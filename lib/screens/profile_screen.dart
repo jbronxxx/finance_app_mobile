@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// Экран профиля пользователя.
+///
+/// [userEmail]/[userName] приходят из [MainShell] (пустые строки — гостевой
+/// режим, данные ещё не подключены к реальному состоянию аутентификации).
+/// [onLogout] сбрасывает это состояние наверху.
 class ProfileScreen extends StatefulWidget {
   final String userEmail;
   final String userName;
@@ -22,6 +27,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   IconData _syncIcon = Icons.cloud_done;
   Color _syncColor = const Color(0xFF0F766E);
 
+  /// ВНИМАНИЕ: это имитация — реального запроса к бэкенду тут нет
+  /// (просто `Future.delayed`). Реальную синхронизацию должен выполнять
+  /// [ApiService.syncLocalDataToBackend] с JWT-токеном текущего пользователя.
   void _startSync() async {
     setState(() {
       _isSyncing = true;
@@ -30,7 +38,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _syncColor = Colors.orange;
     });
 
-    // Имитация сетевого запроса к бэкенду
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;

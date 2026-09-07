@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/local_db_service.dart';
 import 'screens/main_shell.dart';
 
-late final LocalDbService dbService;
-
+/// Точка входа. Порядок важен:
+/// 1) читаем `.env` (адрес бэкенда и т.п. — см. ApiConfig), отсутствие файла
+///    не критично, тогда действуют значения по умолчанию;
+/// 2) поднимаем локальную БД (ObjectBox) — без неё экраны не смогут
+///    прочитать/сохранить транзакции и бюджеты;
+/// 3) запускаем виджет-дерево приложения.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  dbService = await LocalDbService.init();
+
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // .env не создан (например, свежий чекаут без `cp .env.example .env') —
+    // приложение продолжает работать на значениях по умолчанию.
+  }
+
+  await LocalDbService.init();
   runApp(const FinanceApp());
 }
 

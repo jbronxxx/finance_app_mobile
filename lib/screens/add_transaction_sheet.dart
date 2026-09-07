@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
-import '../main.dart';
+import '../services/local_db_service.dart';
 
+/// Модальная форма создания/редактирования транзакции.
+///
+/// Если [transactionToEdit] передан — форма предзаполняется его данными и
+/// сохранение обновляет существующую запись (сохраняя `localId`/дату),
+/// иначе создаётся новая запись с текущей датой и временем.
 class AddTransactionSheet extends StatefulWidget {
   final Transaction? transactionToEdit;
 
@@ -34,6 +39,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     super.dispose();
   }
 
+  /// Валидирует сумму (принимает и запятую, и точку как десятичный
+  /// разделитель) и сохраняет транзакцию — новую или обновлённую.
   void _save() {
     final amountText = _amountController.text.trim().replaceAll(',', '.');
     final amount = double.tryParse(amountText);
@@ -50,7 +57,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         dateMilliseconds: t.date.millisecondsSinceEpoch,
         description: _descriptionController.text.trim(),
       );
-      dbService.saveTransaction(updated);
+      LocalDbService.instance.saveTransaction(updated);
     } else {
       final newTransaction = Transaction(
         dbType: _type.name,
@@ -59,7 +66,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
         description: _descriptionController.text.trim(),
       );
-      dbService.saveTransaction(newTransaction);
+      LocalDbService.instance.saveTransaction(newTransaction);
     }
 
     Navigator.pop(context, true);

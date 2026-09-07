@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// Экран AI-инсайтов.
+///
+/// Пока показывает статичный демонстрационный набор рекомендаций — на
+/// бэкенде эндпоинт `/insights` (см. [ApiConfig.insights]) ещё не подключён
+/// к этому экрану, тексты нужно будет заменить на реальный запрос к API.
 class InsightsScreen extends StatelessWidget {
   const InsightsScreen({super.key});
 
@@ -7,7 +12,6 @@ class InsightsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     const primaryTeal = Color(0xFF0F766E);
 
-    // Демонстрационные инсайты (в будущем придут с FastAPI бэкенда)
     final List<String> insights = [
       'В этом месяце ваши расходы на категорию "Food" выросли на 15% по сравнению с прошлым.',
       'Отличная работа! Вы укладываетесь в месячный лимит по транспорту.',

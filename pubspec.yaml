@@ -16,6 +16,7 @@ dependencies:
   objectbox: ^4.0.0
   objectbox_flutter_libs: any
   dio: ^5.11.1
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -26,3 +27,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env
