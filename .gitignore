@@ -1,0 +1,71 @@
+# Секреты и локальные настройки — никогда не коммитить
+.env
+.env.*
+!.env.example
+
+# FVM (Flutter Version Management) — версия SDK кэшируется локально
+.fvm/
+.fvmrc
+
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code (закомментировано специально: launch.json/settings.json команда решает хранить сама)
+# .vscode/
+
+# Flutter/Dart/Pub
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication / obfuscation
+app.*.symbols
+app.*.map.json
+
+# Android
+android/.gradle/
+android/captures/
+android/local.properties
+android/**/GeneratedPluginRegistrant.java
+android/app/.cxx/
+android/key.properties
+**/*.keystore
+**/*.jks
+
+# iOS / macOS (Xcode, CocoaPods)
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.*
+macos/Pods/
+macos/Flutter/ephemeral/
+macos/Flutter/Flutter-Generated.xcconfig
+macos/Flutter/GeneratedPluginRegistrant.swift
+**/*.xcuserstate
+**/xcuserdata/
+
+# Linux / Windows desktop
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# Coverage
+coverage/

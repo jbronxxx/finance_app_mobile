@@ -1,0 +1,115 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:5574192560812130677",
+      "lastPropertyId": "8:6053026932893744209",
+      "name": "Budget",
+      "properties": [
+        {
+          "id": "1:9214551649342974907",
+          "name": "localId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:250283273511774905",
+          "name": "serverId",
+          "indexId": "1:1611183756185313815",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:2957790525640468579",
+          "name": "dbCategory",
+          "type": 9
+        },
+        {
+          "id": "4:1846827314384648180",
+          "name": "limitAmount",
+          "type": 8
+        },
+        {
+          "id": "5:3827219914486052508",
+          "name": "month",
+          "type": 6
+        },
+        {
+          "id": "6:2113386748042865743",
+          "name": "year",
+          "type": 6
+        },
+        {
+          "id": "7:8965088058634930978",
+          "name": "spent",
+          "type": 8
+        },
+        {
+          "id": "8:6053026932893744209",
+          "name": "remaining",
+          "type": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:4394803372386859630",
+      "lastPropertyId": "7:5012737802703416520",
+      "name": "Transaction",
+      "properties": [
+        {
+          "id": "1:379436739435847804",
+          "name": "localId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5912430042268565551",
+          "name": "serverId",
+          "indexId": "2:827320364083288677",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:3683141746072158620",
+          "name": "amount",
+          "type": 8
+        },
+        {
+          "id": "4:65105620817157698",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "5:4307695167974047121",
+          "name": "dbCategory",
+          "type": 9
+        },
+        {
+          "id": "6:5611710202612279442",
+          "name": "dbType",
+          "type": 9
+        },
+        {
+          "id": "7:5012737802703416520",
+          "name": "dateMilliseconds",
+          "type": 6
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "2:4394803372386859630",
+  "lastIndexId": "2:827320364083288677",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}
