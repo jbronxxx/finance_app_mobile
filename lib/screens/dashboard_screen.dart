@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
-import '../main.dart';
+import '../services/local_db_service.dart';
 import 'add_transaction_sheet.dart';
 import 'auth_screen.dart';
 
+/// Главный экран: баланс за выбранный период и список операций.
+///
+/// [onAuthenticated] вызывается после успешного входа/регистрации в
+/// [AuthScreen] и поднимает данные пользователя в [MainShell], который
+/// передаёт их дальше в экран профиля.
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final void Function(String email, String name)? onAuthenticated;
+
+  const DashboardScreen({super.key, this.onAuthenticated});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -28,10 +35,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadTransactions();
   }
 
+  /// Перечитывает транзакции из локальной БД и оставляет только те, что
+  /// относятся к выбранному месяцу/году (фильтрация — на клиенте, т.к.
+  /// ObjectBox хранит дату как unix-миллисекунды, а не отдельные поля).
   void _loadTransactions() {
-    final all = dbService.getAllTransactions();
+    final all = LocalDbService.instance.getAllTransactions();
     setState(() {
-      // Фильтруем транзакции по выбранному месяцу и году
       _transactions = all.where((t) {
         return t.date.month == _selectedMonth && t.date.year == _selectedYear;
       }).toList();
@@ -39,9 +48,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _deleteTransaction(Transaction transaction) {
-    dbService.deleteTransaction(transaction.localId);
+    LocalDbService.instance.deleteTransaction(transaction.localId);
     _loadTransactions();
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Запись удалена'),
@@ -50,6 +59,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Открывает форму добавления новой записи и обновляет список после
+  /// успешного сохранения (форма сама пишет в БД и возвращает `true`).
   void _openAddTransactionSheet() async {
     final result = await showModalBottomSheet<bool>(
       context: context,
@@ -63,11 +74,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  /// Открывает экран входа/регистрации; при успешном завершении сообщает
+  /// данные пользователя наверх через [DashboardScreen.onAuthenticated].
   void _openAuthScreen() async {
-    await Navigator.push(
+    final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(builder: (context) => const AuthScreen()),
     );
+
+    if (result != null) {
+      widget.onAuthenticated?.call(result['email'] ?? '', result['name'] ?? '');
+    }
   }
 
   void _showPeriodPicker() {

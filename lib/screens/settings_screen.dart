@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// Экран настроек приложения (тема, валюта, уведомления, очистка кэша).
+///
+/// Переключатели пока меняют только локальное состояние виджета и не
+/// сохраняются между запусками — постоянное хранение настроек ещё не
+/// реализовано (кандидат: тот же ObjectBox или SharedPreferences).
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -142,6 +147,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               leading: const Icon(Icons.delete_outline, color: Colors.red),
               title: const Text('Очистить локальный кэш', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
               onTap: () {
+                // ВНИМАНИЕ: кнопка пока ничего не удаляет из ObjectBox —
+                // только показывает сообщение. Перед реальной реализацией
+                // нужно подтверждение пользователя (диалог), т.к. очистка
+                // необратимо удалит все локальные транзакции и лимиты.
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Локальные данные сброшены')),
                 );

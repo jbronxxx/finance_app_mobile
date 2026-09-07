@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
-import '../main.dart';
+import '../services/local_db_service.dart';
 
+/// Экран лимитов бюджета: показывает установленные лимиты по категориям за
+/// выбранный месяц/год и позволяет добавить новый лимит.
 class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({super.key});
 
@@ -21,12 +23,16 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     _loadBudgets();
   }
 
+  /// Загружает лимиты бюджета за текущие выбранные месяц/год.
   void _loadBudgets() {
     setState(() {
-      _budgets = dbService.getBudgetsForPeriod(_selectedMonth, _selectedYear);
+      _budgets = LocalDbService.instance.getBudgetsForPeriod(_selectedMonth, _selectedYear);
     });
   }
 
+  /// Открывает форму создания лимита: считает уже потраченное по выбранной
+  /// категории на момент создания (снимок для полей `spent`/`remaining`)
+  /// и сохраняет новый или обновлённый лимит в БД.
   void _showAddBudgetDialog() {
     Category selectedCategory = Category.food;
     final amountController = TextEditingController();
@@ -94,7 +100,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   onPressed: () {
                     final amount = double.tryParse(amountController.text.trim());
                     if (amount != null && amount > 0) {
-                      final spent = dbService.getSpentForCategory(_selectedMonth, _selectedYear, selectedCategory.name);
+                      final spent = LocalDbService.instance.getSpentForCategory(_selectedMonth, _selectedYear, selectedCategory.name);
                       final newBudget = Budget(
                         dbCategory: selectedCategory.name,
                         limitAmount: amount,
@@ -103,7 +109,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         spent: spent,
                         remaining: amount - spent,
                       );
-                      dbService.saveBudget(newBudget);
+                      LocalDbService.instance.saveBudget(newBudget);
                       Navigator.pop(context);
                       _loadBudgets();
                     }
@@ -199,7 +205,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       itemCount: _budgets.length,
                       itemBuilder: (context, index) {
                         final b = _budgets[index];
-                        final currentSpent = dbService.getSpentForCategory(_selectedMonth, _selectedYear, b.dbCategory);
+                        final currentSpent = LocalDbService.instance.getSpentForCategory(_selectedMonth, _selectedYear, b.dbCategory);
                         final progress = b.limitAmount > 0 ? (currentSpent / b.limitAmount).clamp(0.0, 1.0) : 0.0;
                         final isExceeded = currentSpent > b.limitAmount;
 

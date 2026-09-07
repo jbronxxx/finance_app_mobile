@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
-import '../main.dart'; // где лежит ваш dbService
+import 'package:flutter/foundation.dart';
+import '../config/api_config.dart';
+import 'local_db_service.dart';
 
-// Модель данных для отправки (DTO)
+/// DTO для отправки накопленных гостевых данных на бэкенд одним запросом.
 class SyncPayload {
   final List<Map<String, dynamic>> transactions;
   final List<Map<String, dynamic>> budgets;
@@ -14,40 +16,51 @@ class SyncPayload {
       };
 }
 
+/// Клиент для общения с FastAPI-бэкендом.
+///
+/// На данный момент используется только для отправки гостевых (офлайн)
+/// данных после входа/регистрации — сама авторизация в UI (см. AuthScreen)
+/// пока не подключена к реальному бэкенду и работает как заглушка. Экран
+/// профиля тоже лишь имитирует синхронизацию. Это осознанно оставлено как
+/// точка расширения: когда бэкенд будет готов принимать запросы, именно
+/// через [ApiService] и [ApiConfig.baseUrl] пойдёт реальный трафик.
 class ApiService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: 'https://your-fastapi-backend.com/api/v1'));
+  final Dio _dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
 
-  // Метод отправки накопленных гостевых данных после логина/регистрации
+  /// Выгружает все локальные транзакции и бюджеты на сервер по эндпоинту
+  /// `/sync`, авторизуясь переданным JWT-токеном. Используется один раз
+  /// сразу после успешного входа/регистрации, чтобы не потерять данные,
+  /// накопленные в гостевом режиме.
   Future<void> syncLocalDataToBackend(String jwtToken) async {
     try {
-      // 1. Выгружаем всё, что накопилось в гостевом режиме локально
-      final localTransactions = dbService.getAllTransactions();
-      final localBudgets = dbService.getAllBudgets(); // или ваш метод получения бюджетов
+      final localTransactions = LocalDbService.instance.getAllTransactions();
+      final localBudgets = LocalDbService.instance.getAllBudgets();
 
-      // 2. Форматируем транзакции в JSON-совместимый вид
-      final transactionsJson = localTransactions.map((t) => {
-            'local_id': t.localId,
-            'type': t.dbType, // 'income' или 'expense'
-            'category': t.dbCategory,
-            'amount': t.amount,
-            'date': DateTime.fromMillisecondsSinceEpoch(t.dateMilliseconds).toIso8601String(),
-            'description': t.description,
-          }).toList();
+      final transactionsJson = localTransactions
+          .map((t) => {
+                'local_id': t.localId,
+                'type': t.dbType, // 'income' или 'expense'
+                'category': t.dbCategory,
+                'amount': t.amount,
+                'date': t.date.toIso8601String(),
+                'description': t.description,
+              })
+          .toList();
 
-      // 3. Форматируем бюджеты
-      final budgetsJson = localBudgets.map((b) => {
-            'category': b.dbCategory,
-            'limit_amount': b.limitAmount,
-            'month': b.month,
-            'year': b.year,
-          }).toList();
+      final budgetsJson = localBudgets
+          .map((b) => {
+                'category': b.dbCategory,
+                'limit_amount': b.limitAmount,
+                'month': b.month,
+                'year': b.year,
+              })
+          .toList();
 
       final payload = SyncPayload(
         transactions: transactionsJson,
         budgets: budgetsJson,
       );
 
-      // 4. Отправляем на бэкенд с JWT-токеном
       await _dio.post(
         '/sync',
         data: payload.toJson(),
@@ -58,10 +71,10 @@ class ApiService {
           },
         ),
       );
-      
-      // Опционально: пометить локальные записи как синхронизированные, если нужно
     } catch (e) {
-      print('Ошибка синхронизации: $e');
+      // TODO: заменить debugPrint на нормальное логирование, когда появится
+      // единый механизм логов (или пакет вроде logger/logging).
+      debugPrint('Ошибка синхронизации: $e');
       rethrow;
     }
   }
