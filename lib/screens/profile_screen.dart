@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 /// Экран профиля пользователя.
-///
-/// [userEmail]/[userName] приходят из [MainShell] (пустые строки — гостевой
-/// режим, данные ещё не подключены к реальному состоянию аутентификации).
-/// [onLogout] сбрасывает это состояние наверху.
 class ProfileScreen extends StatefulWidget {
   final String userEmail;
   final String userName;
@@ -27,9 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   IconData _syncIcon = Icons.cloud_done;
   Color _syncColor = const Color(0xFF0F766E);
 
-  /// ВНИМАНИЕ: это имитация — реального запроса к бэкенду тут нет
-  /// (просто `Future.delayed`). Реальную синхронизацию должен выполнять
-  /// [ApiService.syncLocalDataToBackend] с JWT-токеном текущего пользователя.
+  /// Реальная синхронизация данных через ApiService.
   void _startSync() async {
     setState(() {
       _isSyncing = true;
@@ -38,20 +33,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _syncColor = Colors.orange;
     });
 
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      await ApiService.instance.syncLocalDataToBackend();
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isSyncing = false;
-      _syncStatusText = 'Синхронизировано успешно (только что)';
-      _syncIcon = Icons.cloud_done;
-      _syncColor = const Color(0xFF0F766E);
-    });
+      setState(() {
+        _isSyncing = false;
+        _syncStatusText = 'Синхронизировано успешно (только что)';
+        _syncIcon = Icons.cloud_done;
+        _syncColor = const Color(0xFF0F766E);
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Данные успешно отправлены на сервер')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Данные успешно синхронизированы')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSyncing = false;
+        _syncStatusText = 'Ошибка синхронизации';
+        _syncIcon = Icons.error_outline;
+        _syncColor = Colors.red;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка при синхронизации: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      await ApiService.instance.logout();
+
+      if (!mounted) return;
+
+      widget.onLogout();
+
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка при выходе: $e')),
+      );
+    }
   }
 
   @override
@@ -61,7 +88,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Профиль', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Профиль',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -77,14 +105,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 radius: 48,
                 backgroundColor: primaryTeal.withValues(alpha: 0.15),
                 child: Text(
-                  widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
-                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: primaryTeal),
+                  widget.userName.isNotEmpty
+                      ? widget.userName[0].toUpperCase()
+                      : 'U',
+                  style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: primaryTeal),
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                widget.userName.isNotEmpty ? widget.userName.toUpperCase() : 'ПОЛЬЗОВАТЕЛЬ',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                widget.userName.isNotEmpty
+                    ? widget.userName.toUpperCase()
+                    : 'ПОЛЬЗОВАТЕЛЬ',
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87),
               ),
               const SizedBox(height: 4),
               Text(
@@ -105,7 +143,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     const Text(
                       'Статус синхронизации',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -114,14 +153,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: primaryTeal),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: primaryTeal),
                               )
                             : Icon(_syncIcon, color: _syncColor, size: 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             _syncStatusText,
-                            style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                            style: TextStyle(
+                                color: Colors.grey.shade700, fontSize: 14),
                           ),
                         ),
                       ],
@@ -135,11 +176,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           backgroundColor: primaryTeal.withValues(alpha: 0.1),
                           foregroundColor: primaryTeal,
                           elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: _isSyncing ? null : _startSync,
                         icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('Синхронизировать сейчас', style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: const Text('Синхронизировать сейчас',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -153,12 +196,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
-                  onPressed: () {
-                    widget.onLogout();
-                    Navigator.pop(context);
-                  },
+                  onPressed: _handleLogout,
                   child: const Text(
                     'Выйти из аккаунта',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

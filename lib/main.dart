@@ -1,3 +1,6 @@
+import 'dart:developer' as developer;
+import 'dart:ui';
+import 'package:family_budget/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +16,24 @@ import 'screens/main_shell.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.dumpErrorToConsole(details);
+    developer.log(
+      '❌ [UI Error]',
+      error: details.exception,
+      stackTrace: details.stack,
+    );
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    developer.log(
+      '❌ [Async Error]',
+      error: error,
+      stackTrace: stack,
+    );
+    return true; // Возвращаем true, чтобы приложение не падало намертво
+  };
+
   try {
     await dotenv.load(fileName: '.env');
   } catch (_) {
@@ -21,6 +42,12 @@ void main() async {
   }
 
   await LocalDbService.init();
+
+  /// Инициализация ApiService,
+  /// чтобы при старте приложения сразу прочитать токен из secure storage
+  /// и использовать его для авторизации запросов к бэкенду.
+  await ApiService.instance.init();
+
   runApp(const FinanceApp());
 }
 

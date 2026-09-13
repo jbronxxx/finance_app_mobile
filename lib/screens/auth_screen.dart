@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 /// Экран входа/регистрации.
-///
-/// Важно: сейчас это UI-заглушка без реального обращения к бэкенду — форма
-/// просто валидирует поля и возвращает введённые email/имя вызвавшему
-/// экрану через `Navigator.pop`. Реальную авторизацию и последующую
-/// синхронизацию гостевых данных (см. [ApiService.syncLocalDataToBackend])
-/// сюда ещё предстоит подключить.
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -16,6 +11,7 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   bool _isLoginMode = true;
+  bool _isLoading = false;
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -28,28 +24,77 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  /// Простая клиентская валидация + формирование результата экрана.
-  /// В режиме входа именем считается часть email до "@" — реального
-  /// профиля пользователя с бэкенда пока нет.
-  void _submit() {
+  /// Обработка входа/регистрации через ApiService.
+  void _submit() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final name = _nameController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) return;
-    if (!_isLoginMode && name.isEmpty) return;
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Заполните все поля')),
+      );
+      return;
+    }
+    if (!_isLoginMode && name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Введите имя')),
+      );
+      return;
+    }
 
-    final userName = _isLoginMode ? email.split('@')[0] : name;
+    setState(() => _isLoading = true);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_isLoginMode ? 'Вход выполнен: $email' : 'Регистрация успешна: $userName')),
-    );
+    try {
+      if (_isLoginMode) {
+        // Вход
+        final result = await ApiService.instance.login(
+          email: email,
+          password: password,
+        );
 
-    // Возвращаем данные пользователя на главный экран
-    Navigator.pop(context, {
-      'email': email,
-      'name': userName,
-    });
+        // Синхронизация накопленных локальных данных
+        try {
+          await ApiService.instance
+              .syncLocalDataToBackend(result.accessToken.toString());
+        } catch (e) {
+          debugPrint('Фоновая синхронизация не удалась: $e');
+        }
+
+        if (!mounted) return;
+        Navigator.pop(context);
+      } else {
+        // Регистрация
+        await ApiService.instance.register(
+          email: email,
+          password: password,
+          name: name,
+        );
+
+        // После регистрации сразу логинимся
+        final loginResult = await ApiService.instance.login(
+          email: email,
+          password: password,
+        );
+
+        try {
+          await ApiService.instance
+              .syncLocalDataToBackend(loginResult.accessToken.toString());
+        } catch (e) {
+          debugPrint('Фоновая синхронизация не удалась: $e');
+        }
+
+        if (!mounted) return;
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка: ${e.toString()}')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -72,7 +117,10 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 20),
               Text(
                 _isLoginMode ? 'С возвращением!' : 'Создать аккаунт',
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87),
               ),
               const SizedBox(height: 8),
               Text(
@@ -87,7 +135,8 @@ class _AuthScreenState extends State<AuthScreen> {
                   controller: _nameController,
                   decoration: InputDecoration(
                     labelText: 'Имя',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16)),
                     prefixIcon: const Icon(Icons.person_outline),
                   ),
                 ),
@@ -98,7 +147,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Email',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   prefixIcon: const Icon(Icons.email_outlined),
                 ),
               ),
@@ -108,7 +158,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Пароль',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   prefixIcon: const Icon(Icons.lock_outline),
                 ),
               ),
@@ -120,13 +171,22 @@ class _AuthScreenState extends State<AuthScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryTeal,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
-                  onPressed: _submit,
-                  child: Text(
-                    _isLoginMode ? 'Войти' : 'Зарегистрироваться',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  onPressed: _isLoading ? null : _submit,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        )
+                      : Text(
+                          _isLoginMode ? 'Войти' : 'Зарегистрироваться',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
               const Spacer(),
@@ -138,8 +198,11 @@ class _AuthScreenState extends State<AuthScreen> {
                     });
                   },
                   child: Text(
-                    _isLoginMode ? 'Нет аккаунта? Зарегистрируйтесь' : 'Уже есть аккаунт? Войдите',
-                    style: const TextStyle(color: primaryTeal, fontWeight: FontWeight.bold),
+                    _isLoginMode
+                        ? 'Нет аккаунта? Зарегистрируйтесь'
+                        : 'Уже есть аккаунт? Войдите',
+                    style: const TextStyle(
+                        color: primaryTeal, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
