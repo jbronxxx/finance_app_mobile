@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'dashboard_screen.dart';
 import 'budgets_screen.dart';
 import 'insights_screen.dart';
@@ -25,6 +26,22 @@ class _MainShellState extends State<MainShell> {
   String _userEmail = '';
   String _userName = '';
 
+  @override
+  void initState() {
+    super.initState();
+    // При запуске токен и профиль уже подняты из защищённого хранилища
+    // (ApiService.init в main), поэтому подхватываем сохранённого пользователя.
+    _userEmail = ApiService.instance.email ?? '';
+    _userName = ApiService.instance.userName ?? '';
+  }
+
+  /// Переключение на вкладку профиля (индекс 3).
+  void _openProfileTab() {
+    setState(() {
+      _currentIndex = 3;
+    });
+  }
+
   void _onAuthenticated(String email, String name) {
     setState(() {
       _userEmail = email;
@@ -33,6 +50,7 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _logout() {
+    ApiService.instance.setToken(null);
     setState(() {
       _userEmail = '';
       _userName = '';
@@ -40,7 +58,10 @@ class _MainShellState extends State<MainShell> {
   }
 
   List<Widget> get _screens => [
-        DashboardScreen(onAuthenticated: _onAuthenticated),
+        DashboardScreen(
+          onAuthenticated: _onAuthenticated,
+          onOpenProfile: _openProfileTab,
+        ),
         const BudgetsScreen(),
         const InsightsScreen(),
         ProfileScreen(

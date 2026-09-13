@@ -14,7 +14,7 @@ import 'package:objectbox/internal.dart'
 import 'package:objectbox/objectbox.dart' as obx;
 import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
-import 'models/models.dart';
+import 'models/local_db_models.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
 
@@ -194,9 +194,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         object.localId = id;
       },
       objectToFB: (Budget object, fb.Builder fbb) {
-        final serverIdOffset = object.serverId == null
-            ? null
-            : fbb.writeString(object.serverId!);
+        final serverIdOffset =
+            object.serverId == null ? null : fbb.writeString(object.serverId!);
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
         fbb.startTable(9);
         fbb.addInt64(0, object.localId);
@@ -278,9 +277,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         object.localId = id;
       },
       objectToFB: (Transaction object, fb.Builder fbb) {
-        final serverIdOffset = object.serverId == null
-            ? null
-            : fbb.writeString(object.serverId!);
+        final serverIdOffset =
+            object.serverId == null ? null : fbb.writeString(object.serverId!);
         final descriptionOffset = fbb.writeString(object.description);
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
         final dbTypeOffset = fbb.writeString(object.dbType);
@@ -336,6 +334,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           dbCategory: dbCategoryParam,
           dbType: dbTypeParam,
           dateMilliseconds: dateMillisecondsParam,
+          dateCreatedMilliseconds: 0,
         );
 
         return object;

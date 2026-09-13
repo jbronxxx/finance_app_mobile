@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/models.dart';
+import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
 
 /// Модальная форма создания/редактирования транзакции.
@@ -28,7 +28,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     final t = widget.transactionToEdit;
     _type = t?.type ?? TransactionType.expense;
     _category = t?.category ?? Category.food;
-    _amountController = TextEditingController(text: t != null ? t.amount.toString() : '');
+    _amountController =
+        TextEditingController(text: t != null ? t.amount.toString() : '');
     _descriptionController = TextEditingController(text: t?.description ?? '');
   }
 
@@ -49,13 +50,19 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
     if (widget.transactionToEdit != null) {
       final t = widget.transactionToEdit!;
+      // serverId и дату создания обязательно переносим в новый объект: без
+      // них уже выгруженная запись снова попадёт в
+      // `getUnsyncedTransactions()` и создаст дубликат на сервере при
+      // следующей синхронизации.
       final updated = Transaction(
         localId: t.localId,
+        serverId: t.serverId,
         dbType: _type.name,
         dbCategory: _category.name,
         amount: amount,
         dateMilliseconds: t.date.millisecondsSinceEpoch,
         description: _descriptionController.text.trim(),
+        dateCreatedMilliseconds: t.dateCreatedMilliseconds,
       );
       LocalDbService.instance.saveTransaction(updated);
     } else {
@@ -65,6 +72,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         amount: amount,
         dateMilliseconds: DateTime.now().millisecondsSinceEpoch,
         description: _descriptionController.text.trim(),
+        dateCreatedMilliseconds: 0,
       );
       LocalDbService.instance.saveTransaction(newTransaction);
     }
@@ -97,7 +105,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             children: [
               Text(
                 isEditing ? 'Редактировать запись' : 'Новая запись',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -116,22 +125,32 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => setState(() => _type = TransactionType.expense),
+                    onTap: () =>
+                        setState(() => _type = TransactionType.expense),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: _type == TransactionType.expense ? Colors.white : Colors.transparent,
+                        color: _type == TransactionType.expense
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: _type == TransactionType.expense
-                            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                            ? [
+                                BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2))
+                              ]
                             : [],
                       ),
                       child: Text(
                         'Расход',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: _type == TransactionType.expense ? Colors.black87 : Colors.grey,
+                          color: _type == TransactionType.expense
+                              ? Colors.black87
+                              : Colors.grey,
                         ),
                       ),
                     ),
@@ -144,17 +163,26 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: _type == TransactionType.income ? Colors.white : Colors.transparent,
+                        color: _type == TransactionType.income
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: _type == TransactionType.income
-                            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                            ? [
+                                BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2))
+                              ]
                             : [],
                       ),
                       child: Text(
                         'Доход',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: _type == TransactionType.income ? primaryTeal : Colors.grey,
+                          color: _type == TransactionType.income
+                              ? primaryTeal
+                              : Colors.grey,
                         ),
                       ),
                     ),
@@ -170,7 +198,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             autofocus: !isEditing,
             decoration: InputDecoration(
               labelText: 'Сумма (₽)',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
           ),
           const SizedBox(height: 16),
@@ -178,7 +207,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             value: _category,
             decoration: InputDecoration(
               labelText: 'Категория',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
             items: Category.values.map((cat) {
               return DropdownMenuItem(
@@ -195,7 +225,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             controller: _descriptionController,
             decoration: InputDecoration(
               labelText: 'Описание (необязательно)',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
           ),
           const SizedBox(height: 24),
@@ -206,12 +237,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryTeal,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
               ),
               onPressed: _save,
               child: Text(
                 isEditing ? 'Сохранить изменения' : 'Добавить запись',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),

@@ -18,7 +18,14 @@ enum TransactionType {
 
 /// Категория транзакции/бюджета.
 enum Category {
-  food, transport, entertainment, health, subscriptions, shopping, salary, other;
+  food,
+  transport,
+  entertainment,
+  health,
+  subscriptions,
+  shopping,
+  salary,
+  other;
 
   /// Строковое значение из БД/JSON -> enum. Неизвестная категория
   /// (например, добавленная бэкендом позже, но ещё не поддержанная в
@@ -53,6 +60,7 @@ class Transaction {
   final String dbCategory;
   final String dbType;
   final int dateMilliseconds;
+  final int dateCreatedMilliseconds;
 
   Transaction({
     this.localId = 0,
@@ -62,6 +70,7 @@ class Transaction {
     required this.dbCategory,
     required this.dbType,
     required this.dateMilliseconds,
+    required this.dateCreatedMilliseconds,
   });
 
   @Transient()
@@ -76,13 +85,14 @@ class Transaction {
   /// Разбирает ответ бэкенда (FastAPI) в локальную модель.
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
-      serverId: json['id'],
-      amount: (json['amount'] as num).toDouble(),
-      description: json['description'] ?? '',
-      dbCategory: json['category'],
-      dbType: json['type'],
-      dateMilliseconds: DateTime.parse(json['date']).millisecondsSinceEpoch,
-    );
+        serverId: json['id'],
+        amount: (json['amount'] as num).toDouble(),
+        description: json['description'] ?? '',
+        dbCategory: json['category'],
+        dbType: json['type'],
+        dateMilliseconds: DateTime.parse(json['date']).millisecondsSinceEpoch,
+        dateCreatedMilliseconds:
+            DateTime.parse(json['date_created']).millisecondsSinceEpoch);
   }
 
   /// Формирует тело запроса к бэкенду в формате его API.
@@ -144,5 +154,16 @@ class Budget {
       spent: (json['spent'] as num?)?.toDouble() ?? 0.0,
       remaining: (json['remaining'] as num?)?.toDouble() ?? 0.0,
     );
+  }
+
+  /// Формирует тело запроса к бэкенду в формате его API.
+  Map<String, dynamic> toJson() {
+    return {
+      if (serverId != null) 'id': serverId,
+      'category': category.name,
+      'limit_amount': limitAmount,
+      'month': month,
+      'year': year,
+    };
   }
 }

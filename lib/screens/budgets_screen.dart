@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/models.dart';
+import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
 
 /// Экран лимитов бюджета: показывает установленные лимиты по категориям за
@@ -26,7 +26,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   /// Загружает лимиты бюджета за текущие выбранные месяц/год.
   void _loadBudgets() {
     setState(() {
-      _budgets = LocalDbService.instance.getBudgetsForPeriod(_selectedMonth, _selectedYear);
+      _budgets = LocalDbService.instance
+          .getBudgetsForPeriod(_selectedMonth, _selectedYear);
     });
   }
 
@@ -66,7 +67,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 value: selectedCategory,
                 decoration: InputDecoration(
                   labelText: 'Категория',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
                 items: Category.values.map((cat) {
                   return DropdownMenuItem(
@@ -81,10 +83,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   labelText: 'Сумма лимита (₽)',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
               ),
               const SizedBox(height: 24),
@@ -95,12 +99,15 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0F766E),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: () {
-                    final amount = double.tryParse(amountController.text.trim());
+                    final amount =
+                        double.tryParse(amountController.text.trim());
                     if (amount != null && amount > 0) {
-                      final spent = LocalDbService.instance.getSpentForCategory(_selectedMonth, _selectedYear, selectedCategory.name);
+                      final spent = LocalDbService.instance.getSpentForCategory(
+                          _selectedMonth, _selectedYear, selectedCategory.name);
                       final newBudget = Budget(
                         dbCategory: selectedCategory.name,
                         limitAmount: amount,
@@ -114,7 +121,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       _loadBudgets();
                     }
                   },
-                  child: const Text('Сохранить лимит', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Сохранить лимит',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -131,7 +139,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Месячные лимиты', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Месячные лимиты',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -147,7 +156,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     value: _selectedMonth,
                     decoration: InputDecoration(
                       labelText: 'Месяц',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       filled: true,
                       fillColor: Colors.white,
                     ),
@@ -173,7 +183,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     value: _selectedYear,
                     decoration: InputDecoration(
                       labelText: 'Год',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       filled: true,
                       fillColor: Colors.white,
                     ),
@@ -199,14 +210,19 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             Expanded(
               child: _budgets.isEmpty
                   ? const Center(
-                      child: Text('Лимиты на этот период не установлены', style: TextStyle(color: Colors.grey)),
+                      child: Text('Лимиты на этот период не установлены',
+                          style: TextStyle(color: Colors.grey)),
                     )
                   : ListView.builder(
                       itemCount: _budgets.length,
                       itemBuilder: (context, index) {
                         final b = _budgets[index];
-                        final currentSpent = LocalDbService.instance.getSpentForCategory(_selectedMonth, _selectedYear, b.dbCategory);
-                        final progress = b.limitAmount > 0 ? (currentSpent / b.limitAmount).clamp(0.0, 1.0) : 0.0;
+                        final currentSpent = LocalDbService.instance
+                            .getSpentForCategory(
+                                _selectedMonth, _selectedYear, b.dbCategory);
+                        final progress = b.limitAmount > 0
+                            ? (currentSpent / b.limitAmount).clamp(0.0, 1.0)
+                            : 0.0;
                         final isExceeded = currentSpent > b.limitAmount;
 
                         return Container(
@@ -215,19 +231,28 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: isExceeded ? Colors.red.shade300 : Colors.grey.shade200),
+                            border: Border.all(
+                                color: isExceeded
+                                    ? Colors.red.shade300
+                                    : Colors.grey.shade200),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(b.category.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  Text('${currentSpent.toStringAsFixed(0)} / ${b.limitAmount.toStringAsFixed(0)} ₽',
+                                  Text(b.category.name.toUpperCase(),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  Text(
+                                      '${currentSpent.toStringAsFixed(0)} / ${b.limitAmount.toStringAsFixed(0)} ₽',
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: isExceeded ? Colors.red : primaryTeal)),
+                                          color: isExceeded
+                                              ? Colors.red
+                                              : primaryTeal)),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -240,7 +265,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                               ),
                               if (isExceeded) ...[
                                 const SizedBox(height: 8),
-                                const Text('Лимит превышен!', style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold))
+                                const Text('Лимит превышен!',
+                                    style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold))
                               ]
                             ],
                           ),

@@ -1,6 +1,6 @@
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import '../models/models.dart';
+import '../models/local_db_models.dart';
 import '../objectbox.g.dart'; // Генерируется автоматически: `dart run build_runner build`
 
 /// Локальное хранилище приложения на базе ObjectBox.
@@ -30,7 +30,8 @@ class LocalDbService {
   /// при старте приложения, до первого обращения к [instance].
   static Future<void> init() async {
     final docsDir = await getApplicationDocumentsDirectory();
-    final store = await openStore(directory: p.join(docsDir.path, "obx-finance"));
+    final store =
+        await openStore(directory: p.join(docsDir.path, "obx-finance"));
     instance = LocalDbService._create(store);
   }
 
@@ -54,6 +55,17 @@ class LocalDbService {
   /// Сохраняет транзакцию: если `localId` уже существует — обновляет запись,
   /// иначе создаёт новую (поведение ObjectBox `Box.put`).
   void saveTransaction(Transaction transaction) {
+    if (transaction.serverId != null) {
+      final existing = _transactionBox
+          .query(Transaction_.serverId.equals(transaction.serverId!))
+          .build()
+          .findFirst();
+
+      if (existing != null) {
+        transaction.localId = existing.localId;
+      }
+    }
+
     _transactionBox.put(transaction);
   }
 
@@ -61,6 +73,18 @@ class LocalDbService {
   /// была найдена и удалена.
   bool deleteTransaction(int id) {
     return _transactionBox.remove(id);
+  }
+
+  /// Массово сохраняет транзакции, которым только что проставили `serverId`
+  /// по ответу `/sync/`.
+  ///
+  /// Без этого шага записи навсегда остаются «несинхронизированными» и
+  /// выгружаются на сервер повторно при каждом входе и при каждом нажатии
+  /// «Синхронизировать» — у транзакций нет естественного ключа, поэтому
+  /// бэкенд создаёт на каждую отправку новую запись с новым UUID.
+  void putTransactions(List<Transaction> transactions) {
+    if (transactions.isEmpty) return;
+    _transactionBox.putMany(transactions);
   }
 
   /// Возвращает транзакции, ещё не отправленные на сервер (`serverId == null`).
@@ -93,7 +117,8 @@ class LocalDbService {
   void saveBudget(Budget budget) {
     final existing = _budgetBox
         .query(
-          Budget_.dbCategory.equals(budget.dbCategory)
+          Budget_.dbCategory
+              .equals(budget.dbCategory)
               .and(Budget_.month.equals(budget.month))
               .and(Budget_.year.equals(budget.year)),
         )
@@ -104,6 +129,22 @@ class LocalDbService {
       budget.localId = existing.localId;
     }
     _budgetBox.put(budget);
+  }
+
+  /// Массово сохраняет бюджеты, которым только что проставили `serverId`
+  /// по ответу `/sync/` — см. [putTransactions].
+  void putBudgets(List<Budget> budgets) {
+    if (budgets.isEmpty) return;
+    _budgetBox.putMany(budgets);
+  }
+
+  /// Возвращает лимиты бюджета, ещё не отправленные на сервер (`serverId == null`).
+  /// Используется при синхронизации гостевых данных после входа/регистрации.
+  List<Budget> getUnsyncedBudgets() {
+    final query = _budgetBox.query(Budget_.serverId.isNull()).build();
+    final results = query.find();
+    query.close();
+    return results;
   }
 
   /// Считает сумму расходов по конкретной категории за месяц и год.
@@ -124,5 +165,10 @@ class LocalDbService {
       }
     }
     return totalSpent;
+  }
+
+  Future<void> clearAllData() async {
+    _transactionBox.removeAll();
+    _budgetBox.removeAll();
   }
 }

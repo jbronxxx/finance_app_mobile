@@ -1,22 +1,60 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 /// Экран AI-инсайтов.
-///
-/// Пока показывает статичный демонстрационный набор рекомендаций — на
-/// бэкенде эндпоинт `/insights` (см. [ApiConfig.insights]) ещё не подключён
-/// к этому экрану, тексты нужно будет заменить на реальный запрос к API.
-class InsightsScreen extends StatelessWidget {
+class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key});
+
+  @override
+  State<InsightsScreen> createState() => _InsightsScreenState();
+}
+
+class _InsightsScreenState extends State<InsightsScreen> {
+  bool _isLoading = false;
+  List<String> _insights = [];
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInsights();
+  }
+
+  Future<void> _loadInsights() async {
+    if (!ApiService.instance.isAuthenticated) {
+      setState(() {
+        _insights = [
+          'Войдите в аккаунт, чтобы получить персональные рекомендации на основе ваших данных.',
+        ];
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final data = await ApiService.instance.getInsights();
+      setState(() {
+        _insights = List<String>.from(data['insights'] ?? []);
+        if (_insights.isEmpty) {
+          _insights = ['Пока недостаточно данных для анализа. Продолжайте записывать расходы!'];
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Не удалось загрузить инсайты. Попробуйте позже.';
+      });
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     const primaryTeal = Color(0xFF0F766E);
-
-    final List<String> insights = [
-      'В этом месяце ваши расходы на категорию "Food" выросли на 15% по сравнению с прошлым.',
-      'Отличная работа! Вы укладываетесь в месячный лимит по транспорту.',
-      'Рекомендуем отложить не менее 10% от текущего баланса для формирования подушки безопасности.',
-    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -25,6 +63,12 @@ class InsightsScreen extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: _isLoading ? null : _loadInsights,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -61,33 +105,37 @@ class InsightsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: ListView.builder(
-                itemCount: insights.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.auto_awesome, color: primaryTeal, size: 24),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            insights[index],
-                            style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
-                          ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: primaryTeal))
+                  : _error != null
+                      ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+                      : ListView.builder(
+                          itemCount: _insights.length,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.auto_awesome, color: primaryTeal, size: 24),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      _insights[index],
+                                      style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
             ),
           ],
         ),

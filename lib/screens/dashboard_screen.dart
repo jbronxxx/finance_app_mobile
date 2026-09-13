@@ -1,5 +1,7 @@
+import 'package:family_budget/screens/profile_screen.dart';
+import 'package:family_budget/services/api_service.dart';
 import 'package:flutter/material.dart';
-import '../models/models.dart';
+import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
 import 'add_transaction_sheet.dart';
 import 'auth_screen.dart';
@@ -9,10 +11,15 @@ import 'auth_screen.dart';
 /// [onAuthenticated] вызывается после успешного входа/регистрации в
 /// [AuthScreen] и поднимает данные пользователя в [MainShell], который
 /// передаёт их дальше в экран профиля.
+///
+/// [onOpenProfile] просит [MainShell] переключиться на вкладку профиля —
+/// так залогиненный пользователь попадает в профиль с нижней навигацией,
+/// а не в отдельный экран поверх стека.
 class DashboardScreen extends StatefulWidget {
   final void Function(String email, String name)? onAuthenticated;
+  final VoidCallback? onOpenProfile;
 
-  const DashboardScreen({super.key, this.onAuthenticated});
+  const DashboardScreen({super.key, this.onAuthenticated, this.onOpenProfile});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -25,8 +32,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Transaction> _transactions = [];
 
   final List<String> _monthsNames = [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+    'Январь',
+    'Февраль',
+    'Март',
+    'Апрель',
+    'Май',
+    'Июнь',
+    'Июль',
+    'Август',
+    'Сентябрь',
+    'Октябрь',
+    'Ноябрь',
+    'Декабрь'
   ];
 
   @override
@@ -75,16 +92,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Открывает экран входа/регистрации; при успешном завершении сообщает
-  /// данные пользователя наверх через [DashboardScreen.onAuthenticated].
+  /// данные пользователя наверх через [DashboardScreen.onAuthenticated]
+  /// и перенаправляет пользователя в профиль.
   void _openAuthScreen() async {
-    final result = await Navigator.push<Map<String, String>>(
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AuthScreen()),
     );
 
-    if (result != null) {
-      widget.onAuthenticated?.call(result['email'] ?? '', result['name'] ?? '');
+    if (!mounted) return;
+    setState(() {});
+
+    // AuthScreen просто закрывается после успешного входа, поэтому результат
+    // читаем из ApiService — там уже лежат токен и профиль пользователя.
+    if (ApiService.instance.isAuthenticated) {
+      widget.onAuthenticated?.call(
+        ApiService.instance.email ?? '',
+        ApiService.instance.userName ?? '',
+      );
+      _openProfile();
     }
+  }
+
+  /// Переход в профиль: по возможности переключаем вкладку в [MainShell],
+  /// иначе (экран используется отдельно) открываем профиль поверх стека.
+  void _openProfile() async {
+    if (widget.onOpenProfile != null) {
+      widget.onOpenProfile!();
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileScreen(
+          userEmail: ApiService.instance.email ?? '',
+          userName: ApiService.instance.userName ?? '',
+          onLogout: () {
+            if (mounted) setState(() {});
+          },
+        ),
+      ),
+    );
+
+    if (mounted) setState(() {});
+  }
+
+  /// Подпись кнопки в AppBar: имя пользователя, иначе email, иначе «Профиль».
+  String get _userLabel {
+    final name = ApiService.instance.userName;
+    if (name != null && name.isNotEmpty) return name;
+
+    final email = ApiService.instance.email;
+    if (email != null && email.isNotEmpty) return email;
+
+    return 'Профиль';
   }
 
   void _showPeriodPicker() {
@@ -114,7 +176,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 value: tempMonth,
                 decoration: InputDecoration(
                   labelText: 'Месяц',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
                 items: List.generate(12, (index) {
                   return DropdownMenuItem(
@@ -131,7 +194,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 value: tempYear,
                 decoration: InputDecoration(
                   labelText: 'Год',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
                 items: [2024, 2025, 2026, 2027].map((year) {
                   return DropdownMenuItem(
@@ -151,7 +215,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0F766E),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: () {
                     setState(() {
@@ -161,7 +226,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     });
                     Navigator.pop(context);
                   },
-                  child: const Text('Применить', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Применить',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -199,7 +265,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Text(
                 '$currentMonthName $_selectedYear',
-                style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18),
+                style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18),
               ),
               const SizedBox(width: 4),
               const Icon(Icons.arrow_drop_down, color: Colors.black87),
@@ -210,21 +279,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: TextButton(
-              onPressed: _openAuthScreen,
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF0F766E),
-                backgroundColor: const Color(0xFF0F766E).withValues(alpha: 0.1),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Вход / Регистрация',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-            ),
+            child: ApiService.instance.isAuthenticated
+                ? TextButton.icon(
+                    onPressed: _openProfile,
+                    icon: const Icon(Icons.person, size: 18),
+                    label: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 120),
+                      child: Text(
+                        _userLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF0F766E),
+                      backgroundColor:
+                          const Color(0xFF0F766E).withValues(alpha: 0.1),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  )
+                : TextButton(
+                    onPressed: _openAuthScreen,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF0F766E),
+                      backgroundColor:
+                          const Color(0xFF0F766E).withValues(alpha: 0.1),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Вход / Регистрация',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ),
           )
         ],
       ),
@@ -232,30 +329,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           children: [
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber.shade200),
+            if (!ApiService.instance.isAuthenticated)
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        size: 16, color: Colors.amber.shade800),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Режим гостя (данные хранятся локально)',
+                      style: TextStyle(
+                          color: Colors.amber.shade900,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, size: 16, color: Colors.amber.shade800),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Режим гостя (данные хранятся локально)',
-                    style: TextStyle(color: Colors.amber.shade900, fontSize: 12, fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
             _buildBalanceCard(balance, income, expense),
             const SizedBox(height: 24),
             const Text(
               'История операций',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87),
             ),
             const SizedBox(height: 12),
             _transactions.isEmpty
@@ -307,19 +413,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           const Text(
             'Общий баланс',
-            style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
           Text(
             '${balance.toStringAsFixed(0)} ₽',
-            style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildIncomeExpenseInfo('Доход', income, Icons.arrow_downward, Colors.white),
-              _buildIncomeExpenseInfo('Расход', expense, Icons.arrow_upward, Colors.white),
+              _buildIncomeExpenseInfo(
+                  'Доход', income, Icons.arrow_downward, Colors.white),
+              _buildIncomeExpenseInfo(
+                  'Расход', expense, Icons.arrow_upward, Colors.white),
             ],
           ),
         ],
@@ -327,7 +439,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildIncomeExpenseInfo(String label, double amount, IconData icon, Color color) {
+  Widget _buildIncomeExpenseInfo(
+      String label, double amount, IconData icon, Color color) {
     return Row(
       children: [
         Container(
@@ -342,10 +455,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(label,
+                style: const TextStyle(color: Colors.white70, fontSize: 12)),
             Text(
               '${amount.toStringAsFixed(0)} ₽',
-              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ],
         ),
@@ -355,11 +470,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildTransactionCard(Transaction transaction) {
     final isExpense = transaction.type == TransactionType.expense;
-    
+
     IconData categoryIcon = Icons.category;
-    if (transaction.category == Category.food) categoryIcon = Icons.shopping_cart;
-    if (transaction.category == Category.transport) categoryIcon = Icons.directions_bus;
-    if (transaction.category == Category.salary) categoryIcon = Icons.monetization_on;
+    if (transaction.category == Category.food) {
+      categoryIcon = Icons.shopping_cart;
+    }
+    if (transaction.category == Category.transport) {
+      categoryIcon = Icons.directions_bus;
+    }
+    if (transaction.category == Category.salary) {
+      categoryIcon = Icons.monetization_on;
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
@@ -391,12 +512,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: isExpense ? Colors.orange.shade50 : Colors.teal.shade50,
+                  color:
+                      isExpense ? Colors.orange.shade50 : Colors.teal.shade50,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   categoryIcon,
-                  color: isExpense ? Colors.orange.shade400 : Colors.teal.shade400,
+                  color:
+                      isExpense ? Colors.orange.shade400 : Colors.teal.shade400,
                 ),
               ),
               const SizedBox(width: 16),
@@ -406,13 +529,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       transaction.category.name.toUpperCase(),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     if (transaction.description.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         transaction.description,
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                        style: TextStyle(
+                            color: Colors.grey.shade600, fontSize: 12),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

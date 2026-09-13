@@ -16,8 +16,10 @@ class ApiConfig {
   // (см. OpenAPI-спецификацию FastAPI), поэтому они остаются константами.
 
   // Авторизация
-  static const String register = '/auth/register';
-  static const String login = '/auth/login';
+  static const String register = '/auth/register'; // POST
+  static const String login = '/auth/login'; // POST
+  static const String logout = '/auth/logout'; // POST
+  static const String me = '/auth/me'; // GET
 
   // Транзакции
   static const String transactions = '/transactions/'; // GET, POST
@@ -26,6 +28,8 @@ class ApiConfig {
 
   // Бюджеты
   static const String budgets = '/budgets/'; // GET, POST
+
+  static const String sync = '/sync/'; // POST
 
   // AI-инсайты
   static const String insights = '/insights/'; // GET
