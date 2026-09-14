@@ -49,8 +49,6 @@ class _AuthScreenState extends State<AuthScreen> {
       if (_isLoginMode) {
         await ApiService.instance.login(email: email, password: password);
       } else {
-        // Отдельный login() здесь не нужен: register() сам логинится после
-        // успешной регистрации и сохраняет токен. Раньше вызов дублировался.
         await ApiService.instance.register(
           email: email,
           password: password,
@@ -58,21 +56,18 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
 
-      // Полная двусторонняя синхронизация: сначала выгружаем то, что
-      // накопилось в гостевом режиме, затем забираем с сервера актуальное
-      // состояние по всем периодам (после переустановки приложения сервер —
-      // единственный источник данных). Токен уже сохранён внутри
-      // ApiService, поэтому передавать его параметром не нужно.
       try {
         await ApiService.instance.syncAll();
       } catch (e) {
-        // Неудачная синхронизация не отменяет вход: локальные данные никуда
-        // не делись и уйдут на сервер при следующей попытке.
         debugPrint('Синхронизация после входа не удалась: $e');
       }
 
       if (!mounted) return;
-      Navigator.pop(context);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacementNamed(context, '/');
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,7 +91,6 @@ class _AuthScreenState extends State<AuthScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          // <-- 1. Добавили скролл
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,8 +170,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                 ),
               ),
-              const SizedBox(
-                  height: 24), // <-- 2. Заменили Spacer на фиксированный отступ
+              const SizedBox(height: 24),
               Center(
                 child: TextButton(
                   onPressed: () {
