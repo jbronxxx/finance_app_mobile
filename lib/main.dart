@@ -5,13 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/local_db_service.dart';
+import 'services/pending_deletions_store.dart';
 import 'screens/main_shell.dart';
 
 /// Точка входа. Порядок важен:
 /// 1) читаем `.env` (адрес бэкенда и т.п. — см. ApiConfig), отсутствие файла
 ///    не критично, тогда действуют значения по умолчанию;
 /// 2) поднимаем локальную БД (ObjectBox) — без неё экраны не смогут
-///    прочитать/сохранить транзакции и бюджеты;
+///    прочитать/сохранить транзакции и бюджеты, и очередь отложенных
+///    удалений, которую читает синхронизация;
 /// 3) запускаем виджет-дерево приложения.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +44,10 @@ void main() async {
   }
 
   await LocalDbService.init();
+
+  /// Очередь удалений, не доехавших до сервера, — читается с диска до
+  /// первого возможного вызова синхронизации.
+  await PendingDeletionsStore.init();
 
   /// Инициализация ApiService,
   /// чтобы при старте приложения сразу прочитать токен из secure storage

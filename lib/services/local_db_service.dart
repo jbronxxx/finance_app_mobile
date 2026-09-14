@@ -55,18 +55,77 @@ class LocalDbService {
   /// Сохраняет транзакцию: если `localId` уже существует — обновляет запись,
   /// иначе создаёт новую (поведение ObjectBox `Box.put`).
   void saveTransaction(Transaction transaction) {
-    if (transaction.serverId != null) {
-      final existing = _transactionBox
-          .query(Transaction_.serverId.equals(transaction.serverId!))
-          .build()
-          .findFirst();
+    _linkToExistingTransaction(transaction);
+    _transactionBox.put(transaction);
+  }
 
-      if (existing != null) {
-        transaction.localId = existing.localId;
-      }
+  /// Переносит на приехавшую с сервера транзакцию `localId` уже существующей
+  /// локальной строки с тем же `serverId`, чтобы `put` её обновил, а не
+  /// создал вторую.
+  ///
+  /// Без этого шага `put` вставил бы новую строку с тем же `serverId`, а он
+  /// помечен `@Unique()` со стратегией по умолчанию `ConflictStrategy.fail` —
+  /// то есть вставка не «перезаписала бы тихо», а бросила
+  /// `UniqueViolationException` и оборвала синхронизацию.
+  /// [claimed] — локальные `localId`, уже занятые другими записями в рамках
+  /// одного прохода сверки; нужен, чтобы две серверные записи не «прилипли»
+  /// к одной локальной строке.
+  void _linkToExistingTransaction(Transaction transaction,
+      {Set<int>? claimed}) {
+    final serverId = transaction.serverId;
+    if (serverId == null) return;
+
+    final query =
+        _transactionBox.query(Transaction_.serverId.equals(serverId)).build();
+    final existing = query.findFirst();
+    query.close();
+
+    if (existing != null) {
+      transaction.localId = existing.localId;
+      claimed?.add(existing.localId);
+      return;
     }
 
-    _transactionBox.put(transaction);
+    // Записи с таким serverId локально нет. Прежде чем вставлять новую
+    // строку, ищем ещё не выгруженную запись с тем же содержимым: скорее
+    // всего это та же самая операция, которой выгрузка не успела проставить
+    // serverId (ответ `/sync/` вернулся неполным). Без этой проверки она
+    // осталась бы в базе рядом с приехавшей копией — получился бы дубль, и
+    // он же уехал бы на сервер при следующей выгрузке.
+    final twin = _findUnsyncedTransactionTwin(transaction, claimed);
+
+    if (twin != null) {
+      transaction.localId = twin.localId;
+      claimed?.add(twin.localId);
+    }
+  }
+
+  /// Ищет невыгруженную локальную транзакцию, совпадающую с [remote] по
+  /// содержимому: дата, категория, тип и сумма.
+  ///
+  /// Сумму сравниваем в Dart, а не в запросе: ObjectBox не умеет
+  /// сопоставлять double на точное равенство.
+  Transaction? _findUnsyncedTransactionTwin(
+    Transaction remote,
+    Set<int>? claimed,
+  ) {
+    final query = _transactionBox
+        .query(Transaction_.serverId
+            .isNull()
+            .and(Transaction_.dateMilliseconds.equals(remote.dateMilliseconds))
+            .and(Transaction_.dbCategory.equals(remote.dbCategory))
+            .and(Transaction_.dbType.equals(remote.dbType)))
+        .build();
+    final candidates = query.find();
+    query.close();
+
+    for (final candidate in candidates) {
+      final isClaimed = claimed?.contains(candidate.localId) ?? false;
+
+      if (!isClaimed && candidate.amount == remote.amount) return candidate;
+    }
+
+    return null;
   }
 
   /// Удаляет транзакцию по локальному ID. Возвращает `true`, если запись
@@ -96,6 +155,52 @@ class LocalDbService {
     return results;
   }
 
+  /// Приводит локальные транзакции в соответствие с состоянием сервера.
+  ///
+  /// [remote] — ПОЛНЫЙ список транзакций пользователя с сервера (по всем
+  /// периодам). Метод делает две вещи в одной транзакции записи:
+  ///
+  /// 1. upsert присланных записей по `serverId`;
+  /// 2. удаление локальных записей, у которых `serverId` есть, но в [remote]
+  ///    его нет, — значит запись удалили на сервере.
+  ///
+  /// Записи с `serverId == null` не удаляются никогда: это данные, созданные
+  /// офлайн и ещё не выгруженные (см. [getUnsyncedTransactions]). Стереть их
+  /// означало бы потерять ровно то, что синхронизация призвана сохранить.
+  ///
+  /// Вызывать ТОЛЬКО с полным ответом сервера: для отфильтрованной или
+  /// частичной выборки «нет в [remote]» не означает «удалено на сервере»,
+  /// и сверка снесёт живые данные.
+  ///
+  /// Одна транзакция записи вместо `put` на каждую запись нужна и для
+  /// скорости (на несколько месяцев гостевых данных это сотни строк), и для
+  /// атомарности: оборвавшись на середине, метод не оставит базу в
+  /// полуобновлённом состоянии.
+  ///
+  /// Возвращает число удалённых при сверке записей.
+  int reconcileTransactions(List<Transaction> remote) {
+    return _store.runInTransaction(TxMode.write, () {
+      final claimed = <int>{};
+
+      for (final transaction in remote) {
+        _linkToExistingTransaction(transaction, claimed: claimed);
+      }
+      _transactionBox.putMany(remote);
+
+      final remoteIds =
+          remote.map((t) => t.serverId).whereType<String>().toSet();
+
+      final stale = _transactionBox
+          .getAll()
+          .where((t) => t.serverId != null && !remoteIds.contains(t.serverId))
+          .map((t) => t.localId)
+          .toList();
+
+      _transactionBox.removeMany(stale);
+      return stale.length;
+    });
+  }
+
   // --- Бюджеты ---
 
   /// Возвращает лимиты бюджета за конкретные месяц и год.
@@ -115,20 +220,51 @@ class LocalDbService {
   /// Сохраняет лимит бюджета. Если лимит на эту категорию за этот месяц/год
   /// уже существует — обновляет его вместо создания дубликата.
   void saveBudget(Budget budget) {
-    final existing = _budgetBox
+    _linkToExistingBudget(budget);
+    _budgetBox.put(budget);
+  }
+
+  /// Ищет локальную строку, которую должен обновить этот лимит.
+  ///
+  /// Порядок проверок важен. Сначала `serverId` — это единственный ключ,
+  /// который гарантированно указывает на ту же запись, даже если у неё на
+  /// сервере поменяли категорию или период. Только если записи с таким
+  /// `serverId` локально нет (или лимит создан офлайн и `serverId` пока
+  /// пустой), сопоставляем по натуральному ключу `категория + месяц + год`.
+  ///
+  /// Раньше проверка по `serverId` отсутствовала, и при полной выгрузке с
+  /// сервера строка находилась только по натуральному ключу — из-за чего
+  /// `serverId` мог продублироваться между строками и `put` падал с
+  /// `UniqueViolationException`.
+  void _linkToExistingBudget(Budget budget) {
+    final serverId = budget.serverId;
+
+    if (serverId != null) {
+      final byServerId =
+          _budgetBox.query(Budget_.serverId.equals(serverId)).build();
+      final existing = byServerId.findFirst();
+      byServerId.close();
+
+      if (existing != null) {
+        budget.localId = existing.localId;
+        return;
+      }
+    }
+
+    final byPeriod = _budgetBox
         .query(
           Budget_.dbCategory
               .equals(budget.dbCategory)
               .and(Budget_.month.equals(budget.month))
               .and(Budget_.year.equals(budget.year)),
         )
-        .build()
-        .findFirst();
+        .build();
+    final existing = byPeriod.findFirst();
+    byPeriod.close();
 
     if (existing != null) {
       budget.localId = existing.localId;
     }
-    _budgetBox.put(budget);
   }
 
   /// Массово сохраняет бюджеты, которым только что проставили `serverId`
@@ -145,6 +281,29 @@ class LocalDbService {
     final results = query.find();
     query.close();
     return results;
+  }
+
+  /// Приводит локальные лимиты бюджета в соответствие с состоянием сервера —
+  /// см. [reconcileTransactions], правила те же.
+  int reconcileBudgets(List<Budget> remote) {
+    return _store.runInTransaction(TxMode.write, () {
+      for (final budget in remote) {
+        _linkToExistingBudget(budget);
+      }
+      _budgetBox.putMany(remote);
+
+      final remoteIds =
+          remote.map((b) => b.serverId).whereType<String>().toSet();
+
+      final stale = _budgetBox
+          .getAll()
+          .where((b) => b.serverId != null && !remoteIds.contains(b.serverId))
+          .map((b) => b.localId)
+          .toList();
+
+      _budgetBox.removeMany(stale);
+      return stale.length;
+    });
   }
 
   /// Считает сумму расходов по конкретной категории за месяц и год.
