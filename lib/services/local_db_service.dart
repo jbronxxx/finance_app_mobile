@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../models/local_db_models.dart';
@@ -30,8 +31,9 @@ class LocalDbService {
   /// при старте приложения, до первого обращения к [instance].
   static Future<void> init() async {
     final docsDir = await getApplicationDocumentsDirectory();
-    final store =
-        await openStore(directory: p.join(docsDir.path, "obx-finance"));
+    final dbPath = p.join(docsDir.path, "obx-finance");
+    if (kDebugMode) debugPrint('[LocalDbService] Opening store at $dbPath');
+    final store = await openStore(directory: dbPath);
     instance = LocalDbService._create(store);
   }
 
@@ -56,7 +58,8 @@ class LocalDbService {
   /// иначе создаёт новую (поведение ObjectBox `Box.put`).
   void saveTransaction(Transaction transaction) {
     _linkToExistingTransaction(transaction);
-    _transactionBox.put(transaction);
+    final id = _transactionBox.put(transaction);
+    if (kDebugMode) debugPrint('[LocalDbService] Saved transaction localId: $id');
   }
 
   /// Переносит на приехавшую с сервера транзакцию `localId` уже существующей
@@ -131,7 +134,9 @@ class LocalDbService {
   /// Удаляет транзакцию по локальному ID. Возвращает `true`, если запись
   /// была найдена и удалена.
   bool deleteTransaction(int id) {
-    return _transactionBox.remove(id);
+    final removed = _transactionBox.remove(id);
+    if (kDebugMode) debugPrint('[LocalDbService] Removed transaction $id: $removed');
+    return removed;
   }
 
   /// Массово сохраняет транзакции, которым только что проставили `serverId`
@@ -221,7 +226,8 @@ class LocalDbService {
   /// уже существует — обновляет его вместо создания дубликата.
   void saveBudget(Budget budget) {
     _linkToExistingBudget(budget);
-    _budgetBox.put(budget);
+    final id = _budgetBox.put(budget);
+    if (kDebugMode) debugPrint('[LocalDbService] Saved budget localId: $id');
   }
 
   /// Ищет локальную строку, которую должен обновить этот лимит.

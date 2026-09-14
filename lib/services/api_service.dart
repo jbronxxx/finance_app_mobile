@@ -37,6 +37,7 @@ class ApiService {
         if (e.response?.statusCode == 401 &&
             e.requestOptions.path != ApiConfig.refreshToken) {
           if (_refreshToken != null) {
+            if (kDebugMode) debugPrint('[ApiService] Token expired, attempting refresh...');
             try {
               final refreshResponse = await _dio.post(
                 ApiConfig.refreshToken,
@@ -47,15 +48,18 @@ class ApiService {
               final newRefresh = refreshResponse.data['data']['refresh_token'];
 
               await setTokens(newAccess, newRefresh);
+              if (kDebugMode) debugPrint('[ApiService] Token refreshed successfully');
 
               final options = e.requestOptions;
               options.headers['Authorization'] = 'Bearer $newAccess';
               return handler.resolve(await _dio.fetch(options));
             } catch (err) {
+              if (kDebugMode) debugPrint('[ApiService] Token refresh failed: $err');
               await _handleSessionExpired();
               return handler.reject(e);
             }
           } else {
+            if (kDebugMode) debugPrint('[ApiService] No refresh token available');
             await _handleSessionExpired();
           }
         }
@@ -164,7 +168,9 @@ class ApiService {
       await setUserName(registerResponse.name);
       await setUserEmail(registerResponse.email);
     } on DioException catch (e) {
-      debugPrint('Ошибка регистрации: ${e.response?.data ?? e.message}');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Register error: ${e.response?.data ?? e.message}');
+      }
       rethrow;
     }
 
@@ -173,7 +179,7 @@ class ApiService {
 
       return registerResponse;
     } catch (e) {
-      debugPrint('Ошибка входа после регистрации: $e');
+      if (kDebugMode) debugPrint('[ApiService] Login after register error: $e');
       rethrow;
     }
   }
@@ -206,7 +212,9 @@ class ApiService {
 
       return LoginResponseModel.fromJson(response.data);
     } on DioException catch (e) {
-      debugPrint('Ошибка входа: ${e.response?.data ?? e.message}');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Login error: ${e.response?.data ?? e.message}');
+      }
       rethrow;
     }
   }
@@ -224,19 +232,22 @@ class ApiService {
       await setUserName(userProfile.userName);
       await setUserEmail(userProfile.userEmail);
 
-      debugPrint('Профиль пользователя обновлен: ${userProfile.userName}');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Profile updated for: ${userProfile.userName}');
+      }
     } on DioException catch (e) {
-      debugPrint(
-          'Ошибка при получении профиля: ${e.response?.data ?? e.message}');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Fetch profile error: ${e.response?.data ?? e.message}');
+      }
     } catch (e) {
-      debugPrint('Не удалось разобрать профиль пользователя: $e');
+      if (kDebugMode) debugPrint('[ApiService] Profile parse error: $e');
     }
   }
 
   /// Выход из аккаунта.
   Future<LogoutResponseModel> logout() async {
     if (_token == null) {
-      debugPrint('Попытка выхода без авторизации');
+      if (kDebugMode) debugPrint('[ApiService] Logout attempted without token');
       return LogoutResponseModel(status: 'error', message: 'Не авторизован');
     }
 
@@ -248,10 +259,12 @@ class ApiService {
 
       final logoutResponse = LogoutResponseModel.fromJson(response.data);
 
-      debugPrint('Выход успешен: ${logoutResponse.message}');
+      if (kDebugMode) debugPrint('[ApiService] Logout success: ${logoutResponse.message}');
       return logoutResponse;
     } on DioException catch (e) {
-      debugPrint('Ошибка выхода: ${e.response?.data ?? e.message}');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Logout error: ${e.response?.data ?? e.message}');
+      }
       rethrow;
     } finally {
       await clearAllUserData();
@@ -274,7 +287,7 @@ class ApiService {
       final List<dynamic> list = response.data['data'];
       return list.map((json) => TransactionModel.fromJson(json)).toList();
     } catch (e) {
-      debugPrint('Ошибка получения транзакций: $e');
+      if (kDebugMode) debugPrint('[ApiService] Get transactions error: $e');
       rethrow;
     }
   }
@@ -290,7 +303,7 @@ class ApiService {
 
       return TransactionModel.fromJson(response.data['data']);
     } catch (e) {
-      debugPrint('Ошибка создания транзакции: $e');
+      if (kDebugMode) debugPrint('[ApiService] Create transaction error: $e');
       rethrow;
     }
   }
@@ -303,7 +316,7 @@ class ApiService {
         options: _authOptions(token),
       );
     } catch (e) {
-      debugPrint('Ошибка удаления транзакции: $e');
+      if (kDebugMode) debugPrint('[ApiService] Delete transaction error: $e');
       rethrow;
     }
   }
@@ -323,7 +336,7 @@ class ApiService {
     try {
       await deleteTransaction(serverId);
     } catch (e) {
-      debugPrint('Удаление на сервере не удалось, откладываем: $e');
+      if (kDebugMode) debugPrint('[ApiService] Server delete failed, deferring: $e');
       await PendingDeletionsStore.instance.addTransaction(serverId);
     }
   }
@@ -343,7 +356,7 @@ class ApiService {
       final List<dynamic> list = response.data['data'];
       return list.map((json) => BudgetModel.fromJson(json)).toList();
     } catch (e) {
-      debugPrint('Ошибка получения бюджетов: $e');
+      if (kDebugMode) debugPrint('[ApiService] Get budgets error: $e');
       rethrow;
     }
   }
@@ -359,7 +372,7 @@ class ApiService {
 
       return BudgetModel.fromJson(response.data['data']);
     } catch (e) {
-      debugPrint('Ошибка создания бюджета: $e');
+      if (kDebugMode) debugPrint('[ApiService] Create budget error: $e');
       rethrow;
     }
   }
@@ -374,7 +387,7 @@ class ApiService {
 
       return response.data;
     } catch (e) {
-      debugPrint('Ошибка получения инсайтов: $e');
+      if (kDebugMode) debugPrint('[ApiService] Get insights error: $e');
       rethrow;
     }
   }
@@ -408,13 +421,13 @@ class ApiService {
         _assignBudgetIds(localBudgets, data['synced_budgets']);
       }
 
-      debugPrint('Синхронизация успешна');
+      if (kDebugMode) debugPrint('[ApiService] Sync local -> backend success');
       return response.data;
     } on DioException catch (e) {
-      debugPrint('Ошибка синхронизации: ${e.response?.statusCode}');
+      if (kDebugMode) debugPrint('[ApiService] Sync error: ${e.response?.statusCode}');
       throw Exception('Ошибка синхронизации: ${e.response?.statusCode}');
     } catch (e) {
-      debugPrint('Произошла непредвиденная ошибка: $e');
+      if (kDebugMode) debugPrint('[ApiService] Sync unexpected error: $e');
       rethrow;
     }
   }
@@ -433,10 +446,12 @@ class ApiService {
       final removedBudgets =
           LocalDbService.instance.reconcileBudgets(remoteBudgets);
 
-      debugPrint(
-          'Загружено с сервера: транзакций ${remoteTransactions.length}, '
-          'бюджетов ${remoteBudgets.length}; удалено локально: '
-          'транзакций $removedTransactions, бюджетов $removedBudgets');
+      if (kDebugMode) {
+        debugPrint(
+            '[ApiService] Sync backend -> local: '
+            'T(${remoteTransactions.length}), B(${remoteBudgets.length}); '
+            'Removed: T($removedTransactions), B($removedBudgets)');
+      }
 
       return {
         'transactions': remoteTransactions.length,
@@ -445,10 +460,10 @@ class ApiService {
         'removed_budgets': removedBudgets,
       };
     } on DioException catch (e) {
-      debugPrint('Ошибка загрузки данных с сервера: ${e.response?.statusCode}');
+      if (kDebugMode) debugPrint('[ApiService] Load error: ${e.response?.statusCode}');
       throw Exception('Ошибка загрузки данных: ${e.response?.statusCode}');
     } catch (e) {
-      debugPrint('Произошла непредвиденная ошибка: $e');
+      if (kDebugMode) debugPrint('[ApiService] Load unexpected error: $e');
       rethrow;
     }
   }
@@ -479,17 +494,19 @@ class ApiService {
         if (e.response?.statusCode == 404) {
           done.add(serverId);
         } else {
-          debugPrint('Отложенное удаление $serverId не удалось: '
-              '${e.response?.statusCode}');
+          if (kDebugMode) {
+            debugPrint('[ApiService] Flush delete $serverId failed: ${e.response?.statusCode}');
+          }
         }
       } catch (e) {
-        debugPrint('Отложенное удаление $serverId не удалось: $e');
+        if (kDebugMode) debugPrint('[ApiService] Flush delete $serverId failed: $e');
       }
     }
 
     await PendingDeletionsStore.instance.removeTransactions(done);
-    debugPrint('Проиграно отложенных удалений: ${done.length} '
-        'из ${pending.length}');
+    if (kDebugMode) {
+      debugPrint('[ApiService] Flushed pending deletions: ${done.length}/${pending.length}');
+    }
 
     return done.length;
   }
@@ -549,8 +566,9 @@ class ApiService {
     }
 
     LocalDbService.instance.putTransactions(synced);
-    debugPrint(
-        'Синхронизировано транзакций: ${synced.length} из ${sent.length}');
+    if (kDebugMode) {
+      debugPrint('[ApiService] Assigned transaction IDs: ${synced.length}/${sent.length}');
+    }
   }
 
   void _assignBudgetIds(List<Budget> sent, dynamic remote) {
@@ -586,7 +604,9 @@ class ApiService {
     }
 
     LocalDbService.instance.putBudgets(synced);
-    debugPrint('Синхронизировано бюджетов: ${synced.length} из ${sent.length}');
+    if (kDebugMode) {
+      debugPrint('[ApiService] Assigned budget IDs: ${synced.length}/${sent.length}');
+    }
   }
 
   List<Map<String, dynamic>> _asJsonList(dynamic value) {

@@ -46,6 +46,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     'Декабрь'
   ];
 
+  final List<String> _monthsNamesGenitive = [
+    'Января',
+    'Февраля',
+    'Марта',
+    'Апреля',
+    'Мая',
+    'Июня',
+    'Июля',
+    'Августа',
+    'Сентября',
+    'Октября',
+    'Ноября',
+    'Декабря'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -82,14 +97,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// Открывает форму добавления новой записи и обновляет список после
-  /// успешного сохранения (форма сама пишет в БД и возвращает `true`).
-  void _openAddTransactionSheet() async {
+  /// Открывает форму добавления новой записи или редактирования существующей.
+  void _openTransactionSheet([Transaction? transaction]) async {
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const AddTransactionSheet(),
+      builder: (context) => AddTransactionSheet(transactionToEdit: transaction),
     );
 
     if (result == true) {
@@ -384,20 +398,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                   )
-                : ListView.builder(
-                    itemCount: _transactions.length,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemBuilder: (context, index) {
-                      final transaction = _transactions[index];
-                      return _buildTransactionCard(transaction);
-                    },
-                  ),
+                : _buildGroupedTransactionList(),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _openAddTransactionSheet,
+        onPressed: () => _openTransactionSheet(),
         child: const Icon(Icons.add, size: 32),
       ),
     );
@@ -475,6 +481,178 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildGroupedTransactionList() {
+    final grouped = _groupTransactions();
+    return ListView.builder(
+      itemCount: grouped.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemBuilder: (context, index) {
+        final date = grouped.keys.elementAt(index);
+        final categories = grouped[date]!;
+        return _buildDayGroup(date, categories);
+      },
+    );
+  }
+
+  Map<DateTime, Map<Category, List<Transaction>>> _groupTransactions() {
+    final Map<DateTime, Map<Category, List<Transaction>>> grouped = {};
+    for (var t in _transactions) {
+      final date = DateTime(t.date.year, t.date.month, t.date.day);
+      grouped.putIfAbsent(date, () => {});
+      grouped[date]!.putIfAbsent(t.category, () => []);
+      grouped[date]![t.category]!.add(t);
+    }
+    final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+    final Map<DateTime, Map<Category, List<Transaction>>> sortedGrouped = {};
+    for (var date in sortedDates) {
+      sortedGrouped[date] = grouped[date]!;
+    }
+    return sortedGrouped;
+  }
+
+  Widget _buildDayGroup(DateTime date, Map<Category, List<Transaction>> categories) {
+    final dayStr = date.day.toString();
+    final monthStr = _monthsNamesGenitive[date.month - 1];
+    final isToday = DateTime.now().year == date.year &&
+        DateTime.now().month == date.month &&
+        DateTime.now().day == date.day;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            isToday ? 'Сегодня, $dayStr $monthStr' : '$dayStr $monthStr',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ),
+        ...categories.entries.map((entry) => _buildCategoryGroup(entry.key, entry.value)),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _buildCategoryGroup(Category category, List<Transaction> transactions) {
+    final total = transactions.fold<double>(0, (sum, t) {
+      return t.type == TransactionType.income ? sum + t.amount : sum - t.amount;
+    });
+
+    IconData categoryIcon = Icons.category;
+    Color categoryColor = Colors.grey.shade400;
+    Color bgColor = Colors.grey.shade50;
+
+    if (category == Category.food) {
+      categoryIcon = Icons.shopping_cart;
+      categoryColor = Colors.orange.shade400;
+      bgColor = Colors.orange.shade50;
+    } else if (category == Category.transport) {
+      categoryIcon = Icons.directions_bus;
+      categoryColor = Colors.blue.shade400;
+      bgColor = Colors.blue.shade50;
+    } else if (category == Category.salary) {
+      categoryIcon = Icons.monetization_on;
+      categoryColor = Colors.teal.shade400;
+      bgColor = Colors.teal.shade50;
+    } else if (category == Category.entertainment) {
+      categoryIcon = Icons.movie;
+      categoryColor = Colors.purple.shade400;
+      bgColor = Colors.purple.shade50;
+    } else if (category == Category.health) {
+      categoryIcon = Icons.medical_services;
+      categoryColor = Colors.red.shade400;
+      bgColor = Colors.red.shade50;
+    } else if (category == Category.shopping) {
+      categoryIcon = Icons.shopping_bag;
+      categoryColor = Colors.pink.shade400;
+      bgColor = Colors.pink.shade50;
+    } else if (category == Category.subscriptions) {
+      categoryIcon = Icons.subscriptions;
+      categoryColor = Colors.indigo.shade400;
+      bgColor = Colors.indigo.shade50;
+    }
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.shade100),
+        ),
+        child: ExpansionTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(categoryIcon, color: categoryColor, size: 20),
+          ),
+          title: Text(
+            category.name.toUpperCase(),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          trailing: Text(
+            '${total >= 0 ? "+" : ""}${total.toStringAsFixed(0)} ₽',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: total >= 0 ? Colors.teal.shade700 : Colors.black87,
+            ),
+          ),
+          children: transactions.map((t) => _buildTransactionItem(t)).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionItem(Transaction transaction) {
+    final isExpense = transaction.type == TransactionType.expense;
+    return Dismissible(
+      key: Key(transaction.localId.toString()),
+      direction: DismissDirection.endToStart,
+      onDismissed: (direction) {
+        _deleteTransaction(transaction);
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.error,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      child: ListTile(
+        onTap: () => _openTransactionSheet(transaction),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+        title: Text(
+          transaction.description.isEmpty ? 'Без описания' : transaction.description,
+          style: const TextStyle(fontSize: 13),
+        ),
+        trailing: Text(
+          '${isExpense ? "-" : "+"}${transaction.amount.toStringAsFixed(0)} ₽',
+          style: TextStyle(
+            fontSize: 14,
+            color: isExpense ? Colors.grey.shade700 : Colors.teal.shade600,
+          ),
+        ),
+      ),
     );
   }
 
