@@ -86,11 +86,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     final isEditing = widget.transactionToEdit != null;
 
     return Container(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      margin: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      padding: const EdgeInsets.only(
         top: 24,
         left: 24,
         right: 24,
+        bottom: 24,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,

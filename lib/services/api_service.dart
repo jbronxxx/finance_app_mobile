@@ -377,6 +377,65 @@ class ApiService {
     }
   }
 
+  /// Обновить или создать бюджет.
+  Future<BudgetModel> updateBudget(Map<String, dynamic> data) async {
+    // В данном API создание и обновление бюджета происходит через один и тот же POST эндпоинт.
+    return createBudget(data);
+  }
+
+  /// Удалить бюджет с сервера по ID.
+  Future<void> deleteBudget(String id, [String? token]) async {
+    try {
+      await _dio.delete(
+        '${ApiConfig.budgets}$id',
+        options: _authOptions(token),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('[ApiService] Delete budget error: $e');
+      rethrow;
+    }
+  }
+
+  /// Удалить бюджет по категории и периоду.
+  Future<void> deleteBudgetByPeriod(
+    String category,
+    int month,
+    int year, [
+    String? token,
+  ]) async {
+    try {
+      await _dio.delete(
+        '${ApiConfig.budgets}category/$category/$month/$year',
+        options: _authOptions(token),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('[ApiService] Delete budget by period error: $e');
+      rethrow;
+    }
+  }
+
+  /// Удаляет бюджет локально и на сервере.
+  Future<void> deleteBudgetEverywhere(Budget budget) async {
+    final serverId = budget.serverId;
+    LocalDbService.instance.deleteBudget(budget.localId);
+
+    if (serverId == null) return;
+
+    if (!isAuthenticated) {
+      await PendingDeletionsStore.instance.addBudget(serverId);
+      return;
+    }
+
+    try {
+      await deleteBudget(serverId);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ApiService] Server budget delete failed, deferring: $e');
+      }
+      await PendingDeletionsStore.instance.addBudget(serverId);
+    }
+  }
+
   /// Получить AI-инсайты.
   Future<Map<String, dynamic>> getInsights() async {
     try {
@@ -481,34 +540,69 @@ class ApiService {
   }
 
   Future<int> _flushPendingDeletions(String token) async {
-    final pending = PendingDeletionsStore.instance.transactionIds;
-    if (pending.isEmpty) return 0;
+    final pendingTransactions = PendingDeletionsStore.instance.transactionIds;
+    final pendingBudgets = PendingDeletionsStore.instance.budgetIds;
 
-    final done = <String>[];
+    if (pendingTransactions.isEmpty && pendingBudgets.isEmpty) return 0;
 
-    for (final serverId in pending) {
-      try {
-        await deleteTransaction(serverId, token);
-        done.add(serverId);
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
+    int totalDone = 0;
+
+    if (pendingTransactions.isNotEmpty) {
+      final done = <String>[];
+      for (final serverId in pendingTransactions) {
+        try {
+          await deleteTransaction(serverId, token);
           done.add(serverId);
-        } else {
+        } on DioException catch (e) {
+          if (e.response?.statusCode == 404) {
+            done.add(serverId);
+          } else {
+            if (kDebugMode) {
+              debugPrint(
+                  '[ApiService] Flush delete transaction $serverId failed: ${e.response?.statusCode}');
+            }
+          }
+        } catch (e) {
           if (kDebugMode) {
-            debugPrint('[ApiService] Flush delete $serverId failed: ${e.response?.statusCode}');
+            debugPrint(
+                '[ApiService] Flush delete transaction $serverId failed: $e');
           }
         }
-      } catch (e) {
-        if (kDebugMode) debugPrint('[ApiService] Flush delete $serverId failed: $e');
       }
+      await PendingDeletionsStore.instance.removeTransactions(done);
+      totalDone += done.length;
     }
 
-    await PendingDeletionsStore.instance.removeTransactions(done);
-    if (kDebugMode) {
-      debugPrint('[ApiService] Flushed pending deletions: ${done.length}/${pending.length}');
+    if (pendingBudgets.isNotEmpty) {
+      final done = <String>[];
+      for (final serverId in pendingBudgets) {
+        try {
+          await deleteBudget(serverId, token);
+          done.add(serverId);
+        } on DioException catch (e) {
+          if (e.response?.statusCode == 404) {
+            done.add(serverId);
+          } else {
+            if (kDebugMode) {
+              debugPrint(
+                  '[ApiService] Flush delete budget $serverId failed: ${e.response?.statusCode}');
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[ApiService] Flush delete budget $serverId failed: $e');
+          }
+        }
+      }
+      await PendingDeletionsStore.instance.removeBudgets(done);
+      totalDone += done.length;
     }
 
-    return done.length;
+    if (kDebugMode && totalDone > 0) {
+      debugPrint('[ApiService] Flushed pending deletions: $totalDone');
+    }
+
+    return totalDone;
   }
 
   Future<List<Transaction>> _fetchRemoteTransactions(String token) async {

@@ -30,6 +30,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedYear = DateTime.now().year;
 
   List<Transaction> _transactions = [];
+  Map<DateTime, Map<Category, List<Transaction>>> _groupedTransactions = {};
+  double _totalIncome = 0;
+  double _totalExpense = 0;
+  double _totalBalance = 0;
 
   final List<String> _monthsNames = [
     'Январь',
@@ -72,10 +76,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// ObjectBox хранит дату как unix-миллисекунды, а не отдельные поля).
   void _loadTransactions() {
     final all = LocalDbService.instance.getAllTransactions();
+    final filtered = all.where((t) {
+      return t.date.month == _selectedMonth && t.date.year == _selectedYear;
+    }).toList();
+
+    double income = 0;
+    double expense = 0;
+
+    for (var t in filtered) {
+      if (t.type == TransactionType.income) {
+        income += t.amount;
+      } else {
+        expense += t.amount;
+      }
+    }
+
+    final Map<DateTime, Map<Category, List<Transaction>>> grouped = {};
+    for (var t in filtered) {
+      final date = DateTime(t.date.year, t.date.month, t.date.day);
+      grouped.putIfAbsent(date, () => {});
+      grouped[date]!.putIfAbsent(t.category, () => []);
+      grouped[date]![t.category]!.add(t);
+    }
+
+    final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+    final Map<DateTime, Map<Category, List<Transaction>>> sortedGrouped = {};
+    for (var date in sortedDates) {
+      sortedGrouped[date] = grouped[date]!;
+    }
+
     setState(() {
-      _transactions = all.where((t) {
-        return t.date.month == _selectedMonth && t.date.year == _selectedYear;
-      }).toList();
+      _transactions = filtered;
+      _totalIncome = income;
+      _totalExpense = expense;
+      _totalBalance = income - expense;
+      _groupedTransactions = sortedGrouped;
     });
   }
 
@@ -204,9 +239,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       borderRadius: BorderRadius.circular(16)),
                 ),
                 items: List.generate(12, (index) {
+                  final monthValue = index + 1;
+                  final isCurrentMonth = monthValue == DateTime.now().month &&
+                      tempYear == DateTime.now().year;
+
                   return DropdownMenuItem(
-                    value: index + 1,
-                    child: Text(_monthsNames[index]),
+                    value: monthValue,
+                    child: Text(
+                      _monthsNames[index],
+                      style: TextStyle(
+                        fontWeight: isCurrentMonth
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isCurrentMonth
+                            ? const Color(0xFF0F766E)
+                            : Colors.black87,
+                      ),
+                    ),
                   );
                 }),
                 onChanged: (val) {
@@ -221,12 +270,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16)),
                 ),
-                items: [2024, 2025, 2026, 2027].map((year) {
+                items: List.generate(11, (index) {
+                  final yearValue = DateTime.now().year + index;
+                  final isCurrentYear = yearValue == DateTime.now().year;
                   return DropdownMenuItem(
-                    value: year,
-                    child: Text('$year'),
+                    value: yearValue,
+                    child: Text(
+                      '$yearValue',
+                      style: TextStyle(
+                        fontWeight: isCurrentYear
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isCurrentYear
+                            ? const Color(0xFF0F766E)
+                            : Colors.black87,
+                      ),
+                    ),
                   );
-                }).toList(),
+                }),
                 onChanged: (val) {
                   if (val != null) setModalState(() => tempYear = val);
                 },
@@ -263,18 +324,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double income = 0;
-    double expense = 0;
-
-    for (var t in _transactions) {
-      if (t.type == TransactionType.income) {
-        income += t.amount;
-      } else {
-        expense += t.amount;
-      }
-    }
-    double balance = income - expense;
-
     String currentMonthName = _monthsNames[_selectedMonth - 1];
 
     return Scaffold(
@@ -350,55 +399,79 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          children: [
-            if (!ApiService.instance.isAuthenticated)
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.amber.shade200),
-                ),
-                child: Row(
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.info_outline,
-                        size: 16, color: Colors.amber.shade800),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Режим гостя (данные хранятся локально)',
+                    if (!ApiService.instance.isAuthenticated)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.amber.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline,
+                                size: 16, color: Colors.amber.shade800),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Режим гостя (данные хранятся локально)',
+                              style: TextStyle(
+                                  color: Colors.amber.shade900,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    _buildBalanceCard(_totalBalance, _totalIncome, _totalExpense),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'История операций',
                       style: TextStyle(
-                          color: Colors.amber.shade900,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87),
                     ),
+                    const SizedBox(height: 12),
+                    if (_transactions.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 40.0),
+                        child: Center(
+                          child: Text(
+                            'В этом месяце пока нет записей',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
-            _buildBalanceCard(balance, income, expense),
-            const SizedBox(height: 24),
-            const Text(
-              'История операций',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87),
             ),
-            const SizedBox(height: 12),
-            _transactions.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.only(top: 40.0),
-                    child: Center(
-                      child: Text(
-                        'В этом месяце пока нет записей',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ),
-                  )
-                : _buildGroupedTransactionList(),
+            if (_transactions.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final date = _groupedTransactions.keys.elementAt(index);
+                      final categories = _groupedTransactions[date]!;
+                      return _buildDayGroup(date, categories);
+                    },
+                    childCount: _groupedTransactions.length,
+                  ),
+                ),
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
         ),
       ),
@@ -580,43 +653,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
       bgColor = Colors.indigo.shade50;
     }
 
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.grey.shade100),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: ExpansionTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(categoryIcon, color: categoryColor, size: 20),
         ),
-        child: ExpansionTile(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(categoryIcon, color: categoryColor, size: 20),
-          ),
-          title: Text(
-            category.name.toUpperCase(),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          trailing: Text(
-            '${total >= 0 ? "+" : ""}${total.toStringAsFixed(0)} ₽',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: total >= 0 ? Colors.teal.shade700 : Colors.black87,
-            ),
-          ),
-          children: transactions.map((t) => _buildTransactionItem(t)).toList(),
+        title: Text(
+          category.name.toUpperCase(),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
+        trailing: Text(
+          '${total >= 0 ? "+" : ""}${total.toStringAsFixed(0)} ₽',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: total >= 0 ? Colors.teal.shade700 : Colors.black87,
+          ),
+        ),
+        children: transactions.map((t) => _buildTransactionItem(t)).toList(),
       ),
     );
   }

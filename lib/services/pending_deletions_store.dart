@@ -29,8 +29,9 @@ class PendingDeletionsStore {
 
   final File _file;
   final Set<String> _transactionIds;
+  final Set<String> _budgetIds;
 
-  PendingDeletionsStore._(this._file, this._transactionIds);
+  PendingDeletionsStore._(this._file, this._transactionIds, this._budgetIds);
 
   /// Читает очередь с диска и инициализирует [instance]. Вызывается один раз
   /// при старте приложения. Повреждённый или нечитаемый файл не считается
@@ -39,30 +40,45 @@ class PendingDeletionsStore {
   static Future<void> init() async {
     final docsDir = await getApplicationDocumentsDirectory();
     final file = File(p.join(docsDir.path, 'pending_deletions.json'));
-    final ids = <String>{};
+    final transactionIds = <String>{};
+    final budgetIds = <String>{};
 
     try {
       if (await file.exists()) {
         final decoded = jsonDecode(await file.readAsString());
 
-        if (decoded is List) {
-          ids.addAll(decoded.whereType<String>());
+        if (decoded is Map) {
+          final txs = decoded['transactions'];
+          if (txs is List) transactionIds.addAll(txs.whereType<String>());
+          
+          final bgts = decoded['budgets'];
+          if (bgts is List) budgetIds.addAll(bgts.whereType<String>());
+        } else if (decoded is List) {
+          // Миграция со старого формата, где был только список ID транзакций.
+          transactionIds.addAll(decoded.whereType<String>());
         }
       }
     } catch (e) {
       debugPrint('Не удалось прочитать очередь удалений: $e');
     }
 
-    instance = PendingDeletionsStore._(file, ids);
+    instance = PendingDeletionsStore._(file, transactionIds, budgetIds);
   }
 
   /// `serverId` транзакций, удаление которых ещё нужно повторить на сервере.
   Set<String> get transactionIds => Set.unmodifiable(_transactionIds);
 
-  bool get isEmpty => _transactionIds.isEmpty;
+  /// `serverId` бюджетов, удаление которых ещё нужно повторить на сервере.
+  Set<String> get budgetIds => Set.unmodifiable(_budgetIds);
+
+  bool get isEmpty => _transactionIds.isEmpty && _budgetIds.isEmpty;
 
   Future<void> addTransaction(String serverId) async {
     if (_transactionIds.add(serverId)) await _flush();
+  }
+
+  Future<void> addBudget(String serverId) async {
+    if (_budgetIds.add(serverId)) await _flush();
   }
 
   /// Убирает из очереди удаления, доехавшие до сервера.
@@ -73,9 +89,20 @@ class PendingDeletionsStore {
     if (_transactionIds.length != sizeBefore) await _flush();
   }
 
+  /// Убирает из очереди удаления бюджетов, доехавшие до сервера.
+  Future<void> removeBudgets(Iterable<String> serverIds) async {
+    final sizeBefore = _budgetIds.length;
+    _budgetIds.removeAll(serverIds.toSet());
+
+    if (_budgetIds.length != sizeBefore) await _flush();
+  }
+
   Future<void> _flush() async {
     try {
-      await _file.writeAsString(jsonEncode(_transactionIds.toList()));
+      await _file.writeAsString(jsonEncode({
+        'transactions': _transactionIds.toList(),
+        'budgets': _budgetIds.toList(),
+      }));
     } catch (e) {
       // Запись не удалась — очередь останется только в памяти и будет
       // потеряна при перезапуске. Это лучше, чем упасть в момент удаления

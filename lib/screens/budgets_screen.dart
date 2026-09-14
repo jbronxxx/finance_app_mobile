@@ -1,3 +1,4 @@
+import 'package:family_budget/services/api_service.dart';
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
@@ -17,6 +18,21 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   List<Budget> _budgets = [];
 
+  final List<String> _monthsNames = [
+    'Январь',
+    'Февраль',
+    'Март',
+    'Апрель',
+    'Май',
+    'Июнь',
+    'Июль',
+    'Август',
+    'Сентябрь',
+    'Октябрь',
+    'Ноябрь',
+    'Декабрь'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -31,36 +47,49 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     });
   }
 
-  /// Открывает форму создания лимита: считает уже потраченное по выбранной
-  /// категории на момент создания (снимок для полей `spent`/`remaining`)
-  /// и сохраняет новый или обновлённый лимит в БД.
-  void _showAddBudgetDialog() {
-    Category selectedCategory = Category.food;
-    final amountController = TextEditingController();
+  /// Удаляет лимит бюджета локально и на сервере.
+  void _deleteBudget(Budget budget) {
+    ApiService.instance.deleteBudgetEverywhere(budget);
+    _loadBudgets();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Лимит удален'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Открывает форму создания или редактирования лимита.
+  void _showAddBudgetDialog([Budget? budgetToEdit]) {
+    Category selectedCategory = budgetToEdit?.category ?? Category.food;
+    final amountController = TextEditingController(
+      text: budgetToEdit != null ? budgetToEdit.limitAmount.toString() : '',
+    );
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (context) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          top: 24,
-          left: 24,
-          right: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: StatefulBuilder(
-          builder: (context, setModalState) => Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Лимит на бюджет',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: StatefulBuilder(
+            builder: (context, setModalState) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+              Text(
+                budgetToEdit != null ? 'Редактировать лимит' : 'Лимит на бюджет',
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               DropdownButtonFormField<Category>(
@@ -76,15 +105,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     child: Text(cat.name.toUpperCase()),
                   );
                 }).toList(),
-                onChanged: (val) {
-                  if (val != null) setModalState(() => selectedCategory = val);
-                },
+                onChanged: budgetToEdit != null
+                    ? null // Запрещаем менять категорию при редактировании, т.к. это ключ
+                    : (val) {
+                        if (val != null) {
+                          setModalState(() => selectedCategory = val);
+                        }
+                      },
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: amountController,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                autofocus: true,
                 decoration: InputDecoration(
                   labelText: 'Сумма лимита (₽)',
                   border: OutlineInputBorder(
@@ -109,6 +143,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       final spent = LocalDbService.instance.getSpentForCategory(
                           _selectedMonth, _selectedYear, selectedCategory.name);
                       final newBudget = Budget(
+                        localId: budgetToEdit?.localId ?? 0,
+                        serverId: budgetToEdit?.serverId,
                         dbCategory: selectedCategory.name,
                         limitAmount: amount,
                         month: _selectedMonth,
@@ -121,16 +157,18 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       _loadBudgets();
                     }
                   },
-                  child: const Text('Сохранить лимит',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(
+                      budgetToEdit != null ? 'Обновить лимит' : 'Сохранить лимит',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -162,9 +200,24 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       fillColor: Colors.white,
                     ),
                     items: List.generate(12, (index) {
+                      final monthValue = index + 1;
+                      final isCurrentMonth =
+                          monthValue == DateTime.now().month &&
+                              _selectedYear == DateTime.now().year;
+
                       return DropdownMenuItem(
-                        value: index + 1,
-                        child: Text('Месяц ${index + 1}'),
+                        value: monthValue,
+                        child: Text(
+                          _monthsNames[index],
+                          style: TextStyle(
+                            fontWeight: isCurrentMonth
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isCurrentMonth
+                                ? const Color(0xFF0F766E)
+                                : Colors.black87,
+                          ),
+                        ),
                       );
                     }),
                     onChanged: (val) {
@@ -188,12 +241,24 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       filled: true,
                       fillColor: Colors.white,
                     ),
-                    items: [2025, 2026, 2027].map((year) {
+                    items: List.generate(11, (index) {
+                      final yearValue = DateTime.now().year + index;
+                      final isCurrentYear = yearValue == DateTime.now().year;
                       return DropdownMenuItem(
-                        value: year,
-                        child: Text('$year'),
+                        value: yearValue,
+                        child: Text(
+                          '$yearValue',
+                          style: TextStyle(
+                            fontWeight: isCurrentYear
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isCurrentYear
+                                ? const Color(0xFF0F766E)
+                                : Colors.black87,
+                          ),
+                        ),
                       );
-                    }).toList(),
+                    }),
                     onChanged: (val) {
                       if (val != null) {
                         setState(() {
@@ -225,53 +290,74 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                             : 0.0;
                         final isExceeded = currentSpent > b.limitAmount;
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: isExceeded
-                                    ? Colors.red.shade300
-                                    : Colors.grey.shade200),
+                        return Dismissible(
+                          key: Key('budget_${b.localId}'),
+                          direction: DismissDirection.endToStart,
+                          onDismissed: (direction) => _deleteBudget(b),
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.error,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Icon(Icons.delete, color: Colors.white),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                          child: InkWell(
+                            onTap: () => _showAddBudgetDialog(b),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: isExceeded
+                                        ? Colors.orange.shade200
+                                        : Colors.grey.shade200),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(b.category.name.toUpperCase(),
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  Text(
-                                      '${currentSpent.toStringAsFixed(0)} / ${b.limitAmount.toStringAsFixed(0)} ₽',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: isExceeded
-                                              ? Colors.red
-                                              : primaryTeal)),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(b.category.name.toUpperCase(),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold)),
+                                      Text(
+                                          '${currentSpent.toStringAsFixed(0)} / ${b.limitAmount.toStringAsFixed(0)} ₽',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: isExceeded
+                                                  ? Colors.orange.shade800
+                                                  : primaryTeal)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  LinearProgressIndicator(
+                                    value: progress,
+                                    color: isExceeded
+                                        ? Colors.orange.shade400
+                                        : primaryTeal,
+                                    backgroundColor: Colors.grey.shade100,
+                                    minHeight: 8,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  if (isExceeded) ...[
+                                    const SizedBox(height: 8),
+                                    Text('Лимит превышен',
+                                        style: TextStyle(
+                                            color: Colors.orange.shade900,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600))
+                                  ]
                                 ],
                               ),
-                              const SizedBox(height: 12),
-                              LinearProgressIndicator(
-                                value: progress,
-                                color: isExceeded ? Colors.red : primaryTeal,
-                                backgroundColor: Colors.grey.shade100,
-                                minHeight: 8,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              if (isExceeded) ...[
-                                const SizedBox(height: 8),
-                                const Text('Лимит превышен!',
-                                    style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold))
-                              ]
-                            ],
+                            ),
                           ),
                         );
                       },

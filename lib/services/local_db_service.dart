@@ -312,6 +312,14 @@ class LocalDbService {
     });
   }
 
+  /// Удаляет лимит бюджета по локальному ID. Возвращает `true`, если запись
+  /// была найдена и удалена.
+  bool deleteBudget(int id) {
+    final removed = _budgetBox.remove(id);
+    if (kDebugMode) debugPrint('[LocalDbService] Removed budget $id: $removed');
+    return removed;
+  }
+
   /// Считает сумму расходов по конкретной категории за месяц и год.
   ///
   /// Примечание: реализовано через полное сканирование всех транзакций —
