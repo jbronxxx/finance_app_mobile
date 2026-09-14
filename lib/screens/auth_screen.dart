@@ -109,7 +109,8 @@ class _AuthScreenState extends State<AuthScreen> {
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
+          // <-- 1. Добавили скролл
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +190,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(
+                  height: 24), // <-- 2. Заменили Spacer на фиксированный отступ
               Center(
                 child: TextButton(
                   onPressed: () {
