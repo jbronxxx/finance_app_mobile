@@ -56,7 +56,7 @@
     },
     {
       "id": "2:4394803372386859630",
-      "lastPropertyId": "7:5012737802703416520",
+      "lastPropertyId": "8:7388451711990150673",
       "name": "Transaction",
       "properties": [
         {
@@ -95,6 +95,11 @@
         {
           "id": "7:5012737802703416520",
           "name": "dateMilliseconds",
+          "type": 6
+        },
+        {
+          "id": "8:7388451711990150673",
+          "name": "dateCreatedMilliseconds",
           "type": 6
         }
       ],

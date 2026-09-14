@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
 import 'local_db_service.dart';
+import 'pending_deletions_store.dart';
 
 /// Клиент для общения с FastAPI-бэкендом.
 ///
@@ -102,11 +103,17 @@ class ApiService {
 
   bool get isAuthenticated => _token != null;
 
-  /// Хелпер для получения заголовков с авторизацией
-  Options _authOptions() {
+  /// Хелпер для получения заголовков с авторизацией.
+  ///
+  /// [token] позволяет передать токен явно — методы синхронизации принимают
+  /// его параметром и раньше проверяли, но в запрос не подставляли, из-за
+  /// чего работали только на уже сохранённом `_token`.
+  Options _authOptions([String? token]) {
+    final effectiveToken = token ?? _token;
+
     return Options(
       headers: {
-        if (_token != null) 'Authorization': 'Bearer $_token',
+        if (effectiveToken != null) 'Authorization': 'Bearer $effectiveToken',
       },
     );
   }
@@ -204,7 +211,8 @@ class ApiService {
 
       debugPrint('Профиль пользователя обновлен: ${userProfile.userName}');
     } on DioException catch (e) {
-      debugPrint('Ошибка при получении профиля: ${e.response?.data ?? e.message}');
+      debugPrint(
+          'Ошибка при получении профиля: ${e.response?.data ?? e.message}');
     } catch (e) {
       // Профиль — не критичная часть входа: при неожиданном формате ответа
       // логин не роняем, в UI останется email, сохранённый при входе.
@@ -275,16 +283,47 @@ class ApiService {
   }
 
   /// Удалить транзакцию (DELETE /transactions/{id})
-  Future<void> deleteTransaction(String id) async {
+  Future<void> deleteTransaction(String id, [String? token]) async {
     try {
       // Отправляем DELETE-запрос на эндпоинт /transactions/{id} с авторизацией и id транзакции
       await _dio.delete(
         '${ApiConfig.transactions}$id',
-        options: _authOptions(),
+        options: _authOptions(token),
       );
     } catch (e) {
       debugPrint('Ошибка удаления транзакции: $e');
       rethrow;
+    }
+  }
+
+  /// Удаляет транзакцию и локально, и на сервере.
+  ///
+  /// Именно этот метод должен вызывать UI: голое
+  /// [LocalDbService.deleteTransaction] убирает запись только с устройства, а
+  /// на сервере она остаётся — и возвращается назад при следующей загрузке
+  /// (см. [PendingDeletionsStore]).
+  ///
+  /// Если удалить на сервере сейчас нельзя (нет авторизации после выхода из
+  /// аккаунта или не отвечает сеть), `serverId` уходит в очередь и удаление
+  /// повторяется при следующей синхронизации. Локально запись исчезает сразу
+  /// в любом случае — пользователь не должен ждать сеть.
+  Future<void> deleteTransactionEverywhere(Transaction transaction) async {
+    final serverId = transaction.serverId;
+    LocalDbService.instance.deleteTransaction(transaction.localId);
+
+    // Запись создана офлайн и на сервер ещё не попадала — удалять там нечего.
+    if (serverId == null) return;
+
+    if (!isAuthenticated) {
+      await PendingDeletionsStore.instance.addTransaction(serverId);
+      return;
+    }
+
+    try {
+      await deleteTransaction(serverId);
+    } catch (e) {
+      debugPrint('Удаление на сервере не удалось, откладываем: $e');
+      await PendingDeletionsStore.instance.addTransaction(serverId);
     }
   }
 
@@ -372,7 +411,7 @@ class ApiService {
 
       // Отправляем POST-запрос на эндпоинт /sync с авторизацией и данными локальных транзакций и бюджетов
       final response = await _dio.post(ApiConfig.sync,
-          data: payload.toJson(), options: _authOptions());
+          data: payload.toJson(), options: _authOptions(jwtToken));
 
       // Ответ обязательно разбираем: сервер возвращает созданные записи с
       // их UUID, и эти UUID нужно записать в локальную базу. Иначе записи
@@ -396,6 +435,150 @@ class ApiService {
       debugPrint('Произошла непредвиденная ошибка: $e');
       rethrow;
     }
+  }
+
+  /// Забирает с сервера ВСЕ транзакции и лимиты пользователя (по всем
+  /// периодам) и приводит локальную базу в соответствие с ними.
+  ///
+  /// Это направление, обратное [syncLocalDataToBackend]. Нужно в двух
+  /// сценариях: после переустановки приложения (локальная база пуста, всё
+  /// содержимое приезжает с сервера) и при каждом входе, чтобы подхватить
+  /// изменения, сделанные с другого устройства.
+  ///
+  /// Локальные записи с `serverId == null` (созданные офлайн и ещё не
+  /// выгруженные) сохраняются — см. [LocalDbService.reconcileTransactions].
+  /// Поэтому корректный порядок полной синхронизации — сначала выгрузка,
+  /// потом загрузка; он реализован в [syncAll].
+  Future<Map<String, dynamic>> syncBackendDataToLocal([String? token]) async {
+    final jwtToken = token ?? _token;
+    if (jwtToken == null) throw Exception('Не авторизован');
+
+    try {
+      // Оба запроса выполняем ДО записи в базу. Сверка удаляет локальные
+      // записи, которых нет в ответе, поэтому применять её к неполному
+      // ответу нельзя: упавший второй запрос стёр бы живые данные.
+      final remoteTransactions = await _fetchRemoteTransactions(jwtToken);
+      final remoteBudgets = await _fetchRemoteBudgets(jwtToken);
+
+      final removedTransactions =
+          LocalDbService.instance.reconcileTransactions(remoteTransactions);
+      final removedBudgets =
+          LocalDbService.instance.reconcileBudgets(remoteBudgets);
+
+      debugPrint(
+          'Загружено с сервера: транзакций ${remoteTransactions.length}, '
+          'бюджетов ${remoteBudgets.length}; удалено локально: '
+          'транзакций $removedTransactions, бюджетов $removedBudgets');
+
+      return {
+        'transactions': remoteTransactions.length,
+        'budgets': remoteBudgets.length,
+        'removed_transactions': removedTransactions,
+        'removed_budgets': removedBudgets,
+      };
+    } on DioException catch (e) {
+      debugPrint('Ошибка загрузки данных с сервера: ${e.response?.statusCode}');
+      throw Exception('Ошибка загрузки данных: ${e.response?.statusCode}');
+    } catch (e) {
+      debugPrint('Произошла непредвиденная ошибка: $e');
+      rethrow;
+    }
+  }
+
+  /// Полная двусторонняя синхронизация.
+  ///
+  /// Порядок обязателен: сначала выгрузка, потом загрузка. Если сделать
+  /// наоборот, созданные офлайн записи останутся с `serverId == null`, а
+  /// следующая выгрузка отправит их повторно; кроме того, только после
+  /// выгрузки сервер знает о них и возвращает их в общем списке, благодаря
+  /// чему локальное и серверное состояния совпадают уже после одного вызова.
+  ///
+  /// Именно этот метод следует вызывать из UI — после входа/регистрации и по
+  /// кнопке «Синхронизировать сейчас».
+  Future<Map<String, dynamic>> syncAll([String? token]) async {
+    final jwtToken = token ?? _token;
+    if (jwtToken == null) throw Exception('Не авторизован');
+
+    // Удаления проигрываем первыми: иначе загрузка вернула бы с сервера
+    // записи, которые пользователь уже удалил на устройстве.
+    final deleted = await _flushPendingDeletions(jwtToken);
+
+    final pushed = await syncLocalDataToBackend(jwtToken);
+    final pulled = await syncBackendDataToLocal(jwtToken);
+
+    return {'deleted': deleted, 'pushed': pushed, 'pulled': pulled};
+  }
+
+  /// Повторяет на сервере удаления, накопившиеся в [PendingDeletionsStore]
+  /// пока не было сети или авторизации.
+  ///
+  /// Из очереди запись убирается только после успешного удаления. Ответ 404
+  /// тоже считается успехом: записи на сервере уже нет, значит цель
+  /// достигнута и держать её в очереди вечно незачем.
+  Future<int> _flushPendingDeletions(String token) async {
+    final pending = PendingDeletionsStore.instance.transactionIds;
+    if (pending.isEmpty) return 0;
+
+    final done = <String>[];
+
+    for (final serverId in pending) {
+      try {
+        await deleteTransaction(serverId, token);
+        done.add(serverId);
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          done.add(serverId);
+        } else {
+          debugPrint('Отложенное удаление $serverId не удалось: '
+              '${e.response?.statusCode}');
+        }
+      } catch (e) {
+        // Одно неудавшееся удаление не должно обрывать синхронизацию:
+        // остальные записи и оба направления обмена важнее, а это удаление
+        // останется в очереди и повторится в следующий раз.
+        debugPrint('Отложенное удаление $serverId не удалось: $e');
+      }
+    }
+
+    await PendingDeletionsStore.instance.removeTransactions(done);
+    debugPrint('Проиграно отложенных удалений: ${done.length} '
+        'из ${pending.length}');
+
+    return done.length;
+  }
+
+  /// Забирает с сервера все транзакции сразу в виде локальных сущностей.
+  ///
+  /// В обход [getTransactions] и `TransactionModel`: у сущности
+  /// [Transaction] уже есть `fromJson` под формат бэкенда, и он сам кладёт
+  /// `json['id']` в `serverId`. Промежуточный DTO здесь только добавил бы
+  /// второй маппинг, который надо руками держать в синхроне с первым.
+  Future<List<Transaction>> _fetchRemoteTransactions(String token) async {
+    final response = await _dio.get(
+      ApiConfig.transactions,
+      options: _authOptions(token),
+    );
+
+    return _asJsonList(response.data['data'])
+        .map(Transaction.fromJson)
+        .toList();
+  }
+
+  /// То же для лимитов бюджета — см. [_fetchRemoteTransactions].
+  ///
+  /// Запрос идёт БЕЗ параметров `month`/`year`: сверке нужен полный список
+  /// по всем периодам, иначе лимиты за остальные месяцы будут сочтены
+  /// удалёнными на сервере.
+  Future<List<Budget>> _fetchRemoteBudgets(String token) async {
+    final response = await _dio.get(
+      ApiConfig.budgets,
+      options: _authOptions(token),
+    );
+
+    return _asJsonList(response.data['data'])
+        .map(Budget.fromJson)
+        .where((b) => b.isValidPeriod)
+        .toList();
   }
 
   /// Проставляет локальным транзакциям `serverId` из ответа `/sync/` и

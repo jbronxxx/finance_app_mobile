@@ -64,8 +64,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  /// Удаляет запись и локально, и на сервере.
+  ///
+  /// Через ApiService, а не напрямую через LocalDbService: удалённая только
+  /// локально запись осталась бы на сервере и вернулась при следующей
+  /// синхронизации. Если сети нет, удаление встанет в очередь и повторится
+  /// позже — поэтому ответа не ждём и список обновляем сразу.
   void _deleteTransaction(Transaction transaction) {
-    LocalDbService.instance.deleteTransaction(transaction.localId);
+    ApiService.instance.deleteTransactionEverywhere(transaction);
     _loadTransactions();
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -101,7 +107,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     if (!mounted) return;
-    setState(() {});
+
+    // Именно _loadTransactions, а не пустой setState: вход запускает полную
+    // синхронизацию, и в локальной базе теперь могут быть записи, приехавшие
+    // с сервера (после переустановки приложения — вообще все).
+    _loadTransactions();
 
     // AuthScreen просто закрывается после успешного входа, поэтому результат
     // читаем из ApiService — там уже лежат токен и профиль пользователя.
@@ -318,8 +328,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     child: const Text(
                       'Вход / Регистрация',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 12),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ),
           )

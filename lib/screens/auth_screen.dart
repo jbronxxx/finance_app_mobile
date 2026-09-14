@@ -47,46 +47,32 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (_isLoginMode) {
-        // Вход
-        final result = await ApiService.instance.login(
-          email: email,
-          password: password,
-        );
-
-        // Синхронизация накопленных локальных данных
-        try {
-          await ApiService.instance
-              .syncLocalDataToBackend(result.accessToken.toString());
-        } catch (e) {
-          debugPrint('Фоновая синхронизация не удалась: $e');
-        }
-
-        if (!mounted) return;
-        Navigator.pop(context);
+        await ApiService.instance.login(email: email, password: password);
       } else {
-        // Регистрация
+        // Отдельный login() здесь не нужен: register() сам логинится после
+        // успешной регистрации и сохраняет токен. Раньше вызов дублировался.
         await ApiService.instance.register(
           email: email,
           password: password,
           name: name,
         );
-
-        // После регистрации сразу логинимся
-        final loginResult = await ApiService.instance.login(
-          email: email,
-          password: password,
-        );
-
-        try {
-          await ApiService.instance
-              .syncLocalDataToBackend(loginResult.accessToken.toString());
-        } catch (e) {
-          debugPrint('Фоновая синхронизация не удалась: $e');
-        }
-
-        if (!mounted) return;
-        Navigator.pop(context);
       }
+
+      // Полная двусторонняя синхронизация: сначала выгружаем то, что
+      // накопилось в гостевом режиме, затем забираем с сервера актуальное
+      // состояние по всем периодам (после переустановки приложения сервер —
+      // единственный источник данных). Токен уже сохранён внутри
+      // ApiService, поэтому передавать его параметром не нужно.
+      try {
+        await ApiService.instance.syncAll();
+      } catch (e) {
+        // Неудачная синхронизация не отменяет вход: локальные данные никуда
+        // не делись и уйдут на сервер при следующей попытке.
+        debugPrint('Синхронизация после входа не удалась: $e');
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

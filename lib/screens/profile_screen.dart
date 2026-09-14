@@ -34,7 +34,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      await ApiService.instance.syncLocalDataToBackend();
+      // syncAll, а не только выгрузка: кнопка должна и отправить локальные
+      // изменения, и подтянуть сделанные с другого устройства.
+      await ApiService.instance.syncAll();
 
       if (!mounted) return;
 

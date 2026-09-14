@@ -81,7 +81,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(2, 4394803372386859630),
     name: 'Transaction',
-    lastPropertyId: const obx_int.IdUid(7, 5012737802703416520),
+    lastPropertyId: const obx_int.IdUid(8, 7388451711990150673),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -124,6 +124,12 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(7, 5012737802703416520),
         name: 'dateMilliseconds',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 7388451711990150673),
+        name: 'dateCreatedMilliseconds',
         type: 6,
         flags: 0,
       ),
@@ -194,8 +200,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         object.localId = id;
       },
       objectToFB: (Budget object, fb.Builder fbb) {
-        final serverIdOffset =
-            object.serverId == null ? null : fbb.writeString(object.serverId!);
+        final serverIdOffset = object.serverId == null
+            ? null
+            : fbb.writeString(object.serverId!);
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
         fbb.startTable(9);
         fbb.addInt64(0, object.localId);
@@ -277,12 +284,13 @@ obx_int.ModelDefinition getObjectBoxModel() {
         object.localId = id;
       },
       objectToFB: (Transaction object, fb.Builder fbb) {
-        final serverIdOffset =
-            object.serverId == null ? null : fbb.writeString(object.serverId!);
+        final serverIdOffset = object.serverId == null
+            ? null
+            : fbb.writeString(object.serverId!);
         final descriptionOffset = fbb.writeString(object.description);
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
         final dbTypeOffset = fbb.writeString(object.dbType);
-        fbb.startTable(8);
+        fbb.startTable(9);
         fbb.addInt64(0, object.localId);
         fbb.addOffset(1, serverIdOffset);
         fbb.addFloat64(2, object.amount);
@@ -290,6 +298,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(4, dbCategoryOffset);
         fbb.addOffset(5, dbTypeOffset);
         fbb.addInt64(6, object.dateMilliseconds);
+        fbb.addInt64(7, object.dateCreatedMilliseconds);
         fbb.finish(fbb.endTable());
         return object.localId;
       },
@@ -326,6 +335,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
           16,
           0,
         );
+        final dateCreatedMillisecondsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          18,
+          0,
+        );
         final object = Transaction(
           localId: localIdParam,
           serverId: serverIdParam,
@@ -334,7 +349,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           dbCategory: dbCategoryParam,
           dbType: dbTypeParam,
           dateMilliseconds: dateMillisecondsParam,
-          dateCreatedMilliseconds: 0,
+          dateCreatedMilliseconds: dateCreatedMillisecondsParam,
         );
 
         return object;
@@ -423,5 +438,10 @@ class Transaction_ {
   /// See [Transaction.dateMilliseconds].
   static final dateMilliseconds = obx.QueryIntegerProperty<Transaction>(
     _entities[1].properties[6],
+  );
+
+  /// See [Transaction.dateCreatedMilliseconds].
+  static final dateCreatedMilliseconds = obx.QueryIntegerProperty<Transaction>(
+    _entities[1].properties[7],
   );
 }

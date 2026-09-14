@@ -11,14 +11,17 @@ class BudgetModel {
     required this.year,
   });
 
+  /// Разбирает один элемент бюджета из ответа бэкенда.
+  ///
+  /// Раньше здесь читалось `json['details']['fields']` — это форма тела
+  /// ошибки валидации FastAPI, а не бюджета, поэтому на любом валидном
+  /// ответе разбор падал. Элементы `data` приходят плоскими.
   factory BudgetModel.fromJson(Map<String, dynamic> json) {
-    final data = json['details']['fields'];
-
     return BudgetModel(
-      category: data['category'] as String,
-      limitAmount: (data['limit_amount'] as num).toDouble(),
-      month: data['month'] as int,
-      year: data['year'] as int,
+      category: json['category'] as String,
+      limitAmount: (json['limit_amount'] as num).toDouble(),
+      month: (json['month'] as num).toInt(),
+      year: (json['year'] as num).toInt(),
     );
   }
 
