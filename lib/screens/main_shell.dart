@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'dashboard_screen.dart';
@@ -5,15 +6,9 @@ import 'budgets_screen.dart';
 import 'insights_screen.dart';
 import 'settings_screen.dart';
 import 'profile_screen.dart';
+import '../main.dart';
 
 /// Каркас приложения с нижней навигацией.
-///
-/// Здесь же хранится состояние авторизации (`_userEmail`/`_userName`):
-/// единого стека аутентификации в приложении нет (см. AuthScreen — это
-/// пока форма-заглушка без реального бэкенда), поэтому данные пользователя
-/// просто поднимаются на уровень выше экранов, которым они нужны
-/// (DashboardScreen передаёт их сюда через [_onAuthenticated] после
-/// успешного входа, а ProfileScreen получает их для отображения и выхода).
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -25,14 +20,28 @@ class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
   String _userEmail = '';
   String _userName = '';
+  late StreamSubscription _authSubscription;
 
   @override
   void initState() {
     super.initState();
-    // При запуске токен и профиль уже подняты из защищённого хранилища
-    // (ApiService.init в main), поэтому подхватываем сохранённого пользователя.
     _userEmail = ApiService.instance.email ?? '';
     _userName = ApiService.instance.userName ?? '';
+    _authSubscription =
+        ApiService.instance.authStream.listen((isAuthenticated) {
+      if (!isAuthenticated) {
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/login',
+          (route) => false,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
   }
 
   /// Переключение на вкладку профиля (индекс 3).
@@ -50,11 +59,7 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _logout() {
-    ApiService.instance.setToken(null);
-    setState(() {
-      _userEmail = '';
-      _userName = '';
-    });
+    ApiService.instance.performLogout();
   }
 
   List<Widget> get _screens => [

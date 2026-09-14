@@ -7,14 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'services/local_db_service.dart';
 import 'services/pending_deletions_store.dart';
 import 'screens/main_shell.dart';
+import 'screens/auth_screen.dart';
 
-/// Точка входа. Порядок важен:
-/// 1) читаем `.env` (адрес бэкенда и т.п. — см. ApiConfig), отсутствие файла
-///    не критично, тогда действуют значения по умолчанию;
-/// 2) поднимаем локальную БД (ObjectBox) — без неё экраны не смогут
-///    прочитать/сохранить транзакции и бюджеты, и очередь отложенных
-///    удалений, которую читает синхронизация;
-/// 3) запускаем виджет-дерево приложения.
+/// Точка входа в приложение.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -33,29 +28,21 @@ void main() async {
       error: error,
       stackTrace: stack,
     );
-    return true; // Возвращаем true, чтобы приложение не падало намертво
+    return true;
   };
 
   try {
     await dotenv.load(fileName: '.env');
-  } catch (_) {
-    // .env не создан (например, свежий чекаут без `cp .env.example .env') —
-    // приложение продолжает работать на значениях по умолчанию.
-  }
+  } catch (_) {}
 
   await LocalDbService.init();
-
-  /// Очередь удалений, не доехавших до сервера, — читается с диска до
-  /// первого возможного вызова синхронизации.
   await PendingDeletionsStore.init();
-
-  /// Инициализация ApiService,
-  /// чтобы при старте приложения сразу прочитать токен из secure storage
-  /// и использовать его для авторизации запросов к бэкенду.
   await ApiService.instance.init();
 
   runApp(const FinanceApp());
 }
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class FinanceApp extends StatelessWidget {
   const FinanceApp({super.key});
@@ -65,8 +52,13 @@ class FinanceApp extends StatelessWidget {
     const primaryTeal = Color(0xFF0F766E);
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Family Budget',
       debugShowCheckedModeBanner: false,
+      routes: {
+        '/': (context) => const MainShell(),
+        '/login': (context) => const AuthScreen(),
+      },
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -94,7 +86,6 @@ class FinanceApp extends StatelessWidget {
           shape: CircleBorder(),
         ),
       ),
-      home: const MainShell(),
     );
   }
 }

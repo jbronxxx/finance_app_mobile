@@ -24,7 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   IconData _syncIcon = Icons.cloud_done;
   Color _syncColor = const Color(0xFF0F766E);
 
-  /// Реальная синхронизация данных через ApiService.
+  /// Синхронизация данных через ApiService.
   void _startSync() async {
     setState(() {
       _isSyncing = true;
@@ -34,8 +34,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      // syncAll, а не только выгрузка: кнопка должна и отправить локальные
-      // изменения, и подтянуть сделанные с другого устройства.
       await ApiService.instance.syncAll();
 
       if (!mounted) return;
@@ -74,7 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       widget.onLogout();
 
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

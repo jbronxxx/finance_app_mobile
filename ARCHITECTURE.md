@@ -22,23 +22,28 @@
 
 ```
 lib/
-├── main.dart                    # Точка входа: .env -> локальная БД -> runApp
+├── main.dart                    # Точка входа: .env -> локальная БД -> ApiService.init -> runApp
 ├── config/
-│   └── api_config.dart          # Адрес бэкенда (.env) и пути эндпоинтов
+│   └── api_config.dart          # Конфигурация бэкенда (эндпоинты и базовый URL)
 ├── models/
-│   └── models.dart               # Transaction, Budget, enum Category/TransactionType
+│   ├── auth_model.dart          # DTO для авторизации (Login, Register, Me)
+│   ├── budget_model.dart        # DTO для бюджетов
+│   ├── transaction_model.dart   # DTO для транзакций
+│   ├── sync_model.dart          # Модель для пакетной синхронизации
+│   └── local_db_models.dart     # Сущности ObjectBox (Transaction, Budget)
 ├── services/
-│   ├── local_db_service.dart    # Доступ к ObjectBox (singleton LocalDbService.instance)
-│   └── api_service.dart          # Синхронизация с FastAPI-бэкендом (Dio)
+│   ├── local_db_service.dart    # Доступ к ObjectBox (singleton)
+│   ├── api_service.dart          # Клиент API (Dio, JWT, Refresh Token, Sync)
+│   └── pending_deletions_store.dart # Очередь отложенных удалений
 └── screens/
-    ├── main_shell.dart            # Нижняя навигация + состояние авторизации
-    ├── dashboard_screen.dart      # Баланс, список операций за период
-    ├── add_transaction_sheet.dart # Форма добавления/редактирования операции
-    ├── budgets_screen.dart        # Лимиты бюджета по категориям
-    ├── insights_screen.dart       # AI-инсайты (пока статичные демо-данные)
-    ├── profile_screen.dart        # Профиль пользователя, статус синхронизации
-    ├── settings_screen.dart       # Настройки (тема/валюта/уведомления)
-    └── auth_screen.dart           # Вход/регистрация (пока UI-заглушка)
+    ├── main_shell.dart            # Каркас с навигацией и слушателем сессии
+    ├── dashboard_screen.dart      # Баланс и список операций
+    ├── add_transaction_sheet.dart # Форма добавления транзакции
+    ├── budgets_screen.dart        # Лимиты бюджета
+    ├── insights_screen.dart       # AI-инсайты (заглушка)
+    ├── profile_screen.dart        # Профиль и ручная синхронизация
+    ├── settings_screen.dart       # Настройки
+    └── auth_screen.dart           # Вход и регистрация (реализовано)
 ```
 
 ## Правила зависимостей между слоями
@@ -60,47 +65,28 @@ main.dart`. Это было исправлено переносом состоя
 этого правила при добавлении новых сервисов/глобального состояния — не
 кладите его в `main.dart`.
 
+## Авторизация и безопасность
+
+- **JWT-авторизация**: Используется пара `access_token` и `refresh_token`.
+- **Хранение**: Токены сохраняются в `FlutterSecureStorage`.
+- **Автообновление**: Реализован `InterceptorsWrapper` в Dio, который при получении `401` пытается обновить токены через `/auth/refresh`. При неудаче (рефреш протух) сессия сбрасывается.
+- **Слушатель сессии**: `MainShell` подписывается на `ApiService.authStream` и автоматически перенаправляет на `/login` при потере авторизации.
+
 ## Локальное хранилище и синхронизация
 
-- `Transaction` и `Budget` — сущности ObjectBox (`@Entity()`), схема
-  описана в `lib/objectbox-model.json` и генерируется в
-  `lib/objectbox.g.dart` (см. раздел "Кодогенерация" в README). Оба файла
-  коммитятся в git — `objectbox-model.json` хранит стабильные ID полей
-  между миграциями схемы, терять его нельзя.
-- Поле `serverId` в обеих моделях — `null`, пока запись не отправлена на
-  бэкенд. `LocalDbService.getUnsyncedTransactions()` возвращает то, что
-  ещё предстоит выгрузить.
-- `ApiService.syncLocalDataToBackend()` — единственная точка выгрузки
-  локальных данных на сервер (эндпоинт `/sync`), вызывается один раз после
-  успешного входа/регистрации.
+- `Transaction` и `Budget` — сущности ObjectBox (`@Entity()`).
+- **Синхронизация**: Двусторонняя (push/pull).
+  - `syncLocalDataToBackend`: Отправляет локальные записи без `serverId`.
+  - `syncBackendDataToLocal`: Загружает актуальные данные с сервера и сверяет с локальными.
+  - `PendingDeletionsStore`: Хранит ID удаленных локально транзакций, чтобы повторить удаление на сервере при появлении сети.
 
-## Известные ограничения / точки роста (важно для дальнейшей разработки)
+## Известные ограничения
 
-Эти моменты — не баги в смысле "что-то сломано", а осознанно
-незакрытые части функциональности. Оставлены как есть, чтобы не
-придумывать бизнес-логику за product-owner'а:
+1. **AI-инсайты — статичный текст.** `InsightsScreen` пока не обращается к эндпоинту `/insights`.
+2. **Настройки не сохраняются.** Выбор в `SettingsScreen` живет только в памяти виджета.
+3. **Android release**: Используется стандартный debug-ключ.
+4. **`getSpentForCategory`**: Линейное сканирование транзакций в `LocalDbService`.
 
-1. **Авторизация — заглушка.** `AuthScreen` ничего не отправляет на
-   бэкенд: просто валидирует поля и возвращает введённые email/имя.
-   Реальный вызов `/auth/login` и `/auth/register` (см. `ApiConfig`) ещё
-   предстоит подключить, как и последующий вызов
-   `ApiService.syncLocalDataToBackend`.
-2. **Синхронизация в профиле — имитация.** `ProfileScreen._startSync()`
-   делает `Future.delayed(2s)` вместо реального запроса.
-3. **AI-инсайты — статичный текст.** `InsightsScreen` не обращается к
-   `/insights`.
-4. **Настройки не сохраняются.** Переключатели в `SettingsScreen` живут
-   только в памяти виджета и сбрасываются при перезапуске.
-5. **"Очистить локальный кэш" ничего не чистит** — кнопка в
-   `SettingsScreen` только показывает уведомление. Перед реальной
-   реализацией нужно диалоговое подтверждение — операция необратимая.
-6. **Android release собирается debug-ключом подписи**
-   (`android/app/build.gradle.kts`) и `applicationId`/bundle id всё ещё
-   `com.example.finance_app_mobile` — стандартные TODO из шаблона
-   `flutter create`, которые нужно заменить перед публикацией в сторы.
-7. **`getSpentForCategory`** в `LocalDbService` сканирует все транзакции
-   линейно — приемлемо для личного бюджета, но при росте данных стоит
-   заменить на `Box.query` с фильтрами по индексируемым полям.
 
 ## Конфигурация и секреты
 
