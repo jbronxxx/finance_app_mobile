@@ -7,13 +7,13 @@
 
 ## Технологический стек
 
-| Слой              | Технология                              |
-|-------------------|------------------------------------------|
-| UI                | Flutter (Material 3)                      |
-| Локальное хранилище | [ObjectBox](https://objectbox.io/) (NoSQL, встроенная БД) |
-| Сетевой клиент     | [Dio](https://pub.dev/packages/dio)       |
-| Конфигурация       | [flutter_dotenv](https://pub.dev/packages/flutter_dotenv) (`.env`) |
-| Управление версией SDK | [FVM](https://fvm.app/) (см. `.fvmrc`, Flutter 3.29.3) |
+| Слой                   | Технология                                                         |
+|------------------------|--------------------------------------------------------------------|
+| UI                     | Flutter (Material 3)                                               |
+| Локальное хранилище    | [ObjectBox](https://objectbox.io/) (NoSQL, встроенная БД)          |
+| Сетевой клиент         | [Dio](https://pub.dev/packages/dio)                                |
+| Конфигурация           | [flutter_dotenv](https://pub.dev/packages/flutter_dotenv) (`.env`) |
+| Управление версией SDK | [FVM](https://fvm.app/) (см. `.fvmrc`, Flutter 3.29.3)             |
 
 Бэкенд (FastAPI) в этот репозиторий не входит — приложение общается с ним
 только по REST API, описанному в `lib/config/api_config.dart`.
@@ -84,9 +84,6 @@ main.dart`. Это было исправлено переносом состоя
 
 1. **AI-инсайты — статичный текст.** `InsightsScreen` пока не обращается к эндпоинту `/insights`.
 2. **Настройки не сохраняются.** Выбор в `SettingsScreen` живет только в памяти виджета.
-3. **Android release**: Используется стандартный debug-ключ.
-4. **`getSpentForCategory`**: Линейное сканирование транзакций в `LocalDbService`.
-
 
 ## Конфигурация и секреты
 
