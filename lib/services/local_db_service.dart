@@ -321,22 +321,23 @@ class LocalDbService {
   }
 
   /// Считает сумму расходов по конкретной категории за месяц и год.
-  ///
-  /// Примечание: реализовано через полное сканирование всех транзакций —
-  /// приемлемо для локальной базы личных финансов, но при росте объёма
-  /// данных стоит заменить на запрос ObjectBox с фильтрами по category/type/date.
   double getSpentForCategory(int month, int year, String categoryName) {
-    final transactions = getAllTransactions();
-    double totalSpent = 0.0;
+    final startOfMonth = DateTime(year, month, 1);
+    final nextMonth = month == 12 ? 1 : month + 1;
+    final nextYear = month == 12 ? year + 1 : year;
+    final endOfMonth =
+        DateTime(nextYear, nextMonth, 1).subtract(const Duration(milliseconds: 1));
 
-    for (var t in transactions) {
-      if (t.dbCategory == categoryName &&
-          t.type == TransactionType.expense &&
-          t.date.month == month &&
-          t.date.year == year) {
-        totalSpent += t.amount;
-      }
-    }
+    final query = _transactionBox
+        .query(Transaction_.dbCategory.equals(categoryName) &
+            Transaction_.dbType.equals(TransactionType.expense.name) &
+            Transaction_.dateMilliseconds.between(
+                startOfMonth.millisecondsSinceEpoch,
+                endOfMonth.millisecondsSinceEpoch))
+        .build();
+
+    final totalSpent = query.property(Transaction_.amount).sum();
+    query.close();
     return totalSpent;
   }
 

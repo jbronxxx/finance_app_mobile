@@ -4,9 +4,7 @@ import '../services/api_service.dart';
 import 'dashboard_screen.dart';
 import 'budgets_screen.dart';
 import 'insights_screen.dart';
-import 'settings_screen.dart';
 import 'profile_screen.dart';
-import '../main.dart';
 
 /// Каркас приложения с нижней навигацией.
 class MainShell extends StatefulWidget {
@@ -29,12 +27,14 @@ class _MainShellState extends State<MainShell> {
     _userName = ApiService.instance.userName ?? '';
     _authSubscription =
         ApiService.instance.authStream.listen((isAuthenticated) {
-      if (!isAuthenticated) {
-        navigatorKey.currentState?.pushNamedAndRemoveUntil(
-          '/login',
-          (route) => false,
-        );
-      }
+      setState(() {
+        _userEmail = ApiService.instance.email ?? '';
+        _userName = ApiService.instance.userName ?? '';
+        
+        if (!isAuthenticated) {
+          _currentIndex = 0;
+        }
+      });
     });
   }
 
@@ -74,7 +74,6 @@ class _MainShellState extends State<MainShell> {
           userName: _userName,
           onLogout: _logout,
         ),
-        const SettingsScreen(),
       ];
 
   @override
@@ -111,11 +110,6 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person, color: primaryTeal),
             label: 'Профиль',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings, color: primaryTeal),
-            label: 'Настройки',
           ),
         ],
       ),

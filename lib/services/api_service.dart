@@ -210,6 +210,8 @@ class ApiService {
       await setUserEmail(email);
       await fetchAndSaveUserProfile();
 
+      _authStream.add(true); // Уведомляем об успешном входе
+
       return LoginResponseModel.fromJson(response.data);
     } on DioException catch (e) {
       if (kDebugMode) {
