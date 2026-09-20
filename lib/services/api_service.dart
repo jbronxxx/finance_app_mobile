@@ -82,6 +82,8 @@ class ApiService {
   String? _refreshToken;
   String? _userName;
   String? _email;
+  String? _transactionsEtag;
+  String? _budgetsEtag;
 
   String? get userName => _userName;
   String? get email => _email;
@@ -91,6 +93,8 @@ class ApiService {
     _refreshToken = await _storage.read(key: 'refresh_token');
     _userName = await _storage.read(key: 'auth_user');
     _email = await _storage.read(key: 'auth_email');
+    _transactionsEtag = await _storage.read(key: 'transactions_etag');
+    _budgetsEtag = await _storage.read(key: 'budgets_etag');
   }
 
   /// Сохраняет токены авторизации.
@@ -127,11 +131,15 @@ class ApiService {
     await _storage.delete(key: 'refresh_token');
     await _storage.delete(key: 'auth_user');
     await _storage.delete(key: 'auth_email');
+    await _storage.delete(key: 'transactions_etag');
+    await _storage.delete(key: 'budgets_etag');
 
     _token = null;
     _refreshToken = null;
     _userName = null;
     _email = null;
+    _transactionsEtag = null;
+    _budgetsEtag = null;
   }
 
   bool get isAuthenticated => _token != null;
@@ -502,21 +510,38 @@ class ApiService {
       final remoteTransactions = await _fetchRemoteTransactions(jwtToken);
       final remoteBudgets = await _fetchRemoteBudgets(jwtToken);
 
-      final removedTransactions =
-          LocalDbService.instance.reconcileTransactions(remoteTransactions);
-      final removedBudgets =
-          LocalDbService.instance.reconcileBudgets(remoteBudgets);
+      int removedTransactions = 0;
+      int transLength = 0;
+      if (remoteTransactions != null) {
+        removedTransactions =
+            LocalDbService.instance.reconcileTransactions(remoteTransactions);
+        transLength = remoteTransactions.length;
+      } else {
+        if (kDebugMode) debugPrint('[ApiService] Transactions not modified (304). Skipping reconciliation.');
+        transLength = LocalDbService.instance.getAllTransactions().length;
+      }
+
+      int removedBudgets = 0;
+      int budgetsLength = 0;
+      if (remoteBudgets != null) {
+        removedBudgets =
+            LocalDbService.instance.reconcileBudgets(remoteBudgets);
+        budgetsLength = remoteBudgets.length;
+      } else {
+        if (kDebugMode) debugPrint('[ApiService] Budgets not modified (304). Skipping reconciliation.');
+        budgetsLength = LocalDbService.instance.getAllBudgets().length;
+      }
 
       if (kDebugMode) {
         debugPrint(
             '[ApiService] Sync backend -> local: '
-            'T(${remoteTransactions.length}), B(${remoteBudgets.length}); '
+            'T($transLength), B($budgetsLength); '
             'Removed: T($removedTransactions), B($removedBudgets)');
       }
 
       return {
-        'transactions': remoteTransactions.length,
-        'budgets': remoteBudgets.length,
+        'transactions': transLength,
+        'budgets': budgetsLength,
         'removed_transactions': removedTransactions,
         'removed_budgets': removedBudgets,
       };
@@ -607,22 +632,56 @@ class ApiService {
     return totalDone;
   }
 
-  Future<List<Transaction>> _fetchRemoteTransactions(String token) async {
+  Future<List<Transaction>?> _fetchRemoteTransactions(String token) async {
+    final options = _authOptions(token);
+    options.validateStatus = (status) => status != null && ((status >= 200 && status < 300) || status == 304);
+    if (_transactionsEtag != null) {
+      options.headers?['If-None-Match'] = _transactionsEtag;
+    }
+
     final response = await _dio.get(
       ApiConfig.transactions,
-      options: _authOptions(token),
+      options: options,
     );
+
+    if (response.statusCode == 304) {
+      return null;
+    }
+
+    final newEtag = response.headers.value('etag');
+    if (newEtag != null) {
+      _transactionsEtag = newEtag;
+      await _storage.write(key: 'transactions_etag', value: newEtag);
+    }
 
     return _asJsonList(response.data['data'])
         .map(Transaction.fromJson)
         .toList();
   }
 
-  Future<List<Budget>> _fetchRemoteBudgets(String token) async {
+  Future<List<Budget>?> _fetchRemoteBudgets(String token) async {
+    final options = _authOptions(token);
+    options.validateStatus = (status) =>
+        status != null && ((status >= 200 && status < 300) || status == 304);
+
+    if (_budgetsEtag != null) {
+      options.headers?['If-None-Match'] = _budgetsEtag;
+    }
+
     final response = await _dio.get(
       ApiConfig.budgets,
-      options: _authOptions(token),
+      options: options,
     );
+
+    if (response.statusCode == 304) {
+      return null;
+    }
+
+    final newEtag = response.headers.value('etag');
+    if (newEtag != null) {
+      _budgetsEtag = newEtag;
+      await _storage.write(key: 'budgets_etag', value: newEtag);
+    }
 
     return _asJsonList(response.data['data'])
         .map(Budget.fromJson)
