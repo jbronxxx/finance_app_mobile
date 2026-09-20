@@ -1,5 +1,6 @@
 import 'package:family_budget/services/api_service.dart';
 import 'package:family_budget/services/preferences_service.dart';
+import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:family_budget/widgets/swipe_hint_wrapper.dart';
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
@@ -77,7 +78,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   void _showAddBudgetDialog([Budget? budgetToEdit]) {
     Category selectedCategory = budgetToEdit?.category ?? Category.food;
     final amountController = TextEditingController(
-      text: budgetToEdit != null ? budgetToEdit.limitAmount.toString() : '',
+      text: budgetToEdit != null
+          ? CurrencyFormatter.format(budgetToEdit.limitAmount,
+              showSymbol: false)
+          : '',
     );
 
     showModalBottomSheet(
@@ -89,7 +93,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -99,6 +103,17 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(
+                  child: Container(
+                    width: 80,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
                 Text(
                   budgetToEdit != null
                       ? 'Редактировать лимит'
@@ -135,9 +150,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   controller: amountController,
                   keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [CurrencyInputFormatter()],
                   autofocus: false,
                   decoration: InputDecoration(
-                    labelText: 'Сумма лимита (₽)',
+                    labelText: 'Сумма лимита (${CurrencyFormatter.currentCurrency.symbol})',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
@@ -154,9 +170,16 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           borderRadius: BorderRadius.circular(16)),
                     ),
                     onPressed: () {
-                      final amount =
-                      double.tryParse(amountController.text.trim());
+                      final amount = CurrencyFormatter.parseInput(amountController.text);
                       if (amount != null && amount > 0) {
+                        if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Сумма превышает лимит валюты'),
+                            ),
+                          );
+                          return;
+                        }
                         final spent = LocalDbService.instance
                             .getSpentForCategory(_selectedMonth, _selectedYear,
                             selectedCategory.name);
@@ -362,13 +385,40 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                           Text(b.category.name.toUpperCase(),
                                               style: const TextStyle(
                                                   fontWeight: FontWeight.bold)),
-                                          Text(
-                                              '${currentSpent.toStringAsFixed(0)} / ${b.limitAmount.toStringAsFixed(0)} ₽',
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: isExceeded
-                                                      ? Colors.orange.shade800
-                                                      : primaryTeal)),
+                                          Expanded(
+                                            child: Align(
+                                              alignment: Alignment.centerRight,
+                                              child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    CurrencyFormatter.formatText(
+                                                      currentSpent,
+                                                      style: TextStyle(
+                                                          fontWeight: FontWeight.bold,
+                                                          color: isExceeded
+                                                              ? Colors.orange.shade800
+                                                              : primaryTeal),
+                                                    ),
+                                                    Text(' / ', style: TextStyle(
+                                                        fontWeight: FontWeight.bold,
+                                                        color: isExceeded
+                                                            ? Colors.orange.shade800
+                                                            : primaryTeal)),
+                                                    CurrencyFormatter.formatText(
+                                                      b.limitAmount,
+                                                      style: TextStyle(
+                                                          fontWeight: FontWeight.bold,
+                                                          color: isExceeded
+                                                              ? Colors.orange.shade800
+                                                              : primaryTeal),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                       const SizedBox(height: 12),

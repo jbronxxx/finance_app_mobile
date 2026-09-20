@@ -2,6 +2,7 @@ import 'package:family_budget/screens/profile_screen.dart';
 import 'package:family_budget/services/api_service.dart';
 import 'package:family_budget/services/preferences_service.dart';
 import 'package:family_budget/widgets/swipe_hint_wrapper.dart';
+import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
@@ -274,7 +275,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -284,6 +285,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Container(
+                width: 80,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               const Text(
                 'Выберите период',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -589,19 +599,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
-          Text(
-            '${balance.toStringAsFixed(0)} ₽',
+          CurrencyFormatter.formatText(
+            balance,
+            showSign: true,
             style: const TextStyle(
                 color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+            useFittedBox: true,
           ),
           const SizedBox(height: 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildIncomeExpenseInfo(
-                  'Доход', income, Icons.arrow_downward, Colors.white),
-              _buildIncomeExpenseInfo(
-                  'Расход', expense, Icons.arrow_upward, Colors.white),
+              Expanded(
+                child: _buildIncomeExpenseInfo(
+                    'Доход', income, Icons.arrow_downward, Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildIncomeExpenseInfo(
+                    'Расход', expense, Icons.arrow_upward, Colors.white),
+              ),
             ],
           ),
         ],
@@ -611,62 +627,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildIncomeExpenseInfo(
       String label, double amount, IconData icon, Color color) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 16),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
           children: [
-            Text(label,
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color.withValues(alpha: 0.9), size: 12),
+            ),
+            const SizedBox(width: 6),
             Text(
-              '${amount.toStringAsFixed(0)} ₽',
-              style: TextStyle(
-                  color: color, fontWeight: FontWeight.bold, fontSize: 16),
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ],
+        ),
+        const SizedBox(height: 6),
+        CurrencyFormatter.formatText(
+          amount,
+          style: TextStyle(
+              color: color, fontWeight: FontWeight.bold, fontSize: 16),
+          useFittedBox: true,
         ),
       ],
     );
   }
 
-  Widget _buildGroupedTransactionList() {
-    final grouped = _groupTransactions();
-    return ListView.builder(
-      itemCount: grouped.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemBuilder: (context, index) {
-        final date = grouped.keys.elementAt(index);
-        final categories = grouped[date]!;
-        return _buildDayGroup(date, categories);
-      },
-    );
-  }
-
-  Map<DateTime, Map<Category, List<Transaction>>> _groupTransactions() {
-    final Map<DateTime, Map<Category, List<Transaction>>> grouped = {};
-    for (var t in _transactions) {
-      final date = DateTime(t.date.year, t.date.month, t.date.day);
-      grouped.putIfAbsent(date, () => {});
-      grouped[date]!.putIfAbsent(t.category, () => []);
-      grouped[date]![t.category]!.add(t);
-    }
-    final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    final Map<DateTime, Map<Category, List<Transaction>>> sortedGrouped = {};
-    for (var date in sortedDates) {
-      sortedGrouped[date] = grouped[date]!;
-    }
-    return sortedGrouped;
-  }
 
   Widget _buildDayGroup(DateTime date, Map<Category, List<Transaction>> categories,
       {bool showHintOnFirstCategory = false}) {
@@ -771,12 +762,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           category.name.toUpperCase(),
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
-        trailing: Text(
-          '${total >= 0 ? "+" : ""}${total.toStringAsFixed(0)} ₽',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: total >= 0 ? Colors.teal.shade700 : Colors.black87,
+        trailing: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 140),
+          child: CurrencyFormatter.formatText(
+            total,
+            textAlign: TextAlign.end,
+            showSign: true,
+            showSymbol: false,
+            useFittedBox: true,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: total >= 0 ? Colors.teal.shade700 : Colors.black87,
+            ),
           ),
         ),
         children: transactions.asMap().entries.map((entry) {
@@ -816,11 +814,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             transaction.description.isEmpty ? 'Без описания' : transaction.description,
             style: const TextStyle(fontSize: 13),
           ),
-          trailing: Text(
-            '${isExpense ? "-" : "+"}${transaction.amount.toStringAsFixed(0)} ₽',
-            style: TextStyle(
-              fontSize: 14,
-              color: isExpense ? Colors.grey.shade700 : Colors.teal.shade600,
+          trailing: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 120),
+            child: CurrencyFormatter.formatText(
+              isExpense ? -transaction.amount : transaction.amount,
+              textAlign: TextAlign.end,
+              showSign: true,
+              showSymbol: false,
+              useFittedBox: true,
+              style: TextStyle(
+                fontSize: 14,
+                color: isExpense ? Colors.grey.shade700 : Colors.teal.shade600,
+              ),
             ),
           ),
         ),
@@ -844,95 +849,4 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return item;
   }
 
-  Widget _buildTransactionCard(Transaction transaction) {
-    final isExpense = transaction.type == TransactionType.expense;
-
-    IconData categoryIcon = Icons.category;
-    if (transaction.category == Category.food) {
-      categoryIcon = Icons.shopping_cart;
-    }
-    if (transaction.category == Category.transport) {
-      categoryIcon = Icons.directions_bus;
-    }
-    if (transaction.category == Category.salary) {
-      categoryIcon = Icons.monetization_on;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Dismissible(
-          key: Key(transaction.localId.toString()),
-          direction: DismissDirection.endToStart,
-          onDismissed: (direction) {
-            _deleteTransaction(transaction);
-          },
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            color: Theme.of(context).colorScheme.error,
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.grey.shade100),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color:
-                    isExpense ? Colors.orange.shade50 : Colors.teal.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    categoryIcon,
-                    color:
-                    isExpense ? Colors.orange.shade400 : Colors.teal.shade400,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        transaction.category.name.toUpperCase(),
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      if (transaction.description.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          transaction.description,
-                          style: TextStyle(
-                              color: Colors.grey.shade600, fontSize: 12),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ]
-                    ],
-                  ),
-                ),
-                Text(
-                  '${isExpense ? "-" : "+"}${transaction.amount.toStringAsFixed(0)} ₽',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: isExpense ? Colors.black87 : Colors.teal.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
