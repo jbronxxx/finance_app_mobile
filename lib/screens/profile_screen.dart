@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
@@ -30,7 +31,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Состояние настроек (пока локальное)
   bool _notificationsEnabled = true;
   bool _isDarkMode = false;
-  String _selectedCurrency = '₽ (Рубль)';
 
   @override
   void initState() {
@@ -83,12 +83,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  /// Выбор валюты в модальном окне.
+  /// Выбор валюты в модальном окне.
   void _showCurrencyPicker() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -97,36 +99,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Container(
+                width: 80,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
             const Text(
               'Выбор валюты',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildCurrencyOption('₽ (Рубль)'),
-            _buildCurrencyOption('\$ (Доллар США)'),
-            _buildCurrencyOption('€ (Евро)'),
+            ...Currency.values.map((c) => _buildCurrencyOption(c)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCurrencyOption(String label) {
-    final isSelected = _selectedCurrency == label;
-    return ListTile(
-      title: Text(
-        label,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? const Color(0xFF0F766E) : Colors.black87,
-        ),
-      ),
-      trailing: isSelected
-          ? const Icon(Icons.check, color: Color(0xFF0F766E))
-          : null,
-      onTap: () {
-        setState(() => _selectedCurrency = label);
-        Navigator.pop(context);
+  /// Опция выбора конкретной валюты.
+  Widget _buildCurrencyOption(Currency currency) {
+    return ValueListenableBuilder<Currency>(
+      valueListenable: CurrencyFormatter.currencyNotifier,
+      builder: (context, currentCurrency, child) {
+        final isSelected = currentCurrency == currency;
+        // Отображаем знак и полное читаемое название
+        final label = '${currency.symbol} — ${currency.readableName}';
+        return ListTile(
+          title: Text(
+            label,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? const Color(0xFF0F766E) : Colors.black87,
+            ),
+          ),
+          trailing: isSelected
+              ? const Icon(Icons.check, color: Color(0xFF0F766E))
+              : null,
+          onTap: () {
+            // Глобально меняем валюту через форматировщик
+            CurrencyFormatter.setCurrency(currency);
+            Navigator.pop(context);
+          },
+        );
       },
     );
   }
@@ -181,7 +201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Профиль и настройки',
+        title: const Text('Профиль',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -371,16 +391,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ListTile(
             title: const Text('Валюта',
                 style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(_selectedCurrency,
-                    style: TextStyle(
-                        color: primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14)),
-                const Icon(Icons.chevron_right, size: 20),
-              ],
+            trailing: ValueListenableBuilder<Currency>(
+              valueListenable: CurrencyFormatter.currencyNotifier,
+              builder: (context, currency, child) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(currency.readableName,
+                        style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14)),
+                    const Icon(Icons.chevron_right, size: 20),
+                  ],
+                );
+              },
             ),
             onTap: _showCurrencyPicker,
           ),

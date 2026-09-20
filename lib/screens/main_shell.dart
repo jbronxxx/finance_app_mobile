@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'dashboard_screen.dart';
@@ -80,39 +81,45 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     const primaryTeal = Color(0xFF0F766E);
 
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        indicatorColor: primaryTeal.withValues(alpha: 0.2),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.wallet_outlined),
-            selectedIcon: Icon(Icons.wallet, color: primaryTeal),
-            label: 'Баланс',
+    // Слушаем изменение валюты, чтобы мгновенно обновить всё приложение
+    return ValueListenableBuilder<Currency>(
+      valueListenable: CurrencyFormatter.currencyNotifier,
+      builder: (context, currency, child) {
+        return Scaffold(
+          body: _screens[_currentIndex],
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            indicatorColor: primaryTeal.withValues(alpha: 0.2),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.wallet_outlined),
+                selectedIcon: Icon(Icons.wallet, color: primaryTeal),
+                label: 'Баланс',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.pie_chart_outline),
+                selectedIcon: Icon(Icons.pie_chart, color: primaryTeal),
+                label: 'Лимиты',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.lightbulb_outline),
+                selectedIcon: Icon(Icons.lightbulb, color: primaryTeal),
+                label: 'Инсайты',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person, color: primaryTeal),
+                label: 'Профиль',
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.pie_chart_outline),
-            selectedIcon: Icon(Icons.pie_chart, color: primaryTeal),
-            label: 'Лимиты',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.lightbulb_outline),
-            selectedIcon: Icon(Icons.lightbulb, color: primaryTeal),
-            label: 'Инсайты',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: primaryTeal),
-            label: 'Профиль',
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

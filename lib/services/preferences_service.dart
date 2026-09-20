@@ -12,6 +12,17 @@ class PreferencesService {
   final _storage = const FlutterSecureStorage();
   
   static const _keyTotalSessions = 'ux_hint_sessions_completed';
+  static const _keyCurrency = 'selected_currency';
+
+  /// Сохраняет выбранную валюту.
+  Future<void> saveCurrency(String currencyCode) async {
+    await _storage.write(key: _keyCurrency, value: currencyCode);
+  }
+
+  /// Получает сохраненную валюту.
+  Future<String?> getCurrency() async {
+    return await _storage.read(key: _keyCurrency);
+  }
 
   // Храним идентификаторы экранов, где хинт уже был показан в этой сессии
   final Set<String> _shownScreensInSession = {};

@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/local_db_service.dart';
 import 'services/pending_deletions_store.dart';
+import 'utils/currency_formatter.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth_screen.dart';
 
@@ -40,6 +41,7 @@ void main() async {
   await LocalDbService.init();
   await PendingDeletionsStore.init();
   await ApiService.instance.init();
+  await CurrencyFormatter.loadSavedCurrency();
 
   // Фиксируем ориентацию и стиль системных панелей до запуска приложения, 
   // чтобы избежать скачков верстки при инициализации первого кадра.

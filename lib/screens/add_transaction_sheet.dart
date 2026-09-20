@@ -1,3 +1,4 @@
+import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
@@ -28,8 +29,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     final t = widget.transactionToEdit;
     _type = t?.type ?? TransactionType.expense;
     _category = t?.category ?? Category.food;
-    _amountController =
-        TextEditingController(text: t != null ? t.amount.toString() : '');
+    _amountController = TextEditingController(
+      text: t != null
+          ? CurrencyFormatter.format(t.amount, showSymbol: false)
+          : '',
+    );
     _descriptionController = TextEditingController(text: t?.description ?? '');
   }
 
@@ -43,10 +47,21 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   /// Валидирует сумму (принимает и запятую, и точку как десятичный
   /// разделитель) и сохраняет транзакцию — новую или обновлённую.
   void _save() {
-    final amountText = _amountController.text.trim().replaceAll(',', '.');
-    final amount = double.tryParse(amountText);
+    final amount = CurrencyFormatter.parseInput(_amountController.text);
 
-    if (amount == null || amount <= 0) return;
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Введите корректную сумму')),
+      );
+      return;
+    }
+
+    if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Сумма слишком велика для ${CurrencyFormatter.currentCurrency.code}')),
+      );
+      return;
+    }
 
     if (widget.transactionToEdit != null) {
       final t = widget.transactionToEdit!;
@@ -90,7 +105,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       padding: const EdgeInsets.only(
-        top: 24,
+        top: 10,
         left: 24,
         right: 24,
         bottom: 24,
@@ -103,6 +118,17 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Center(
+            child: Container(
+              width: 80,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -198,9 +224,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           TextField(
             controller: _amountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [CurrencyInputFormatter()],
             autofocus: false,
             decoration: InputDecoration(
-              labelText: 'Сумма (₽)',
+              labelText: 'Сумма (${CurrencyFormatter.currentCurrency.symbol})',
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
