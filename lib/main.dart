@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'dart:ui';
 import 'package:family_budget/services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/local_db_service.dart';
@@ -12,6 +13,7 @@ import 'screens/auth_screen.dart';
 /// Точка входа в приложение.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.dumpErrorToConsole(details);
@@ -38,6 +40,19 @@ void main() async {
   await LocalDbService.init();
   await PendingDeletionsStore.init();
   await ApiService.instance.init();
+
+  // Фиксируем ориентацию и стиль системных панелей до запуска приложения, 
+  // чтобы избежать скачков верстки при инициализации первого кадра.
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.white,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
 
   runApp(const FinanceApp());
 }
@@ -68,9 +83,7 @@ class FinanceApp extends StatelessWidget {
           surface: const Color(0xFFF8FAFC),
           error: const Color(0xFFEF4444),
         ),
-        textTheme: GoogleFonts.interTextTheme(
-          Theme.of(context).textTheme,
-        ),
+        textTheme: GoogleFonts.interTextTheme(),
         cardTheme: CardTheme(
           elevation: 0,
           shape: RoundedRectangleBorder(

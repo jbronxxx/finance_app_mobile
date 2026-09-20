@@ -198,7 +198,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           TextField(
             controller: _amountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            autofocus: !isEditing,
+            autofocus: false,
             decoration: InputDecoration(
               labelText: 'Сумма (₽)',
               border:
@@ -208,6 +208,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           const SizedBox(height: 16),
           DropdownButtonFormField<Category>(
             value: _category,
+            borderRadius: BorderRadius.circular(24),
+            alignment: Alignment.centerLeft,
             decoration: InputDecoration(
               labelText: 'Категория',
               border:
