@@ -1,5 +1,7 @@
 import 'package:family_budget/screens/profile_screen.dart';
 import 'package:family_budget/services/api_service.dart';
+import 'package:family_budget/services/preferences_service.dart';
+import 'package:family_budget/widgets/swipe_hint_wrapper.dart';
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
@@ -35,6 +37,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double _totalExpense = 0;
   double _totalBalance = 0;
 
+  bool _shouldShowSwipeHint = false;
+
   final List<String> _monthsNames = [
     'Январь',
     'Февраль',
@@ -69,6 +73,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadTransactions();
+    _checkSwipeHint();
+  }
+
+  void _checkSwipeHint() async {
+    final canShow = await PreferencesService.instance.shouldShowSwipeHint('dashboard');
+    if (canShow) {
+      setState(() {
+        _shouldShowSwipeHint = true;
+      });
+    }
   }
 
   /// Перечитывает транзакции из локальной БД и оставляет только те, что
@@ -224,73 +238,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: StatefulBuilder(
           builder: (context, setModalState) => Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Text(
                 'Выберите период',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<int>(
-                value: tempMonth,
-                decoration: InputDecoration(
-                  labelText: 'Месяц',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                ),
-                items: List.generate(12, (index) {
-                  final monthValue = index + 1;
-                  final isCurrentMonth = monthValue == DateTime.now().month &&
-                      tempYear == DateTime.now().year;
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      value: tempMonth,
+                      borderRadius: BorderRadius.circular(24),
+                      alignment: Alignment.center,
+                      decoration: InputDecoration(
+                        labelText: 'Месяц',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                      ),
+                      items: List.generate(12, (index) {
+                        final monthValue = index + 1;
+                        final isCurrentMonth = monthValue == DateTime.now().month &&
+                            tempYear == DateTime.now().year;
 
-                  return DropdownMenuItem(
-                    value: monthValue,
-                    child: Text(
-                      _monthsNames[index],
-                      style: TextStyle(
-                        fontWeight: isCurrentMonth
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: isCurrentMonth
-                            ? const Color(0xFF0F766E)
-                            : Colors.black87,
-                      ),
+                        return DropdownMenuItem(
+                          value: monthValue,
+                          alignment: Alignment.center,
+                          child: Text(
+                            _monthsNames[index],
+                            style: TextStyle(
+                              fontWeight: isCurrentMonth
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isCurrentMonth
+                                  ? const Color(0xFF0F766E)
+                                  : Colors.black87,
+                            ),
+                          ),
+                        );
+                      }),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => tempMonth = val);
+                      },
                     ),
-                  );
-                }),
-                onChanged: (val) {
-                  if (val != null) setModalState(() => tempMonth = val);
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<int>(
-                value: tempYear,
-                decoration: InputDecoration(
-                  labelText: 'Год',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                ),
-                items: List.generate(11, (index) {
-                  final yearValue = DateTime.now().year + index;
-                  final isCurrentYear = yearValue == DateTime.now().year;
-                  return DropdownMenuItem(
-                    value: yearValue,
-                    child: Text(
-                      '$yearValue',
-                      style: TextStyle(
-                        fontWeight: isCurrentYear
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: isCurrentYear
-                            ? const Color(0xFF0F766E)
-                            : Colors.black87,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      value: tempYear,
+                      borderRadius: BorderRadius.circular(24),
+                      alignment: Alignment.center,
+                      decoration: InputDecoration(
+                        labelText: 'Год',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16)),
                       ),
+                      items: List.generate(11, (index) {
+                        final yearValue = DateTime.now().year + index;
+                        final isCurrentYear = yearValue == DateTime.now().year;
+                        return DropdownMenuItem(
+                          value: yearValue,
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$yearValue',
+                            style: TextStyle(
+                              fontWeight: isCurrentYear
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isCurrentYear
+                                  ? const Color(0xFF0F766E)
+                                  : Colors.black87,
+                            ),
+                          ),
+                        );
+                      }),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => tempYear = val);
+                      },
                     ),
-                  );
-                }),
-                onChanged: (val) {
-                  if (val != null) setModalState(() => tempYear = val);
-                },
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -354,47 +382,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.only(right: 16.0),
             child: ApiService.instance.isAuthenticated
                 ? TextButton.icon(
-                    onPressed: _openProfile,
-                    icon: const Icon(Icons.person, size: 18),
-                    label: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 120),
-                      child: Text(
-                        _userLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF0F766E),
-                      backgroundColor:
-                          const Color(0xFF0F766E).withValues(alpha: 0.1),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  )
+              onPressed: _openProfile,
+              icon: const Icon(Icons.person, size: 18),
+              label: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: Text(
+                  _userLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF0F766E),
+                backgroundColor:
+                const Color(0xFF0F766E).withValues(alpha: 0.1),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            )
                 : TextButton(
-                    onPressed: _openAuthScreen,
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF0F766E),
-                      backgroundColor:
-                          const Color(0xFF0F766E).withValues(alpha: 0.1),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Вход / Регистрация',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                  ),
+              onPressed: _openAuthScreen,
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF0F766E),
+                backgroundColor:
+                const Color(0xFF0F766E).withValues(alpha: 0.1),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Вход / Регистрация',
+                style:
+                TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ),
           )
         ],
       ),
@@ -412,7 +440,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         padding:
-                            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade50,
                           borderRadius: BorderRadius.circular(12),
@@ -462,10 +490,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) {
+                        (context, index) {
                       final date = _groupedTransactions.keys.elementAt(index);
                       final categories = _groupedTransactions[date]!;
-                      return _buildDayGroup(date, categories);
+
+                      return _buildDayGroup(
+                        date,
+                        categories,
+                        showHintOnFirstCategory: index == 0 && _shouldShowSwipeHint,
+                      );
                     },
                     childCount: _groupedTransactions.length,
                   ),
@@ -587,7 +620,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return sortedGrouped;
   }
 
-  Widget _buildDayGroup(DateTime date, Map<Category, List<Transaction>> categories) {
+  Widget _buildDayGroup(DateTime date, Map<Category, List<Transaction>> categories,
+      {bool showHintOnFirstCategory = false}) {
     final dayStr = date.day.toString();
     final monthStr = _monthsNamesGenitive[date.month - 1];
     final isToday = DateTime.now().year == date.year &&
@@ -608,13 +642,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ),
-        ...categories.entries.map((entry) => _buildCategoryGroup(entry.key, entry.value)),
+        ...categories.entries.toList().asMap().entries.map((entry) {
+          final idx = entry.key;
+          final categoryEntry = entry.value;
+          return _buildCategoryGroup(
+            categoryEntry.key,
+            categoryEntry.value,
+            showHintOnFirstTransaction: showHintOnFirstCategory && idx == 0,
+          );
+        }),
         const SizedBox(height: 12),
       ],
     );
   }
 
-  Widget _buildCategoryGroup(Category category, List<Transaction> transactions) {
+  Widget _buildCategoryGroup(Category category, List<Transaction> transactions,
+      {bool showHintOnFirstTransaction = false}) {
     final total = transactions.fold<double>(0, (sum, t) {
       return t.type == TransactionType.income ? sum + t.amount : sum - t.amount;
     });
@@ -662,6 +705,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         border: Border.all(color: Colors.grey.shade100),
       ),
       child: ExpansionTile(
+        key: Key('expansion_${category.name}_$showHintOnFirstTransaction'),
+        initiallyExpanded: showHintOnFirstTransaction,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -686,44 +731,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
             color: total >= 0 ? Colors.teal.shade700 : Colors.black87,
           ),
         ),
-        children: transactions.map((t) => _buildTransactionItem(t)).toList(),
+        children: transactions.asMap().entries.map((entry) {
+          return _buildTransactionItem(
+            entry.value,
+            isFirst: entry.key == 0,
+            showHint: showHintOnFirstTransaction && entry.key == 0,
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildTransactionItem(Transaction transaction) {
+  Widget _buildTransactionItem(Transaction transaction, {bool isFirst = false, bool showHint = false}) {
     final isExpense = transaction.type == TransactionType.expense;
-    return Dismissible(
+
+    final background = Container(
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      color: Theme.of(context).colorScheme.error,
+      child: const Icon(Icons.delete, color: Colors.white),
+    );
+
+    Widget item = Dismissible(
       key: Key(transaction.localId.toString()),
       direction: DismissDirection.endToStart,
       onDismissed: (direction) {
         _deleteTransaction(transaction);
       },
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.error,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      child: ListTile(
-        onTap: () => _openTransactionSheet(transaction),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
-        title: Text(
-          transaction.description.isEmpty ? 'Без описания' : transaction.description,
-          style: const TextStyle(fontSize: 13),
-        ),
-        trailing: Text(
-          '${isExpense ? "-" : "+"}${transaction.amount.toStringAsFixed(0)} ₽',
-          style: TextStyle(
-            fontSize: 14,
-            color: isExpense ? Colors.grey.shade700 : Colors.teal.shade600,
+      background: background,
+      child: Material(
+        color: Colors.white,
+        child: ListTile(
+          onTap: () => _openTransactionSheet(transaction),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+          title: Text(
+            transaction.description.isEmpty ? 'Без описания' : transaction.description,
+            style: const TextStyle(fontSize: 13),
+          ),
+          trailing: Text(
+            '${isExpense ? "-" : "+"}${transaction.amount.toStringAsFixed(0)} ₽',
+            style: TextStyle(
+              fontSize: 14,
+              color: isExpense ? Colors.grey.shade700 : Colors.teal.shade600,
+            ),
           ),
         ),
       ),
     );
+
+    if (isFirst) {
+      return SwipeHintWrapper(
+        showHint: showHint,
+        background: background,
+        onHintShown: () {
+          PreferencesService.instance.recordHintShown('dashboard');
+          Future.delayed(const Duration(milliseconds: 2000), () {
+            if (mounted) setState(() => _shouldShowSwipeHint = false);
+          });
+        },
+        child: item,
+      );
+    }
+
+    return item;
   }
 
   Widget _buildTransactionCard(Transaction transaction) {
@@ -742,76 +812,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Dismissible(
-        key: Key(transaction.localId.toString()),
-        direction: DismissDirection.endToStart,
-        onDismissed: (direction) {
-          _deleteTransaction(transaction);
-        },
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Dismissible(
+          key: Key(transaction.localId.toString()),
+          direction: DismissDirection.endToStart,
+          onDismissed: (direction) {
+            _deleteTransaction(transaction);
+          },
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             color: Theme.of(context).colorScheme.error,
-            borderRadius: BorderRadius.circular(24),
+            child: const Icon(Icons.delete, color: Colors.white),
           ),
-          child: const Icon(Icons.delete, color: Colors.white),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.grey.shade100),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color:
-                      isExpense ? Colors.orange.shade50 : Colors.teal.shade50,
-                  borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.grey.shade100),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color:
+                    isExpense ? Colors.orange.shade50 : Colors.teal.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    categoryIcon,
+                    color:
+                    isExpense ? Colors.orange.shade400 : Colors.teal.shade400,
+                  ),
                 ),
-                child: Icon(
-                  categoryIcon,
-                  color:
-                      isExpense ? Colors.orange.shade400 : Colors.teal.shade400,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      transaction.category.name.toUpperCase(),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    if (transaction.description.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        transaction.description,
-                        style: TextStyle(
-                            color: Colors.grey.shade600, fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        transaction.category.name.toUpperCase(),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14),
                       ),
-                    ]
-                  ],
+                      if (transaction.description.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          transaction.description,
+                          style: TextStyle(
+                              color: Colors.grey.shade600, fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ]
+                    ],
+                  ),
                 ),
-              ),
-              Text(
-                '${isExpense ? "-" : "+"}${transaction.amount.toStringAsFixed(0)} ₽',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: isExpense ? Colors.black87 : Colors.teal.shade700,
+                Text(
+                  '${isExpense ? "-" : "+"}${transaction.amount.toStringAsFixed(0)} ₽',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isExpense ? Colors.black87 : Colors.teal.shade700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
