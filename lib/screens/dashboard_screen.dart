@@ -33,6 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<Transaction> _transactions = [];
   Map<DateTime, Map<Category, List<Transaction>>> _groupedTransactions = {};
+  DateTime? _lastSyncTime;
   double _totalIncome = 0;
   double _totalExpense = 0;
   double _totalBalance = 0;
@@ -126,6 +127,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _totalBalance = income - expense;
       _groupedTransactions = sortedGrouped;
     });
+  }
+
+  Future<void> _handleRefresh() async {
+    if (!ApiService.instance.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Войдите в аккаунт для синхронизации')),
+      );
+      return;
+    }
+
+    // Проверка на фронтенде: не чаще чем раз в 30 секунд,
+    // если только нет локальных несинхронизированных данных.
+    final now = DateTime.now();
+    final hasUnsynced = LocalDbService.instance.getUnsyncedTransactions().isNotEmpty ||
+        LocalDbService.instance.getUnsyncedBudgets().isNotEmpty;
+
+    if (_lastSyncTime != null &&
+        now.difference(_lastSyncTime!).inSeconds < 30 &&
+        !hasUnsynced) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Обновление уже выполнено недавно')),
+        );
+      }
+      return;
+    }
+
+    try {
+      await ApiService.instance.syncAll();
+      _lastSyncTime = DateTime.now();
+      _loadTransactions();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Данные синхронизированы')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка синхронизации: $e')),
+        );
+      }
+    }
   }
 
   /// Удаляет запись и локально, и на сервере.
@@ -427,9 +471,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
+        child: RefreshIndicator(
+          onRefresh: _handleRefresh,
+          color: const Color(0xFF0F766E),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -508,6 +555,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
+    ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openTransactionSheet(),
         child: const Icon(Icons.add, size: 32),
