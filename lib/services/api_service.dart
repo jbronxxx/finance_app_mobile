@@ -454,7 +454,7 @@ class ApiService {
         options: _authOptions(),
       );
 
-      return response.data;
+      return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
       if (kDebugMode) debugPrint('[ApiService] Get insights error: $e');
       rethrow;
@@ -491,7 +491,7 @@ class ApiService {
       }
 
       if (kDebugMode) debugPrint('[ApiService] Sync local -> backend success');
-      return response.data;
+      return data is Map ? data.cast<String, dynamic>() : response.data;
     } on DioException catch (e) {
       if (kDebugMode) debugPrint('[ApiService] Sync error: ${e.response?.statusCode}');
       throw Exception('Ошибка синхронизации: ${e.response?.statusCode}');

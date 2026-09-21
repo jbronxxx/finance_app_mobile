@@ -24,8 +24,8 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# VS Code (закомментировано специально: launch.json/settings.json команда решает хранить сама)
-# .vscode/
+# VS Code
+.vscode/
 
 # Flutter/Dart/Pub
 .dart_tool/
