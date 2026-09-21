@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/api_service.dart';
 
 /// Экран входа/регистрации.
@@ -44,6 +45,21 @@ class _AuthScreenState extends State<AuthScreen> {
     }
 
     setState(() => _isLoading = true);
+
+    // Проверка интернета перед авторизацией
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Для входа или регистрации необходимо интернет-соединение'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
 
     try {
       if (_isLoginMode) {

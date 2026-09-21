@@ -3,6 +3,7 @@ import 'package:family_budget/services/preferences_service.dart';
 import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:family_budget/widgets/swipe_hint_wrapper.dart';
 import 'package:family_budget/widgets/custom_pull_to_refresh.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
@@ -68,6 +69,19 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Войдите в аккаунт для синхронизации')),
       );
+      return;
+    }
+
+    // Проверка интернета перед синхронизацией
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Нет подключения к сети для синхронизации'),
+          ),
+        );
+      }
       return;
     }
 

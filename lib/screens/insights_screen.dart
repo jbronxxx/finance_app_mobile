@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/api_service.dart';
 import '../widgets/custom_pull_to_refresh.dart';
 
@@ -32,6 +33,16 @@ class _InsightsScreenState extends State<InsightsScreen> {
       return;
     }
 
+    // Проверка наличия интернета перед запросом
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      setState(() {
+        _error = 'network_error';
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -53,6 +64,42 @@ class _InsightsScreenState extends State<InsightsScreen> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  Widget _buildNoNetworkPlaceholder() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.wifi_off, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                const Text(
+                  'Нет подключения к сети',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87),
+                ),
+                const SizedBox(height: 8),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    'Обновление инсайтов требует интернета. Проверьте соединение и потяните экран вниз для повтора.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -115,9 +162,11 @@ class _InsightsScreenState extends State<InsightsScreen> {
                     ? const Center(
                         child: CircularProgressIndicator(color: primaryTeal))
                     : _error != null
-                        ? Center(
-                            child:
-                                Text(_error!, style: const TextStyle(color: Colors.red)))
+                        ? _error == 'network_error'
+                            ? _buildNoNetworkPlaceholder()
+                            : Center(
+                                child: Text(_error!,
+                                    style: const TextStyle(color: Colors.red)))
                         : ListView.builder(
                             physics: const ClampingScrollPhysics(
                               parent: AlwaysScrollableScrollPhysics(),
