@@ -2,6 +2,8 @@ import 'package:family_budget/services/api_service.dart';
 import 'package:family_budget/services/preferences_service.dart';
 import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:family_budget/widgets/swipe_hint_wrapper.dart';
+import 'package:family_budget/widgets/custom_pull_to_refresh.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
@@ -59,6 +61,32 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       _budgets = LocalDbService.instance
           .getBudgetsForPeriod(_selectedMonth, _selectedYear);
     });
+  }
+
+  Future<void> _handleRefresh() async {
+    if (!ApiService.instance.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Войдите в аккаунт для синхронизации')),
+      );
+      return;
+    }
+
+    try {
+      if (kDebugMode) debugPrint('[Budgets] Starting syncAll via pull-to-refresh');
+      await ApiService.instance.syncAll();
+      _loadBudgets();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Данные синхронизированы')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка синхронизации: $e')),
+        );
+      }
+    }
   }
 
   /// Удаляет лимит бюджета локально и на сервере.
@@ -226,10 +254,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
+      body: CustomPullToRefresh(
+        onRefresh: _handleRefresh,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
             Row(
               children: [
                 Expanded(
@@ -328,6 +358,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     style: TextStyle(color: Colors.grey)),
               )
                   : ListView.builder(
+                physics: const ClampingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics()),
                 itemCount: _budgets.length,
                 itemBuilder: (context, index) {
                   final b = _budgets[index];
@@ -457,6 +489,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           ],
         ),
       ),
+    ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddBudgetDialog,
         child: const Icon(Icons.add),

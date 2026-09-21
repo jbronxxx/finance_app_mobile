@@ -2,10 +2,13 @@ import 'package:family_budget/screens/profile_screen.dart';
 import 'package:family_budget/services/api_service.dart';
 import 'package:family_budget/services/preferences_service.dart';
 import 'package:family_budget/widgets/swipe_hint_wrapper.dart';
+import 'package:family_budget/widgets/custom_pull_to_refresh.dart';
 import 'package:family_budget/utils/currency_formatter.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
+import '../services/pending_deletions_store.dart';
 import 'add_transaction_sheet.dart';
 import 'auth_screen.dart';
 
@@ -34,7 +37,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   final List<Transaction> _transactions = [];
   Map<DateTime, Map<Category, List<Transaction>>> _groupedTransactions = {};
-  DateTime? _lastSyncTime;
   double _totalIncome = 0;
   double _totalExpense = 0;
   double _totalBalance = 0;
@@ -184,26 +186,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return;
     }
 
-    // Проверка на фронтенде: не чаще чем раз в 30 секунд,
-    // если только нет локальных несинхронизированных данных.
-    final now = DateTime.now();
-    final hasUnsynced = LocalDbService.instance.getUnsyncedTransactions().isNotEmpty ||
-        LocalDbService.instance.getUnsyncedBudgets().isNotEmpty;
-
-    if (_lastSyncTime != null &&
-        now.difference(_lastSyncTime!).inSeconds < 30 &&
-        !hasUnsynced) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Обновление уже выполнено недавно')),
-        );
-      }
-      return;
-    }
-
     try {
+      if (kDebugMode) debugPrint('[Dashboard] Forced pull-to-refresh transactions sync');
+      
+      // 1. Выгружаем отложенные удаления
+      final pendingTransactions = PendingDeletionsStore.instance.transactionIds;
+      if (pendingTransactions.isNotEmpty) {
+        final done = <String>[];
+        for (final serverId in pendingTransactions) {
+          try {
+            await ApiService.instance.deleteTransaction(serverId);
+            done.add(serverId);
+          } catch (e) {
+            if (kDebugMode) debugPrint('[Dashboard] Pending delete failed: $e');
+          }
+        }
+        await PendingDeletionsStore.instance.removeTransactions(done);
+      }
+
+      // 2. Выгружаем локальные изменения и скачиваем новые данные в одном вызове syncAll, 
+      // но поскольку нас интересуют транзакции, после этого обновляем UI.
+      // Благодаря исправленному ETag, это не займет много трафика.
       await ApiService.instance.syncAll();
-      _lastSyncTime = DateTime.now();
+      
       _loadTransactions();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -211,6 +216,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       }
     } catch (e) {
+      if (kDebugMode) debugPrint('[Dashboard] Sync error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ошибка синхронизации: $e')),
@@ -527,12 +533,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: SafeArea(
-        child: RefreshIndicator(
+        child: CustomPullToRefresh(
           onRefresh: _handleRefresh,
-          color: const Color(0xFF0F766E),
           child: CustomScrollView(
             controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: const ClampingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
             slivers: [
             SliverToBoxAdapter(
               child: Padding(
