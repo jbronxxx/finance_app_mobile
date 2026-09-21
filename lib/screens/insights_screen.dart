@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../widgets/custom_pull_to_refresh.dart';
 
 /// Экран AI-инсайтов.
 class InsightsScreen extends StatefulWidget {
@@ -36,6 +38,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
     });
 
     try {
+      if (kDebugMode) debugPrint('[Insights] Loading insights via pull-to-refresh');
       final data = await ApiService.instance.getInsights();
       setState(() {
         _insights = List<String>.from(data['insights'] ?? []);
@@ -59,85 +62,100 @@ class _InsightsScreenState extends State<InsightsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('AI-Инсайты и Аналитика', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('AI-Инсайты и Аналитика',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: _isLoading ? null : _loadInsights,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.lightbulb, color: Colors.white, size: 36),
-                SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      'Умный анализ ваших финансов на базе ИИ',
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
-                    ),
+      body: CustomPullToRefresh(
+        onRefresh: _loadInsights,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.lightbulb, color: Colors.white, size: 36),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Умный анализ ваших финансов на базе ИИ',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Персональные рекомендации',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: primaryTeal))
-                  : _error != null
-                      ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-                      : ListView.builder(
-                          itemCount: _insights.length,
-                          itemBuilder: (context, index) {
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.grey.shade200),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.auto_awesome, color: primaryTeal, size: 24),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Text(
-                                      _insights[index],
-                                      style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
+              const SizedBox(height: 24),
+              const Text(
+                'Персональные рекомендации',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(color: primaryTeal))
+                    : _error != null
+                        ? Center(
+                            child:
+                                Text(_error!, style: const TextStyle(color: Colors.red)))
+                        : ListView.builder(
+                            physics: const ClampingScrollPhysics(
+                              parent: AlwaysScrollableScrollPhysics(),
+                            ),
+                            itemCount: _insights.length,
+                            itemBuilder: (context, index) {
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border:
+                                      Border.all(color: Colors.grey.shade200),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.auto_awesome,
+                                        color: primaryTeal, size: 24),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Text(
+                                        _insights[index],
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.black87,
+                                            height: 1.4),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-            ),
-          ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
         ),
       ),
     );
