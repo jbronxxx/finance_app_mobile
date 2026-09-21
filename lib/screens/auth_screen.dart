@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/api_service.dart';
+import '../widgets/app_alerts.dart';
+import '../utils/app_error_handler.dart';
 
 /// Экран входа/регистрации.
 class AuthScreen extends StatefulWidget {
@@ -32,15 +34,11 @@ class _AuthScreenState extends State<AuthScreen> {
     final name = _nameController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Заполните все поля')),
-      );
+      AppAlerts.warning(context, 'Заполните все поля');
       return;
     }
     if (!_isLoginMode && name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Введите имя')),
-      );
+      AppAlerts.warning(context, 'Введите имя');
       return;
     }
 
@@ -51,12 +49,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Для входа или регистрации необходимо интернет-соединение'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppAlerts.error(context, 'Для входа или регистрации необходимо интернет-соединение');
       }
       return;
     }
@@ -86,9 +79,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка: ${e.toString()}')),
-      );
+      AppErrorHandler.show(context, e, title: _isLoginMode ? 'Ошибка входа' : 'Ошибка регистрации');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

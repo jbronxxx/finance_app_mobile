@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
+import '../widgets/app_alerts.dart';
+import '../utils/app_error_handler.dart';
 
 /// Экран лимитов бюджета: показывает установленные лимиты по категориям за
 /// выбранный месяц/год и позволяет добавить новый лимит.
@@ -66,9 +68,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   Future<void> _handleRefresh() async {
     if (!ApiService.instance.isAuthenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Войдите в аккаунт для синхронизации')),
-      );
+      AppAlerts.warning(context, 'Войдите в аккаунт для синхронизации');
       return;
     }
 
@@ -76,11 +76,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Нет подключения к сети для синхронизации'),
-          ),
-        );
+        AppAlerts.error(context, 'Нет подключения к сети для синхронизации');
       }
       return;
     }
@@ -90,15 +86,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       await ApiService.instance.syncAll();
       _loadBudgets();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Данные синхронизированы')),
-        );
+        AppAlerts.success(context, 'Данные синхронизированы');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка синхронизации: $e')),
-        );
+        AppErrorHandler.show(context, e, title: 'Ошибка синхронизации');
       }
     }
   }
@@ -108,12 +100,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     ApiService.instance.deleteBudgetEverywhere(budget);
     _loadBudgets();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Лимит удален'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    AppAlerts.info(context, 'Лимит удален');
   }
 
   /// Открывает форму создания или редактирования лимита.
@@ -215,11 +202,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       final amount = CurrencyFormatter.parseInput(amountController.text);
                       if (amount != null && amount > 0) {
                         if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Сумма превышает лимит валюты'),
-                            ),
-                          );
+                          AppAlerts.warning(context, 'Сумма превышает лимит валюты');
                           return;
                         }
                         final spent = LocalDbService.instance

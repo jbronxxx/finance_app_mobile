@@ -2,6 +2,7 @@ import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
+import '../widgets/app_alerts.dart';
 
 /// Модальная форма создания/редактирования транзакции.
 ///
@@ -50,16 +51,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     final amount = CurrencyFormatter.parseInput(_amountController.text);
 
     if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Введите корректную сумму')),
-      );
+      AppAlerts.warning(context, 'Введите корректную сумму');
       return;
     }
 
     if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Сумма слишком велика для ${CurrencyFormatter.currentCurrency.code}')),
-      );
+      AppAlerts.warning(context, 'Сумма слишком велика для ${CurrencyFormatter.currentCurrency.code}');
       return;
     }
 

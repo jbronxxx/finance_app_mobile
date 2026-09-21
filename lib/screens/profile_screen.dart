@@ -4,6 +4,8 @@ import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../widgets/app_alerts.dart';
+import '../utils/app_error_handler.dart';
 
 /// Экран профиля пользователя, совмещенный с настройками приложения.
 class ProfileScreen extends StatefulWidget {
@@ -58,9 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _syncIcon = Icons.cloud_off;
           _syncColor = Colors.grey;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Для синхронизации нужно подключение к сети')),
-        );
+        AppAlerts.warning(context, 'Для синхронизации нужно подключение к сети');
       }
       return;
     }
@@ -83,9 +83,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _syncColor = const Color(0xFF0F766E);
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Данные успешно синхронизированы')),
-      );
+      AppAlerts.success(context, 'Данные успешно синхронизированы');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -94,9 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _syncIcon = Icons.error_outline;
         _syncColor = Colors.red;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка при синхронизации: $e')),
-      );
+      AppErrorHandler.show(context, e, title: 'Синхронизация');
     }
   }
 
@@ -199,14 +195,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       widget.onLogout();
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Вы вышли из системы')),
-      );
+      AppAlerts.info(context, 'Вы вышли из системы');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка при выходе: $e')),
-      );
+      AppErrorHandler.show(context, e, title: 'Ошибка при выходе');
     }
   }
 

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/api_service.dart';
 import '../widgets/custom_pull_to_refresh.dart';
+import '../utils/app_error_handler.dart';
+import '../widgets/app_alerts.dart';
 
 /// Экран AI-инсайтов.
 class InsightsScreen extends StatefulWidget {
@@ -58,9 +60,12 @@ class _InsightsScreenState extends State<InsightsScreen> {
         }
       });
     } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить инсайты. Попробуйте позже.';
-      });
+      if (mounted) {
+        AppErrorHandler.show(context, e, title: 'Аналитика');
+        setState(() {
+          _error = AppErrorHandler.getMessage(e);
+        });
+      }
     } finally {
       setState(() => _isLoading = false);
     }

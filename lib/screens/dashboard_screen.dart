@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
 import '../services/pending_deletions_store.dart';
+import '../widgets/app_alerts.dart';
+import '../utils/app_error_handler.dart';
 import 'add_transaction_sheet.dart';
 import 'auth_screen.dart';
 
@@ -181,9 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _handleRefresh() async {
     if (!ApiService.instance.isAuthenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Войдите в аккаунт для синхронизации')),
-      );
+      AppAlerts.warning(context, 'Войдите в аккаунт для синхронизации');
       return;
     }
 
@@ -191,11 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Нет подключения к сети для синхронизации'),
-          ),
-        );
+        AppAlerts.error(context, 'Нет подключения к сети для синхронизации');
       }
       return;
     }
@@ -218,23 +214,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await PendingDeletionsStore.instance.removeTransactions(done);
       }
 
-      // 2. Выгружаем локальные изменения и скачиваем новые данные в одном вызове syncAll, 
-      // но поскольку нас интересуют транзакции, после этого обновляем UI.
-      // Благодаря исправленному ETag, это не займет много трафика.
+      // 2. Выгружаем локальные изменения и скачиваем новые данные в одном вызове syncAll
       await ApiService.instance.syncAll();
       
       _loadTransactions();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Данные синхронизированы')),
-        );
+        AppAlerts.success(context, 'Данные синхронизированы');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('[Dashboard] Sync error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка синхронизации: $e')),
-        );
+        AppErrorHandler.show(context, e, title: 'Синхронизация');
       }
     }
   }
@@ -249,12 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ApiService.instance.deleteTransactionEverywhere(transaction);
     _loadTransactions();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Запись удалена'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    AppAlerts.info(context, 'Запись удалена');
   }
 
   /// Открывает форму добавления новой записи или редактирования существующей.
