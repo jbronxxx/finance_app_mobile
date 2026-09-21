@@ -39,6 +39,56 @@ class LocalDbService {
 
   // --- Транзакции ---
 
+  /// Возвращает транзакции за определенный месяц и год с поддержкой пагинации.
+  /// Фильтрация происходит на уровне БД через диапазон миллисекунд.
+  List<Transaction> getTransactionsForPeriod(int month, int year, {int? limit, int offset = 0}) {
+    final startOfMonth = DateTime(year, month, 1).millisecondsSinceEpoch;
+    final endOfMonth = DateTime(year, month + 1, 1)
+        .subtract(const Duration(milliseconds: 1))
+        .millisecondsSinceEpoch;
+
+    final query = _transactionBox.query(
+      Transaction_.dateMilliseconds.between(startOfMonth, endOfMonth),
+    )..order(Transaction_.dateMilliseconds, flags: Order.descending);
+
+    final q = query.build();
+    if (limit != null) {
+      q.limit = limit;
+      q.offset = offset;
+    }
+
+    final results = q.find();
+    q.close();
+    return results;
+  }
+
+  /// Считает общие итоги (доход и расход) за выбранный месяц.
+  /// Использует эффективные агрегатные функции ObjectBox.
+  Map<String, double> getMonthTotals(int month, int year) {
+    final startOfMonth = DateTime(year, month, 1).millisecondsSinceEpoch;
+    final endOfMonth = DateTime(year, month + 1, 1)
+        .subtract(const Duration(milliseconds: 1))
+        .millisecondsSinceEpoch;
+
+    final incomeQuery = _transactionBox.query(
+      Transaction_.dateMilliseconds.between(startOfMonth, endOfMonth) &
+      Transaction_.dbType.equals(TransactionType.income.name),
+    ).build();
+    
+    final expenseQuery = _transactionBox.query(
+      Transaction_.dateMilliseconds.between(startOfMonth, endOfMonth) &
+      Transaction_.dbType.equals(TransactionType.expense.name),
+    ).build();
+
+    final income = incomeQuery.property(Transaction_.amount).sum();
+    final expense = expenseQuery.property(Transaction_.amount).sum();
+
+    incomeQuery.close();
+    expenseQuery.close();
+
+    return {'income': income, 'expense': expense};
+  }
+
   /// Возвращает все транзакции, отсортированные от новых к старым.
   List<Transaction> getAllTransactions() {
     final query = _transactionBox.query()

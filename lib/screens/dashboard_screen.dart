@@ -32,7 +32,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedMonth = DateTime.now().month;
   int _selectedYear = DateTime.now().year;
 
-  List<Transaction> _transactions = [];
+  final List<Transaction> _transactions = [];
   Map<DateTime, Map<Category, List<Transaction>>> _groupedTransactions = {};
   DateTime? _lastSyncTime;
   double _totalIncome = 0;
@@ -40,6 +40,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double _totalBalance = 0;
 
   bool _shouldShowSwipeHint = false;
+
+  // Параметры пагинации
+  final ScrollController _scrollController = ScrollController();
+  int _offset = 0;
+  final int _pageSize = 20;
+  bool _hasMore = true;
+  bool _isLoading = false;
 
   final List<String> _monthsNames = [
     'Январь',
@@ -76,6 +83,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadTransactions();
     _checkSwipeHint();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        _hasMore &&
+        !_isLoading) {
+      _loadTransactions(isLoadMore: true);
+    }
   }
 
   void _checkSwipeHint() async {
@@ -87,34 +110,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// Перечитывает транзакции из локальной БД и оставляет только те, что
-  /// относятся к выбранному месяцу/году (фильтрация — на клиенте, т.к.
-  /// ObjectBox хранит дату как unix-миллисекунды, а не отдельные поля).
-  void _loadTransactions() {
-    final all = LocalDbService.instance.getAllTransactions();
-    final filtered = all.where((t) {
-      return t.date.month == _selectedMonth && t.date.year == _selectedYear;
-    }).toList();
+  /// Перечитывает транзакции из локальной БД с использованием пагинации
+  /// и фильтрации на уровне базы данных.
+  void _loadTransactions({bool isLoadMore = false}) {
+    if (_isLoading) return;
 
-    double income = 0;
-    double expense = 0;
-
-    for (var t in filtered) {
-      if (t.type == TransactionType.income) {
-        income += t.amount;
-      } else {
-        expense += t.amount;
-      }
+    if (!isLoadMore) {
+      setState(() {
+        _offset = 0;
+        _hasMore = true;
+        _transactions.clear();
+        _groupedTransactions = {};
+      });
     }
 
-    final Map<DateTime, Map<Category, List<Transaction>>> grouped = {};
-    for (var t in filtered) {
+    if (!_hasMore) return;
+
+    setState(() => _isLoading = true);
+
+    // 1. Загружаем итоги месяца (только если это не дозагрузка, 
+    //    так как итоги для месяца не меняются от пагинации списка)
+    if (!isLoadMore) {
+      final totals = LocalDbService.instance.getMonthTotals(_selectedMonth, _selectedYear);
+      _totalIncome = totals['income'] ?? 0;
+      _totalExpense = totals['expense'] ?? 0;
+      _totalBalance = _totalIncome - _totalExpense;
+    }
+
+    // 2. Загружаем страницу транзакций
+    final newBatch = LocalDbService.instance.getTransactionsForPeriod(
+      _selectedMonth,
+      _selectedYear,
+      limit: _pageSize,
+      offset: _offset,
+    );
+
+    if (newBatch.length < _pageSize) {
+      _hasMore = false;
+    }
+
+    _transactions.addAll(newBatch);
+    _offset += newBatch.length;
+
+    // 3. Группируем (обновляем существующую карту)
+    final Map<DateTime, Map<Category, List<Transaction>>> grouped = 
+        isLoadMore ? Map.from(_groupedTransactions) : {};
+
+    for (var t in newBatch) {
       final date = DateTime(t.date.year, t.date.month, t.date.day);
       grouped.putIfAbsent(date, () => {});
       grouped[date]!.putIfAbsent(t.category, () => []);
       grouped[date]![t.category]!.add(t);
     }
 
+    // Сортировка дат (только если добавили новые)
     final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
     final Map<DateTime, Map<Category, List<Transaction>>> sortedGrouped = {};
     for (var date in sortedDates) {
@@ -122,11 +171,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     setState(() {
-      _transactions = filtered;
-      _totalIncome = income;
-      _totalExpense = expense;
-      _totalBalance = income - expense;
       _groupedTransactions = sortedGrouped;
+      _isLoading = false;
     });
   }
 
@@ -485,6 +531,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onRefresh: _handleRefresh,
           color: const Color(0xFF0F766E),
           child: CustomScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
             SliverToBoxAdapter(
@@ -558,6 +605,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       );
                     },
                     childCount: _groupedTransactions.length,
+                  ),
+                ),
+              ),
+            if (_isLoading && _transactions.isNotEmpty)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF0F766E),
+                    ),
                   ),
                 ),
               ),
