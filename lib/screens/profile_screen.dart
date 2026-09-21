@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:family_budget/utils/currency_formatter.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
@@ -48,6 +49,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// Синхронизация данных через ApiService.
   void _startSync() async {
+    // Проверка интернета перед синхронизацией
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      if (mounted) {
+        setState(() {
+          _syncStatusText = 'Нет сети';
+          _syncIcon = Icons.cloud_off;
+          _syncColor = Colors.grey;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Для синхронизации нужно подключение к сети')),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isSyncing = true;
       _syncStatusText = 'Синхронизация...';
