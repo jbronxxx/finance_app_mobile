@@ -51,6 +51,26 @@ class AppErrorHandler {
         return;
       }
 
+      // Обработка превышения лимита запросов (HTTP 429 / RATE_LIMIT_EXCEEDED)
+      if (error.response?.statusCode == 429 ||
+          code == 'RATE_LIMIT_EXCEEDED' ||
+          (data is Map && data['status'] == 'RATE_LIMIT_EXCEEDED')) {
+        final retryAfterHeader = error.response?.headers.value('retry-after');
+        final retrySeconds = retryAfterHeader != null ? int.tryParse(retryAfterHeader.trim()) : null;
+
+        final customMsg = (data is Map && data['message'] != null && data['message'].toString().isNotEmpty)
+            ? data['message'].toString()
+            : LanguageManager.t('http_429');
+
+        AppAlerts.showRateLimitDialog(
+          context,
+          title: title ?? LanguageManager.t('rate_limit_exceeded_title'),
+          message: customMsg,
+          retryAfterSeconds: retrySeconds,
+        );
+        return;
+      }
+
       // Обработка временной недоступности сервиса (HTTP 503 / SERVICE_UNAVAILABLE)
       if (error.response?.statusCode == 503 ||
           code == 'SERVICE_UNAVAILABLE' ||
@@ -80,6 +100,10 @@ class AppErrorHandler {
         // Извлечение сообщения из унифицированного контракта ErrorResponse
         if (data['message'] != null && data['message'].toString().isNotEmpty) {
           message = data['message'].toString();
+        } else if (data['code'] == 'RATE_LIMIT_EXCEEDED' ||
+            data['status'] == 'RATE_LIMIT_EXCEEDED' ||
+            error.response?.statusCode == 429) {
+          message = LanguageManager.t('http_429');
         } else if (data['code'] == 'SERVICE_UNAVAILABLE' ||
             data['status'] == 'SERVICE_UNAVAILABLE' ||
             error.response?.statusCode == 503) {
@@ -93,7 +117,11 @@ class AppErrorHandler {
             final fields = data['details']['fields'] as Map;
             if (fields.isNotEmpty) {
               final firstError = fields.values.first;
-              message = firstError.toString();
+              if (firstError is List && firstError.isNotEmpty) {
+                message = firstError.first.toString();
+              } else {
+                message = firstError.toString();
+              }
             }
           } catch (_) {}
         }
@@ -104,6 +132,7 @@ class AppErrorHandler {
           case 401: message = LanguageManager.t('http_401'); break;
           case 403: message = LanguageManager.t('http_403'); break;
           case 404: message = LanguageManager.t('http_404'); break;
+          case 429: message = LanguageManager.t('http_429'); break;
           case 500: message = LanguageManager.t('http_500'); break;
           case 503: message = LanguageManager.t('http_503'); break;
           default: message = '${LanguageManager.t('server_error_code')}: ${error.response?.statusCode}';

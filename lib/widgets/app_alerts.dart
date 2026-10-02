@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../utils/language_manager.dart';
 
@@ -329,7 +330,217 @@ class AppAlerts {
       },
     );
   }
+
+  /// Отображает модальное окно превышения лимита запросов (HTTP 429 / RATE_LIMIT_EXCEEDED).
+  ///
+  /// При наличии [retryAfterSeconds] запускает локальный таймер обратного отсчета,
+  /// информирующий пользователя об оставшемся времени блокировки.
+  static void showRateLimitDialog(
+    BuildContext context, {
+    String? title,
+    String? message,
+    int? retryAfterSeconds,
+    VoidCallback? onRetry,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          elevation: 0,
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: _RateLimitDialogContent(
+              title: title ?? LanguageManager.t('rate_limit_exceeded_title'),
+              message: message ?? LanguageManager.t('http_429'),
+              retryAfterSeconds: retryAfterSeconds,
+              onRetry: onRetry,
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
+
+/// Внутренний виджет диалога лимита запросов с таймером обратного отсчета.
+class _RateLimitDialogContent extends StatefulWidget {
+  final String title;
+  final String message;
+  final int? retryAfterSeconds;
+  final VoidCallback? onRetry;
+
+  const _RateLimitDialogContent({
+    required this.title,
+    required this.message,
+    this.retryAfterSeconds,
+    this.onRetry,
+  });
+
+  @override
+  State<_RateLimitDialogContent> createState() => _RateLimitDialogContentState();
+}
+
+class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
+  int _secondsLeft = 0;
+  StreamSubscription<int>? _timerSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.retryAfterSeconds;
+    if (initial != null && initial > 0) {
+      _secondsLeft = initial;
+      // Запуск посекундного декремента счетчика до нуля
+      _timerSubscription = Stream.periodic(const Duration(seconds: 1), (i) => i).listen((_) {
+        if (!mounted) return;
+        if (_secondsLeft > 1) {
+          setState(() => _secondsLeft--);
+        } else {
+          setState(() {
+            _secondsLeft = 0;
+          });
+          _timerSubscription?.cancel();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timerSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Color(0xFFFEF3C7),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.hourglass_bottom_rounded,
+            color: Color(0xFFD97706),
+            size: 32,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          widget.title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          widget.message,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade600,
+            height: 1.5,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        if (widget.retryAfterSeconds != null && widget.retryAfterSeconds! > 0) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFBEB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFDE68A)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _secondsLeft > 0 ? Icons.timer_outlined : Icons.check_circle_outline,
+                  size: 18,
+                  color: const Color(0xFFD97706),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _secondsLeft > 0
+                      ? '${LanguageManager.t('rate_limit_countdown_prefix')} $_secondsLeft ${LanguageManager.t('uzs_symbol') == 'сум' ? 'сек.' : 'sec'}'
+                      : LanguageManager.t('rate_limit_ready'),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        if (widget.onRetry != null && _secondsLeft == 0) ...[
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0F766E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.onRetry!();
+              },
+              child: Text(
+                LanguageManager.t('service_unavailable_retry'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              LanguageManager.t('dialog_ok'),
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
+        ] else ...[
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0F766E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                LanguageManager.t('dialog_ok'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 
 extension ColorExtension on Color {
   Color darken([double amount = .1]) {
