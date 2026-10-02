@@ -34,6 +34,7 @@ lib/
 ├── services/
 │   ├── local_db_service.dart    # Доступ к ObjectBox (singleton)
 │   ├── api_service.dart          # Клиент API (Dio, JWT, Refresh Token, Sync)
+│   ├── tracing_interceptor.dart # Сквозная трассировка сетевых запросов (X-Request-ID)
 │   └── pending_deletions_store.dart # Очередь отложенных удалений
 └── screens/
     ├── main_shell.dart            # Каркас с навигацией и слушателем сессии
@@ -42,7 +43,8 @@ lib/
     ├── budgets_screen.dart        # Лимиты бюджета
     ├── insights_screen.dart       # AI-инсайты
     ├── profile_screen.dart        # Профиль пользователя и настройки приложения
-    └── auth_screen.dart           # Вход и регистрация
+    ├── auth_screen.dart           # Вход и регистрация
+    └── service_unavailable_screen.dart # Экран технических работ (HTTP 503)
 ```
 
 ## Правила зависимостей между слоями
@@ -79,6 +81,11 @@ main.dart`. Это было исправлено переносом состоя
   - `syncLocalDataToBackend`: Отправляет локальные записи без `serverId`, а для офлайн-удаленных бюджетов передает `is_deleted: true` и массив `deleted_budget_ids`.
   - `syncBackendDataToLocal`: Загружает актуальные данные с сервера и сверяет с локальными.
   - `PendingDeletionsStore`: Хранит ID удаленных локально транзакций и бюджетов (tombstones), чтобы синхронизировать удаление на сервере при появлении сети.
+
+## Наблюдаемость и обработка сбоев (Observability & Error Handling)
+
+- **Сквозная трассировка (X-Request-ID)**: В сетевом клиенте Dio зарегистрирован `TracingInterceptor`. Для каждого исходящего запроса генерируется UUID v4 (или сохраняется существующий заголовок `X-Request-ID`). При сбоях или ответах идентификатор запроса извлекается из заголовков ответа (`x-request-id`) или запроса и передается в логи (`developer.log` / `debugPrint`) для упрощения диагностики и корреляции с бэкендом.
+- **Обработка HTTP 503 (Service Unavailable)**: При получении статуса HTTP 503 или кода ошибки `SERVICE_UNAVAILABLE` (например, при технических работах или недоступности бэкенда/эндпоинта `/health`), `AppErrorHandler` перехватывает ошибку и отображает модальный диалог `AppAlerts.showServiceUnavailableDialog` либо перенаправляет на экран `ServiceUnavailableScreen` с поддержкой повтора запроса (`onRetry`) и полной мультиязычностью (RU, UZ, EN).
 
 ## Известные ограничения
 

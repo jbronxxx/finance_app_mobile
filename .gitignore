@@ -12,6 +12,8 @@
 *.log
 *.pyc
 *.swp
+*.dylib
+download/
 .DS_Store
 .buildlog/
 .history
