@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../widgets/app_alerts.dart';
 import '../utils/app_error_handler.dart';
+import '../utils/language_manager.dart';
 
 /// Экран профиля пользователя, совмещенный с настройками приложения.
 class ProfileScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isSyncing = false;
-  String _syncStatusText = 'Данные синхронизированы';
+  String _syncStatusKey = 'sync_synced';
   IconData _syncIcon = Icons.cloud_done;
   Color _syncColor = const Color(0xFF0F766E);
   late StreamSubscription<bool> _authSubscription;
@@ -56,18 +57,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
         setState(() {
-          _syncStatusText = 'Нет сети';
+          _syncStatusKey = 'sync_no_internet';
           _syncIcon = Icons.cloud_off;
           _syncColor = Colors.grey;
         });
-        AppAlerts.warning(context, 'Для синхронизации нужно подключение к сети');
+        AppAlerts.warning(context, LanguageManager.t('sync_no_internet_alert'));
       }
       return;
     }
 
     setState(() {
       _isSyncing = true;
-      _syncStatusText = 'Синхронизация...';
+      _syncStatusKey = 'syncing';
       _syncIcon = Icons.sync;
       _syncColor = Colors.orange;
     });
@@ -78,21 +79,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       setState(() {
         _isSyncing = false;
-        _syncStatusText = 'Обновлено только что';
+        _syncStatusKey = 'sync_updated_just_now';
         _syncIcon = Icons.cloud_done;
         _syncColor = const Color(0xFF0F766E);
       });
 
-      AppAlerts.success(context, 'Данные успешно синхронизированы');
+      AppAlerts.success(context, LanguageManager.t('sync_success'));
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isSyncing = false;
-        _syncStatusText = 'Ошибка синхронизации';
+        _syncStatusKey = 'sync_error';
         _syncIcon = Icons.error_outline;
         _syncColor = Colors.red;
       });
-      AppErrorHandler.show(context, e, title: 'Синхронизация');
+      AppErrorHandler.show(context, e, title: LanguageManager.t('cloud'));
     }
   }
 
@@ -123,9 +124,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-            const Text(
-              'Выбор валюты',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              LanguageManager.t('select_currency'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...Currency.values.map((c) => _buildCurrencyOption(c)),
@@ -141,8 +142,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       valueListenable: CurrencyFormatter.currencyNotifier,
       builder: (context, currentCurrency, child) {
         final isSelected = currentCurrency == currency;
-        // Отображаем знак и полное читаемое название
-        final label = '${currency.symbol} — ${currency.readableName}';
+        // Отображаем знак и полное читаемое название из LanguageManager
+        final currencyNameKey = '${currency.code.toLowerCase()}_name';
+        final label = '${currency.localizedSymbol} — ${LanguageManager.t(currencyNameKey)}';
         return ListTile(
           title: Text(
             label,
@@ -164,6 +166,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// Выбор языка в модальном окне.
+  void _showLanguagePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 80,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(
+              LanguageManager.t('select_language'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ...AppLanguage.values.map((l) => _buildLanguageOption(l)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Опция выбора конкретного языка.
+  Widget _buildLanguageOption(AppLanguage lang) {
+    final isSelected = LanguageManager.currentLanguage == lang;
+    final label = '${lang.flag}   ${lang.displayName}';
+    return ListTile(
+      title: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? const Color(0xFF0F766E) : Colors.black87,
+        ),
+      ),
+      trailing: isSelected
+          ? const Icon(Icons.check, color: Color(0xFF0F766E))
+          : null,
+      onTap: () {
+        LanguageManager.setLanguage(lang);
+        Navigator.pop(context);
+        setState(() {}); // Обновляем локальное состояние экрана профиля
+      },
+    );
+  }
+
   void _handleLogin() {
     Navigator.of(context).pushNamed('/login');
   }
@@ -172,17 +235,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Выход'),
-        content: const Text('Вы уверены, что хотите выйти из аккаунта?'),
+        title: Text(LanguageManager.t('logout_confirm_title')),
+        content: Text(LanguageManager.t('logout_confirm_desc')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
+            child: Text(LanguageManager.t('cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Выйти'),
+            child: Text(LanguageManager.t('logout')),
           ),
         ],
       ),
@@ -195,10 +258,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       widget.onLogout();
       
-      AppAlerts.info(context, 'Вы вышли из системы');
+      AppAlerts.info(context, LanguageManager.t('logout_info'));
     } catch (e) {
       if (!mounted) return;
-      AppErrorHandler.show(context, e, title: 'Ошибка при выходе');
+      AppErrorHandler.show(context, e, title: LanguageManager.t('logout_error_title'));
     }
   }
 
@@ -210,8 +273,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Профиль',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text(LanguageManager.t('profile'),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -227,12 +290,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 32),
 
               // Sync Status Section
-              _buildSectionTitle('Облако'),
+              _buildSectionTitle(LanguageManager.t('cloud')),
               _buildSyncCard(primaryTeal, isAuthenticated),
               const SizedBox(height: 24),
 
               // Settings Section
-              _buildSectionTitle('Интерфейс'),
+              _buildSectionTitle(LanguageManager.t('interface')),
               _buildSettingsCard(primaryTeal),
               const SizedBox(height: 32),
 
@@ -249,8 +312,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       onPressed: _handleLogout,
                       icon: const Icon(Icons.logout),
-                      label: const Text('Выйти из аккаунта',
-                          style: TextStyle(
+                      label: Text(LanguageManager.t('logout'),
+                          style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold)),
                     )
                   : FilledButton.icon(
@@ -261,8 +324,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       onPressed: _handleLogin,
                       icon: const Icon(Icons.login),
-                      label: const Text('Войти или создать аккаунт',
-                          style: TextStyle(
+                      label: Text(LanguageManager.t('login_or_register'),
+                          style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
               ),
@@ -292,13 +355,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(
           isAuthenticated && widget.userName.isNotEmpty 
               ? widget.userName 
-              : (isAuthenticated ? 'Пользователь' : 'Гостевой режим'),
+              : (isAuthenticated ? LanguageManager.t('user') : LanguageManager.t('guest_mode')),
           style: const TextStyle(
               fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         const SizedBox(height: 4),
         Text(
-          isAuthenticated ? widget.userEmail : 'Войдите, чтобы сохранять данные в облаке',
+          isAuthenticated ? widget.userEmail : LanguageManager.t('login_cloud_hint'),
           style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
         ),
       ],
@@ -360,10 +423,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Статус синхронизации',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(LanguageManager.t('sync_status'),
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     Text(
-                      isAuthenticated ? _syncStatusText : 'Облако не подключено',
+                      isAuthenticated ? LanguageManager.t(_syncStatusKey) : LanguageManager.t('cloud_not_connected'),
                       style: TextStyle(
                           color: Colors.grey.shade600, fontSize: 13),
                     ),
@@ -390,23 +453,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         children: [
           SwitchListTile(
-            title: const Text('Темная тема',
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-            subtitle: const Text('Скоро появится', style: TextStyle(fontSize: 12)),
+            title: Text(LanguageManager.t('dark_mode'),
+                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+            subtitle: Text(LanguageManager.t('soon'), style: const TextStyle(fontSize: 12)),
             value: _isDarkMode,
             activeColor: primaryColor,
             onChanged: (val) => setState(() => _isDarkMode = val),
           ),
           ListTile(
-            title: const Text('Валюта',
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+            title: Text(LanguageManager.t('language'),
+                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${LanguageManager.currentLanguage.flag} ${LanguageManager.currentLanguage.displayName}',
+                  style: TextStyle(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14),
+                ),
+                const Icon(Icons.chevron_right, size: 20),
+              ],
+            ),
+            onTap: _showLanguagePicker,
+          ),
+          ListTile(
+            title: Text(LanguageManager.t('currency'),
+                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
             trailing: ValueListenableBuilder<Currency>(
               valueListenable: CurrencyFormatter.currencyNotifier,
               builder: (context, currency, child) {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(currency.readableName,
+                    Text(LanguageManager.t('${currency.code.toLowerCase()}_name'),
                         style: TextStyle(
                             color: primaryColor,
                             fontWeight: FontWeight.bold,
@@ -419,9 +500,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onTap: _showCurrencyPicker,
           ),
           SwitchListTile(
-            title: const Text('Уведомления',
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-            subtitle: const Text('Лимиты и бюджеты', style: TextStyle(fontSize: 12)),
+            title: Text(LanguageManager.t('notifications'),
+                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+            subtitle: Text(LanguageManager.t('limits_and_budgets'), style: const TextStyle(fontSize: 12)),
             value: _notificationsEnabled,
             activeColor: primaryColor,
             onChanged: (val) => setState(() => _notificationsEnabled = val),

@@ -4,6 +4,7 @@ import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:family_budget/widgets/swipe_hint_wrapper.dart';
 import 'package:family_budget/widgets/custom_pull_to_refresh.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:family_budget/utils/language_manager.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
@@ -26,21 +27,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   List<Budget> _budgets = [];
   bool _shouldShowSwipeHint = false;
-
-  final List<String> _monthsNames = [
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь'
-  ];
 
   @override
   void initState() {
@@ -68,7 +54,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   Future<void> _handleRefresh() async {
     if (!ApiService.instance.isAuthenticated) {
-      AppAlerts.warning(context, 'Войдите в аккаунт для синхронизации');
+      _loadBudgets();
+      AppAlerts.warning(context, LanguageManager.t('sync_login_required'));
       return;
     }
 
@@ -76,7 +63,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
-        AppAlerts.error(context, 'Нет подключения к сети для синхронизации');
+        _loadBudgets();
+        AppAlerts.error(context, LanguageManager.t('sync_network_required'));
       }
       return;
     }
@@ -86,11 +74,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       await ApiService.instance.syncAll();
       _loadBudgets();
       if (mounted) {
-        AppAlerts.success(context, 'Данные синхронизированы');
+        AppAlerts.success(context, LanguageManager.t('sync_success'));
       }
     } catch (e) {
       if (mounted) {
-        AppErrorHandler.show(context, e, title: 'Ошибка синхронизации');
+        _loadBudgets();
+        AppErrorHandler.show(context, e, title: LanguageManager.t('sync_error'));
       }
     }
   }
@@ -100,7 +89,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     ApiService.instance.deleteBudgetEverywhere(budget);
     _loadBudgets();
 
-    AppAlerts.info(context, 'Лимит удален');
+    AppAlerts.info(context, LanguageManager.t('budget_deleted'));
   }
 
   /// Открывает форму создания или редактирования лимита.
@@ -145,8 +134,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 ),
                 Text(
                   budgetToEdit != null
-                      ? 'Редактировать лимит'
-                      : 'Лимит на бюджет',
+                      ? LanguageManager.t('edit_budget_title')
+                      : LanguageManager.t('add_budget_title'),
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold),
                 ),
@@ -156,14 +145,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   borderRadius: BorderRadius.circular(24),
                   alignment: Alignment.centerLeft,
                   decoration: InputDecoration(
-                    labelText: 'Категория',
+                    labelText: LanguageManager.t('category_label'),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
                   items: Category.values.map((cat) {
                     return DropdownMenuItem(
                       value: cat,
-                      child: Text(cat.name.toUpperCase()),
+                      child: Text(cat.getLocalizedName(context)),
                     );
                   }).toList(),
                   onChanged: budgetToEdit != null
@@ -182,7 +171,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   inputFormatters: [CurrencyInputFormatter()],
                   autofocus: false,
                   decoration: InputDecoration(
-                    labelText: 'Сумма лимита (${CurrencyFormatter.currentCurrency.symbol})',
+                    labelText: '${LanguageManager.t('budget_amount_hint')} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
@@ -202,7 +191,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       final amount = CurrencyFormatter.parseInput(amountController.text);
                       if (amount != null && amount > 0) {
                         if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
-                          AppAlerts.warning(context, 'Сумма превышает лимит валюты');
+                          AppAlerts.warning(context, '${LanguageManager.t('alert_amount_too_large')} ${CurrencyFormatter.currentCurrency.code}');
                           return;
                         }
                         final spent = LocalDbService.instance
@@ -225,8 +214,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     },
                     child: Text(
                         budgetToEdit != null
-                            ? 'Обновить лимит'
-                            : 'Сохранить лимит',
+                            ? LanguageManager.t('save_btn')
+                            : LanguageManager.t('save_btn'),
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -245,248 +234,263 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Месячные лимиты',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text(LanguageManager.t('budgets_title'),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: CustomPullToRefresh(
         onRefresh: _handleRefresh,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: _selectedMonth,
-                    borderRadius: BorderRadius.circular(24),
-                    alignment: Alignment.center,
-                    decoration: InputDecoration(
-                      labelText: 'Месяц',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    items: List.generate(12, (index) {
-                      final monthValue = index + 1;
-                      final isCurrentMonth =
-                          monthValue == DateTime.now().month &&
-                              _selectedYear == DateTime.now().year;
-
-                      return DropdownMenuItem(
-                        value: monthValue,
+        child: CustomScrollView(
+          physics: const ClampingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 20.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        value: _selectedMonth,
+                        borderRadius: BorderRadius.circular(24),
                         alignment: Alignment.center,
-                        child: Text(
-                          _monthsNames[index],
-                          style: TextStyle(
-                            fontWeight: isCurrentMonth
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: isCurrentMonth
-                                ? const Color(0xFF0F766E)
-                                : Colors.black87,
-                          ),
+                        decoration: InputDecoration(
+                          labelText: LanguageManager.t('month_label'),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          filled: true,
+                          fillColor: Colors.white,
                         ),
-                      );
-                    }),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedMonth = val;
-                          _loadBudgets();
-                        });
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: _selectedYear,
-                    borderRadius: BorderRadius.circular(24),
-                    alignment: Alignment.center,
-                    decoration: InputDecoration(
-                      labelText: 'Год',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    items: List.generate(11, (index) {
-                      final yearValue = DateTime.now().year + index;
-                      final isCurrentYear = yearValue == DateTime.now().year;
-                      return DropdownMenuItem(
-                        value: yearValue,
-                        alignment: Alignment.center,
-                        child: Text(
-                          '$yearValue',
-                          style: TextStyle(
-                            fontWeight: isCurrentYear
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: isCurrentYear
-                                ? const Color(0xFF0F766E)
-                                : Colors.black87,
-                          ),
-                        ),
-                      );
-                    }),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedYear = val;
-                          _loadBudgets();
-                        });
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: _budgets.isEmpty
-                  ? const Center(
-                child: Text('Лимиты на этот период не установлены',
-                    style: TextStyle(color: Colors.grey)),
-              )
-                  : ListView.builder(
-                physics: const ClampingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics()),
-                itemCount: _budgets.length,
-                itemBuilder: (context, index) {
-                  final b = _budgets[index];
-                  final currentSpent = LocalDbService.instance
-                      .getSpentForCategory(
-                      _selectedMonth, _selectedYear, b.dbCategory);
-                  final progress = b.limitAmount > 0
-                      ? (currentSpent / b.limitAmount).clamp(0.0, 1.0)
-                      : 0.0;
-                  final isExceeded = currentSpent > b.limitAmount;
-                  final background = Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    color: Theme.of(context).colorScheme.error,
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  );
+                        items: List.generate(12, (index) {
+                          final monthValue = index + 1;
+                          final isCurrentMonth =
+                              monthValue == DateTime.now().month &&
+                                  _selectedYear == DateTime.now().year;
 
-                  Widget item = Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: isExceeded
-                                ? Colors.orange.shade200
-                                : Colors.grey.shade200),
+                          return DropdownMenuItem(
+                            value: monthValue,
+                            alignment: Alignment.center,
+                            child: Text(
+                              LanguageManager.monthsNames[index],
+                              style: TextStyle(
+                                fontWeight: isCurrentMonth
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isCurrentMonth
+                                    ? const Color(0xFF0F766E)
+                                    : Colors.black87,
+                              ),
+                            ),
+                          );
+                        }),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _selectedMonth = val;
+                              _loadBudgets();
+                            });
+                          }
+                        },
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(19),
-                        child: SwipeHintWrapper(
-                          showHint: index == 0 && _shouldShowSwipeHint,
-                          background: background,
-                          onHintShown: () {
-                            PreferencesService.instance.recordHintShown('budgets');
-                          },
-                          child: Dismissible(
-                            key: Key('budget_${b.localId}'),
-                            direction: DismissDirection.endToStart,
-                            onDismissed: (direction) => _deleteBudget(b),
-                            background: background,
-                            child: Material(
-                              color: Colors.white,
-                              child: InkWell(
-                                onTap: () => _showAddBudgetDialog(b),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        value: _selectedYear,
+                        borderRadius: BorderRadius.circular(24),
+                        alignment: Alignment.center,
+                        decoration: InputDecoration(
+                          labelText: LanguageManager.t('year_label'),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        items: List.generate(11, (index) {
+                          final yearValue = DateTime.now().year + index;
+                          final isCurrentYear = yearValue == DateTime.now().year;
+                          return DropdownMenuItem(
+                            value: yearValue,
+                            alignment: Alignment.center,
+                            child: Text(
+                              '$yearValue',
+                              style: TextStyle(
+                                fontWeight: isCurrentYear
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isCurrentYear
+                                    ? const Color(0xFF0F766E)
+                                    : Colors.black87,
+                              ),
+                            ),
+                          );
+                        }),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _selectedYear = val;
+                              _loadBudgets();
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_budgets.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(
+                    child: Text(
+                      LanguageManager.t('no_budgets_subtitle'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final b = _budgets[index];
+                      final currentSpent = LocalDbService.instance
+                          .getSpentForCategory(
+                          _selectedMonth, _selectedYear, b.dbCategory);
+                      final progress = b.limitAmount > 0
+                          ? (currentSpent / b.limitAmount).clamp(0.0, 1.0)
+                          : 0.0;
+                      final isExceeded = currentSpent > b.limitAmount;
+                      final background = Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        color: Theme.of(context).colorScheme.error,
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      );
+
+                      Widget item = Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: isExceeded
+                                    ? Colors.orange.shade200
+                                    : Colors.grey.shade200),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(19),
+                            child: SwipeHintWrapper(
+                              showHint: index == 0 && _shouldShowSwipeHint,
+                              background: background,
+                              onHintShown: () {
+                                PreferencesService.instance.recordHintShown('budgets');
+                              },
+                              child: Dismissible(
+                                key: Key('budget_${b.localId}'),
+                                direction: DismissDirection.endToStart,
+                                onDismissed: (direction) => _deleteBudget(b),
+                                background: background,
+                                child: Material(
+                                  color: Colors.white,
+                                  child: InkWell(
+                                    onTap: () => _showAddBudgetDialog(b),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(b.category.name.toUpperCase(),
-                                              style: const TextStyle(
-                                                  fontWeight: FontWeight.bold)),
-                                          Expanded(
-                                            child: Align(
-                                              alignment: Alignment.centerRight,
-                                              child: FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    CurrencyFormatter.formatText(
-                                                      currentSpent,
-                                                      style: TextStyle(
-                                                          fontWeight: FontWeight.bold,
-                                                          color: isExceeded
-                                                              ? Colors.orange.shade800
-                                                              : primaryTeal),
+                                          Row(
+                                            mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(b.category.getLocalizedName(context),
+                                                  style: const TextStyle(
+                                                      fontWeight: FontWeight.bold)),
+                                              Expanded(
+                                                child: Align(
+                                                  alignment: Alignment.centerRight,
+                                                  child: FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        CurrencyFormatter.formatText(
+                                                          currentSpent,
+                                                          style: TextStyle(
+                                                              fontWeight: FontWeight.bold,
+                                                              color: isExceeded
+                                                                  ? Colors.orange.shade800
+                                                                  : primaryTeal),
+                                                        ),
+                                                        Text(' / ', style: TextStyle(
+                                                            fontWeight: FontWeight.bold,
+                                                            color: isExceeded
+                                                                ? Colors.orange.shade800
+                                                                : primaryTeal)),
+                                                        CurrencyFormatter.formatText(
+                                                          b.limitAmount,
+                                                          style: TextStyle(
+                                                              fontWeight: FontWeight.bold,
+                                                              color: isExceeded
+                                                                  ? Colors.orange.shade800
+                                                                  : primaryTeal),
+                                                        ),
+                                                      ],
                                                     ),
-                                                    Text(' / ', style: TextStyle(
-                                                        fontWeight: FontWeight.bold,
-                                                        color: isExceeded
-                                                            ? Colors.orange.shade800
-                                                            : primaryTeal)),
-                                                    CurrencyFormatter.formatText(
-                                                      b.limitAmount,
-                                                      style: TextStyle(
-                                                          fontWeight: FontWeight.bold,
-                                                          color: isExceeded
-                                                              ? Colors.orange.shade800
-                                                              : primaryTeal),
-                                                    ),
-                                                  ],
+                                                  ),
                                                 ),
                                               ),
-                                            ),
+                                            ],
                                           ),
+                                          const SizedBox(height: 12),
+                                          LinearProgressIndicator(
+                                            value: progress,
+                                            color: isExceeded
+                                                ? Colors.orange.shade400
+                                                : primaryTeal,
+                                            backgroundColor: Colors.grey.shade100,
+                                            minHeight: 8,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          if (isExceeded) ...[
+                                            const SizedBox(height: 8),
+                                            Text('${LanguageManager.t('budget_exceeded')}!',
+                                                style: TextStyle(
+                                                    color: Colors.orange.shade900,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600))
+                                          ]
                                         ],
                                       ),
-                                      const SizedBox(height: 12),
-                                      LinearProgressIndicator(
-                                        value: progress,
-                                        color: isExceeded
-                                            ? Colors.orange.shade400
-                                            : primaryTeal,
-                                        backgroundColor: Colors.grey.shade100,
-                                        minHeight: 8,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      if (isExceeded) ...[
-                                        const SizedBox(height: 8),
-                                        Text('Лимит превышен',
-                                            style: TextStyle(
-                                                color: Colors.orange.shade900,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600))
-                                      ]
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
+                      );
 
-                  return item;
-                },
+                      return item;
+                    },
+                    childCount: _budgets.length,
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),
-    ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddBudgetDialog,
         child: const Icon(Icons.add),

@@ -1,4 +1,6 @@
+import 'package:flutter/widgets.dart';
 import 'package:objectbox/objectbox.dart';
+import '../utils/language_manager.dart';
 
 /// Разбирает дату из ответа бэкенда, возвращая `null` вместо исключения.
 ///
@@ -24,6 +26,11 @@ enum TransactionType {
       orElse: () => TransactionType.expense,
     );
   }
+
+  /// Возвращает локализованное название типа транзакции.
+  String getLocalizedName([BuildContext? context]) {
+    return LanguageManager.t('type_$name');
+  }
 }
 
 /// Категория транзакции/бюджета.
@@ -45,6 +52,11 @@ enum Category {
       (e) => e.name == type,
       orElse: () => Category.other,
     );
+  }
+
+  /// Возвращает локализованное название категории.
+  String getLocalizedName([BuildContext? context]) {
+    return LanguageManager.t('category_$name');
   }
 }
 

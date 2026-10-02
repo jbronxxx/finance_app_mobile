@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
+import '../utils/language_manager.dart';
 
 /// Кастомный виджет Pull-to-Refresh с эффектом «протягивания» всего контента
 /// и отображением подложки под ним.
 class CustomPullToRefresh extends StatefulWidget {
   final Widget child;
   final Future<void> Function() onRefresh;
-  final String pullText;
-  final String releaseText;
-  final String refreshingText;
+  final String? pullText;
+  final String? releaseText;
+  final String? refreshingText;
   final Color backgroundColor;
   final Color foregroundColor;
 
@@ -18,9 +19,9 @@ class CustomPullToRefresh extends StatefulWidget {
     super.key,
     required this.child,
     required this.onRefresh,
-    this.pullText = 'Потяните для обновления',
-    this.releaseText = 'Отпустите для обновления',
-    this.refreshingText = 'Обновление данных...',
+    this.pullText,
+    this.releaseText,
+    this.refreshingText,
     this.backgroundColor = const Color(0xFFF1F5F9),
     this.foregroundColor = const Color(0xFF0F766E),
   });
@@ -167,8 +168,10 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
                   const SizedBox(height: 8),
                   Text(
                     _isRefreshing
-                        ? widget.refreshingText
-                        : (_canRefresh ? widget.releaseText : widget.pullText),
+                        ? (widget.refreshingText ?? LanguageManager.t('refreshing_data'))
+                        : (_canRefresh
+                            ? (widget.releaseText ?? LanguageManager.t('release_to_refresh'))
+                            : (widget.pullText ?? LanguageManager.t('pull_to_refresh'))),
                     style: TextStyle(
                       color: widget.foregroundColor,
                       fontWeight: FontWeight.bold,

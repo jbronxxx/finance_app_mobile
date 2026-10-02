@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/language_manager.dart';
 
 enum AlertType { success, error, warning, info }
 
@@ -136,9 +137,10 @@ class AppAlerts {
     BuildContext context, {
     required String title,
     required String message,
-    String buttonText = 'Понятно',
+    String? buttonText,
     VoidCallback? onPressed,
   }) {
+    final effectiveButtonText = buttonText ?? LanguageManager.t('dialog_ok');
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -202,7 +204,7 @@ class AppAlerts {
                       if (onPressed != null) onPressed();
                     },
                     child: Text(
-                      buttonText,
+                      effectiveButtonText,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),

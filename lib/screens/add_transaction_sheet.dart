@@ -1,4 +1,5 @@
 import 'package:family_budget/utils/currency_formatter.dart';
+import 'package:family_budget/utils/language_manager.dart';
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';
@@ -51,12 +52,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     final amount = CurrencyFormatter.parseInput(_amountController.text);
 
     if (amount == null || amount <= 0) {
-      AppAlerts.warning(context, 'Введите корректную сумму');
+      AppAlerts.warning(context, LanguageManager.t('alert_valid_amount'));
       return;
     }
 
     if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
-      AppAlerts.warning(context, 'Сумма слишком велика для ${CurrencyFormatter.currentCurrency.code}');
+      AppAlerts.warning(context, '${LanguageManager.t('alert_amount_too_large')} ${CurrencyFormatter.currentCurrency.code}');
       return;
     }
 
@@ -130,7 +131,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isEditing ? 'Редактировать запись' : 'Новая запись',
+                isEditing ? LanguageManager.t('edit_transaction') : LanguageManager.t('new_transaction'),
                 style:
                     const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
@@ -171,7 +172,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                             : [],
                       ),
                       child: Text(
-                        'Расход',
+                        LanguageManager.t('expense_title'),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: _type == TransactionType.expense
@@ -203,7 +204,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                             : [],
                       ),
                       child: Text(
-                        'Доход',
+                        LanguageManager.t('income_title'),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: _type == TransactionType.income
@@ -224,7 +225,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             inputFormatters: [CurrencyInputFormatter()],
             autofocus: false,
             decoration: InputDecoration(
-              labelText: 'Сумма (${CurrencyFormatter.currentCurrency.symbol})',
+              labelText: '${LanguageManager.t('amount_label')} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -235,14 +236,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             borderRadius: BorderRadius.circular(24),
             alignment: Alignment.centerLeft,
             decoration: InputDecoration(
-              labelText: 'Категория',
+              labelText: LanguageManager.t('category_label'),
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
             items: Category.values.map((cat) {
               return DropdownMenuItem(
                 value: cat,
-                child: Text(cat.name.toUpperCase()),
+                child: Text(cat.getLocalizedName(context)),
               );
             }).toList(),
             onChanged: (val) {
@@ -253,7 +254,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           TextField(
             controller: _descriptionController,
             decoration: InputDecoration(
-              labelText: 'Описание (необязательно)',
+              labelText: LanguageManager.t('description_label'),
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -271,7 +272,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               ),
               onPressed: _save,
               child: Text(
-                isEditing ? 'Сохранить изменения' : 'Добавить запись',
+                isEditing ? LanguageManager.t('save_changes_btn') : LanguageManager.t('add_btn'),
                 style:
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
