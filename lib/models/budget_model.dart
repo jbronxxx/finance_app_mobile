@@ -1,3 +1,5 @@
+import 'local_db_models.dart';
+
 class BudgetModel {
   final String? id;
   final String category;
@@ -17,16 +19,15 @@ class BudgetModel {
 
   /// Разбирает один элемент бюджета из ответа бэкенда.
   ///
-  /// Раньше здесь читалось `json['details']['fields']` — это форма тела
-  /// ошибки валидации FastAPI, а не бюджета, поэтому на любом валидном
-  /// ответе разбор падал. Элементы `data` приходят плоскими.
+  /// Поддерживает безопасный парсинг `limit_amount`, `month`, `year`
+  /// как из числовых (num), так и из строковых представлений (Decimal/Numeric).
   factory BudgetModel.fromJson(Map<String, dynamic> json) {
     return BudgetModel(
       id: json['id'] as String?,
       category: json['category'] as String,
-      limitAmount: (json['limit_amount'] as num).toDouble(),
-      month: (json['month'] as num).toInt(),
-      year: (json['year'] as num).toInt(),
+      limitAmount: parseAmount(json['limit_amount']),
+      month: parseInteger(json['month']),
+      year: parseInteger(json['year']),
       isDeleted: json['is_deleted'] as bool? ?? false,
     );
   }

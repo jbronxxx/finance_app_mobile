@@ -12,6 +12,38 @@ DateTime? parseServerDate(dynamic value) {
   return DateTime.tryParse(value)?.toLocal();
 }
 
+/// Безопасно разбирает денежную сумму / число с плавающей точкой из JSON.
+///
+/// Поддерживает форматы:
+/// - [num] (int / double, например: `150.5`, `100`)
+/// - [String] (например: `"150.50"`, `"100.00"`, `"100"` — формат Decimal / Numeric(12, 2))
+///
+/// Если значение `null`, некорректная строка или неподдерживаемый тип,
+/// возвращает [fallback] (по умолчанию `0.0`).
+double parseAmount(dynamic value, [double fallback = 0.0]) {
+  if (value == null) return fallback;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    final parsed = num.tryParse(value.trim());
+    return parsed?.toDouble() ?? fallback;
+  }
+  return fallback;
+}
+
+/// Безопасно разбирает целочисленное значение из JSON.
+///
+/// Поддерживает форматы [num] и [String].
+/// Если значение `null` или некорректно, возвращает [fallback] (по умолчанию `0`).
+int parseInteger(dynamic value, [int fallback = 0]) {
+  if (value == null) return fallback;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    final parsed = num.tryParse(value.trim());
+    return parsed?.toInt() ?? fallback;
+  }
+  return fallback;
+}
+
 /// Тип операции: доход или расход.
 enum TransactionType {
   income,
@@ -112,14 +144,15 @@ class Transaction {
   /// factory — единственная точка входа для данных, приезжающих с сервера
   /// при полной выгрузке (см. `ApiService.syncBackendDataToLocal`), и падение
   /// на одной битой записи оставило бы локальную базу рассинхронизированной.
-  /// В частности, `date_created` бэкенд возвращает не во всех ответах,
-  /// поэтому при его отсутствии берём дату самой операции.
+  /// В частности, `amount` безопасно парсится из чисел или строк Decimal(12, 2),
+  /// а `date_created` бэкенд возвращает не во всех ответах, поэтому при его
+  /// отсутствии берём дату самой операции.
   factory Transaction.fromJson(Map<String, dynamic> json) {
     final date = parseServerDate(json['date']) ?? DateTime.now();
 
     return Transaction(
       serverId: json['id'] as String?,
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      amount: parseAmount(json['amount']),
       description: json['description'] as String? ?? '',
       dbCategory: json['category'] as String? ?? Category.other.name,
       dbType: json['type'] as String? ?? TransactionType.expense.name,
@@ -181,7 +214,8 @@ class Budget {
   Category get category => Category.fromString(dbCategory);
 
   /// Разбирает ответ бэкенда (FastAPI) в локальную модель.
-  /// Устойчив к отсутствующим полям — см. [Transaction.fromJson].
+  /// Устойчив к отсутствующим полям и поддерживает парсинг `limit_amount`,
+  /// `spent`, `remaining` из Decimal/Numeric(12, 2) строк или чисел.
   ///
   /// `month`/`year` при отсутствии остаются нулевыми: такая запись не
   /// относится ни к одному периоду, и вызывающая сторона отбрасывает её
@@ -190,11 +224,11 @@ class Budget {
     return Budget(
       serverId: json['id'] as String?,
       dbCategory: json['category'] as String? ?? Category.other.name,
-      limitAmount: (json['limit_amount'] as num?)?.toDouble() ?? 0.0,
-      month: (json['month'] as num?)?.toInt() ?? 0,
-      year: (json['year'] as num?)?.toInt() ?? 0,
-      spent: (json['spent'] as num?)?.toDouble() ?? 0.0,
-      remaining: (json['remaining'] as num?)?.toDouble() ?? 0.0,
+      limitAmount: parseAmount(json['limit_amount']),
+      month: parseInteger(json['month']),
+      year: parseInteger(json['year']),
+      spent: parseAmount(json['spent']),
+      remaining: parseAmount(json['remaining']),
       isModified: false,
     );
   }

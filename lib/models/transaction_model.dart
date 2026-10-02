@@ -1,3 +1,5 @@
+import 'local_db_models.dart';
+
 class TransactionModel {
   final String id;
   final double amount;
@@ -15,10 +17,14 @@ class TransactionModel {
     required this.date,
   });
 
+  /// Разбирает транзакцию из ответа бэкенда REST API.
+  ///
+  /// Поддерживает безопасный парсинг `amount` как из числа (num), так и из
+  /// строкового представления `Decimal(12, 2)` / `Numeric(12, 2)`.
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
     return TransactionModel(
       id: json['id'] as String,
-      amount: (json['amount'] as num).toDouble(),
+      amount: parseAmount(json['amount']),
       description: json['description'] as String,
       category: json['category'] as String,
       type: json['type'] as String,

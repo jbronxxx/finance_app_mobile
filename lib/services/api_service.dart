@@ -938,9 +938,10 @@ class ApiService {
   }
 
   String _remoteTransactionKey(Map<String, dynamic> json) {
-    final date = DateTime.parse(json['date'] as String).toLocal();
+    final date = parseServerDate(json['date']) ??
+        DateTime.parse(json['date'] as String).toLocal();
 
-    return '${(json['amount'] as num).toDouble()}|${json['category']}|'
+    return '${parseAmount(json['amount'])}|${json['category']}|'
         '${json['type']}|${date.millisecondsSinceEpoch}';
   }
 
