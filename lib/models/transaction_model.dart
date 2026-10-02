@@ -22,7 +22,7 @@ class TransactionModel {
       description: json['description'] as String,
       category: json['category'] as String,
       type: json['type'] as String,
-      date: DateTime.parse(json['date'] as String),
+      date: DateTime.parse(json['date'] as String).toLocal(),
     );
   }
 
@@ -33,7 +33,7 @@ class TransactionModel {
       'description': description,
       'category': category,
       'type': type,
-      'date': date.toIso8601String(),
+      'date': date.toUtc().toIso8601String(),
     };
   }
 }

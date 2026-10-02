@@ -52,16 +52,20 @@ class LoginModel {
 class LoginResponseModel {
   final String accessToken;
   final String tokenType;
+  final String? refreshToken;
 
   LoginResponseModel({
     required this.accessToken,
     required this.tokenType,
+    this.refreshToken,
   });
 
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] is Map ? json['data'] as Map<String, dynamic> : json;
     return LoginResponseModel(
-      accessToken: json['data']['access_token'] as String,
-      tokenType: json['data']['token_type'] as String,
+      accessToken: (data['access_token'] ?? '') as String,
+      tokenType: (data['token_type'] ?? 'bearer') as String,
+      refreshToken: data['refresh_token'] as String?,
     );
   }
 }
@@ -103,7 +107,7 @@ class AuthMeResponseModel {
       userEmail: data['email'] as String,
       userName: data['name'] as String,
       createdAt: data['created_at'] != null
-          ? DateTime.parse(data['created_at'] as String)
+          ? DateTime.parse(data['created_at'] as String).toLocal()
           : null,
     );
   }

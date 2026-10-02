@@ -9,7 +9,7 @@ import '../utils/language_manager.dart';
 /// разбор всей выгрузки, поэтому используется `tryParse`.
 DateTime? parseServerDate(dynamic value) {
   if (value is! String) return null;
-  return DateTime.tryParse(value);
+  return DateTime.tryParse(value)?.toLocal();
 }
 
 /// Тип операции: доход или расход.
@@ -138,7 +138,7 @@ class Transaction {
       'description': description,
       'category': category.name,
       'type': type.name,
-      'date': date.toIso8601String(),
+      'date': date.toUtc().toIso8601String(),
     };
   }
 }
@@ -204,13 +204,14 @@ class Budget {
   bool get isValidPeriod => month >= 1 && month <= 12 && year > 0;
 
   /// Формирует тело запроса к бэкенду в формате его API.
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson({bool isDeleted = false}) {
     return {
       if (serverId != null) 'id': serverId,
       'category': category.name,
       'limit_amount': limitAmount,
       'month': month,
       'year': year,
+      if (isDeleted) 'is_deleted': true,
     };
   }
 }

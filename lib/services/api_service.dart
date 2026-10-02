@@ -49,24 +49,36 @@ class ApiService {
       },
       onError: (DioException e, handler) async {
         if (e.response?.statusCode == 401 &&
-            e.requestOptions.path != ApiConfig.refreshToken) {
-          if (_refreshToken != null) {
-            if (kDebugMode) debugPrint('[ApiService] Token expired, attempting refresh...');
+            e.requestOptions.path != ApiConfig.refreshToken &&
+            e.requestOptions.path != ApiConfig.login) {
+          final refreshToken = _refreshToken ?? await _storage.read(key: 'refresh_token');
+          if (refreshToken != null && refreshToken.isNotEmpty) {
+            if (kDebugMode) debugPrint('[ApiService] Token expired (401), attempting refresh...');
             try {
               final refreshResponse = await _dio.post(
                 ApiConfig.refreshToken,
-                data: {'refresh_token': _refreshToken},
+                data: {'refresh_token': refreshToken},
               );
 
-              final newAccess = refreshResponse.data['data']['access_token'];
-              final newRefresh = refreshResponse.data['data']['refresh_token'];
+              final resData = refreshResponse.data is Map
+                  ? (refreshResponse.data['data'] is Map
+                      ? refreshResponse.data['data'] as Map<String, dynamic>
+                      : refreshResponse.data as Map<String, dynamic>)
+                  : <String, dynamic>{};
 
-              await setTokens(newAccess, newRefresh);
-              if (kDebugMode) debugPrint('[ApiService] Token refreshed successfully');
+              final newAccess = resData['access_token'] as String?;
+              final newRefresh = resData['refresh_token'] as String? ?? refreshToken;
 
-              final options = e.requestOptions;
-              options.headers['Authorization'] = 'Bearer $newAccess';
-              return handler.resolve(await _dio.fetch(options));
+              if (newAccess != null && newAccess.isNotEmpty) {
+                await setTokens(newAccess, newRefresh);
+                if (kDebugMode) debugPrint('[ApiService] Token refreshed successfully');
+
+                final options = e.requestOptions;
+                options.headers['Authorization'] = 'Bearer $newAccess';
+                return handler.resolve(await _dio.fetch(options));
+              } else {
+                throw Exception('Empty access token returned on refresh');
+              }
             } catch (err) {
               if (kDebugMode) debugPrint('[ApiService] Token refresh failed: $err');
               await _handleSessionExpired();
@@ -479,7 +491,44 @@ class ApiService {
     }
   }
 
-  /// Выгружает локальные транзакции и бюджеты на сервер.
+  /// Обновление пары JWT-токенов через POST /api/v1/auth/refresh.
+  Future<bool> refreshAuthTokens() async {
+    final currentRefresh = _refreshToken ?? await _storage.read(key: 'refresh_token');
+    if (currentRefresh == null || currentRefresh.isEmpty) {
+      await _handleSessionExpired();
+      return false;
+    }
+
+    try {
+      final response = await _dio.post(
+        ApiConfig.refreshToken,
+        data: {'refresh_token': currentRefresh},
+      );
+
+      final resData = response.data is Map
+          ? (response.data['data'] is Map
+              ? response.data['data'] as Map<String, dynamic>
+              : response.data as Map<String, dynamic>)
+          : <String, dynamic>{};
+
+      final newAccess = resData['access_token'] as String?;
+      final newRefresh = resData['refresh_token'] as String? ?? currentRefresh;
+
+      if (newAccess != null && newAccess.isNotEmpty) {
+        await setTokens(newAccess, newRefresh);
+        return true;
+      } else {
+        await _handleSessionExpired();
+        return false;
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[ApiService] refreshAuthTokens error: $e');
+      await _handleSessionExpired();
+      return false;
+    }
+  }
+
+  /// Выгружает локальные транзакции и бюджеты на сервер (включая удаленные офлайн бюджеты).
   Future<Map<String, dynamic>> syncLocalDataToBackend([String? token]) async {
     final jwtToken = token ?? _token;
     if (jwtToken == null) throw Exception('Не авторизован');
@@ -488,24 +537,53 @@ class ApiService {
       final localTransactions =
           LocalDbService.instance.getUnsyncedTransactions();
       final localBudgets = LocalDbService.instance.getUnsyncedBudgets();
+      final pendingBudgets = PendingDeletionsStore.instance.budgetIds.toList();
+      final pendingTransactions = PendingDeletionsStore.instance.transactionIds.toList();
 
-      if (localTransactions.isEmpty && localBudgets.isEmpty) {
+      if (localTransactions.isEmpty &&
+          localBudgets.isEmpty &&
+          pendingBudgets.isEmpty &&
+          pendingTransactions.isEmpty) {
         return {'message': 'Нет данных для синхронизации'};
+      }
+
+      // Формируем список бюджетов с поддержкой флага is_deleted: true для удаленных офлайн
+      final budgetsPayload = <Map<String, dynamic>>[];
+      for (final b in localBudgets) {
+        budgetsPayload.add(b.toJson());
+      }
+      for (final budgetId in pendingBudgets) {
+        budgetsPayload.add({
+          'id': budgetId,
+          'is_deleted': true,
+        });
       }
 
       final payload = SyncModel(
         transactions: localTransactions.map((t) => t.toJson()).toList(),
-        budgets: localBudgets.map((b) => b.toJson()).toList(),
+        budgets: budgetsPayload,
+        deletedBudgetIds: pendingBudgets.isNotEmpty ? pendingBudgets : null,
+        deletedTransactionIds: pendingTransactions.isNotEmpty ? pendingTransactions : null,
       );
 
-      final response = await _dio.post(ApiConfig.sync,
-          data: payload.toJson(), options: _authOptions(jwtToken));
+      final response = await _dio.post(
+        ApiConfig.sync,
+        data: payload.toJson(),
+        options: _authOptions(jwtToken),
+      );
 
       final data = response.data['data'];
 
       if (data is Map) {
         _assignTransactionIds(localTransactions, data['synced_transactions']);
         _assignBudgetIds(localBudgets, data['synced_budgets']);
+      }
+
+      if (pendingBudgets.isNotEmpty) {
+        await PendingDeletionsStore.instance.removeBudgets(pendingBudgets);
+      }
+      if (pendingTransactions.isNotEmpty) {
+        await PendingDeletionsStore.instance.removeTransactions(pendingTransactions);
       }
 
       if (kDebugMode) debugPrint('[ApiService] Sync local -> backend success');
@@ -847,7 +925,7 @@ class ApiService {
   }
 
   String _remoteTransactionKey(Map<String, dynamic> json) {
-    final date = DateTime.parse(json['date'] as String);
+    final date = DateTime.parse(json['date'] as String).toLocal();
 
     return '${(json['amount'] as num).toDouble()}|${json['category']}|'
         '${json['type']}|${date.millisecondsSinceEpoch}';
