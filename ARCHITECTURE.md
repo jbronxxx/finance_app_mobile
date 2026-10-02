@@ -40,10 +40,9 @@ lib/
     ├── dashboard_screen.dart      # Баланс и список операций
     ├── add_transaction_sheet.dart # Форма добавления транзакции
     ├── budgets_screen.dart        # Лимиты бюджета
-    ├── insights_screen.dart       # AI-инсайты (заглушка)
-    ├── profile_screen.dart        # Профиль и ручная синхронизация
-    ├── settings_screen.dart       # Настройки
-    └── auth_screen.dart           # Вход и регистрация (реализовано)
+    ├── insights_screen.dart       # AI-инсайты
+    ├── profile_screen.dart        # Профиль пользователя и настройки приложения
+    └── auth_screen.dart           # Вход и регистрация
 ```
 
 ## Правила зависимостей между слоями

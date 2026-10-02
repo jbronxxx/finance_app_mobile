@@ -4,6 +4,7 @@ import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:family_budget/widgets/swipe_hint_wrapper.dart';
 import 'package:family_budget/widgets/custom_pull_to_refresh.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:family_budget/utils/language_manager.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
@@ -26,21 +27,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   List<Budget> _budgets = [];
   bool _shouldShowSwipeHint = false;
-
-  final List<String> _monthsNames = [
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь'
-  ];
 
   @override
   void initState() {
@@ -68,7 +54,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   Future<void> _handleRefresh() async {
     if (!ApiService.instance.isAuthenticated) {
-      AppAlerts.warning(context, 'Войдите в аккаунт для синхронизации');
+      AppAlerts.warning(context, LanguageManager.t('sync_login_required'));
       return;
     }
 
@@ -76,7 +62,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
-        AppAlerts.error(context, 'Нет подключения к сети для синхронизации');
+        AppAlerts.error(context, LanguageManager.t('sync_network_required'));
       }
       return;
     }
@@ -86,11 +72,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       await ApiService.instance.syncAll();
       _loadBudgets();
       if (mounted) {
-        AppAlerts.success(context, 'Данные синхронизированы');
+        AppAlerts.success(context, LanguageManager.t('sync_success'));
       }
     } catch (e) {
       if (mounted) {
-        AppErrorHandler.show(context, e, title: 'Ошибка синхронизации');
+        AppErrorHandler.show(context, e, title: LanguageManager.t('sync_error'));
       }
     }
   }
@@ -100,7 +86,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     ApiService.instance.deleteBudgetEverywhere(budget);
     _loadBudgets();
 
-    AppAlerts.info(context, 'Лимит удален');
+    AppAlerts.info(context, LanguageManager.t('budget_deleted'));
   }
 
   /// Открывает форму создания или редактирования лимита.
@@ -145,8 +131,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 ),
                 Text(
                   budgetToEdit != null
-                      ? 'Редактировать лимит'
-                      : 'Лимит на бюджет',
+                      ? LanguageManager.t('edit_budget_title')
+                      : LanguageManager.t('add_budget_title'),
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold),
                 ),
@@ -156,14 +142,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   borderRadius: BorderRadius.circular(24),
                   alignment: Alignment.centerLeft,
                   decoration: InputDecoration(
-                    labelText: 'Категория',
+                    labelText: LanguageManager.t('category_label'),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
                   items: Category.values.map((cat) {
                     return DropdownMenuItem(
                       value: cat,
-                      child: Text(cat.name.toUpperCase()),
+                      child: Text(cat.getLocalizedName(context)),
                     );
                   }).toList(),
                   onChanged: budgetToEdit != null
@@ -182,7 +168,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   inputFormatters: [CurrencyInputFormatter()],
                   autofocus: false,
                   decoration: InputDecoration(
-                    labelText: 'Сумма лимита (${CurrencyFormatter.currentCurrency.symbol})',
+                    labelText: '${LanguageManager.t('budget_amount_hint')} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
@@ -202,7 +188,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       final amount = CurrencyFormatter.parseInput(amountController.text);
                       if (amount != null && amount > 0) {
                         if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
-                          AppAlerts.warning(context, 'Сумма превышает лимит валюты');
+                          AppAlerts.warning(context, '${LanguageManager.t('alert_amount_too_large')} ${CurrencyFormatter.currentCurrency.code}');
                           return;
                         }
                         final spent = LocalDbService.instance
@@ -225,8 +211,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     },
                     child: Text(
                         budgetToEdit != null
-                            ? 'Обновить лимит'
-                            : 'Сохранить лимит',
+                            ? LanguageManager.t('save_btn')
+                            : LanguageManager.t('save_btn'),
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -245,8 +231,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Месячные лимиты',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text(LanguageManager.t('budgets_title'),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -265,7 +251,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     borderRadius: BorderRadius.circular(24),
                     alignment: Alignment.center,
                     decoration: InputDecoration(
-                      labelText: 'Месяц',
+                      labelText: LanguageManager.t('month_label'),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16)),
                       filled: true,
@@ -281,7 +267,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         value: monthValue,
                         alignment: Alignment.center,
                         child: Text(
-                          _monthsNames[index],
+                          LanguageManager.monthsNames[index],
                           style: TextStyle(
                             fontWeight: isCurrentMonth
                                 ? FontWeight.bold
@@ -310,7 +296,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     borderRadius: BorderRadius.circular(24),
                     alignment: Alignment.center,
                     decoration: InputDecoration(
-                      labelText: 'Год',
+                      labelText: LanguageManager.t('year_label'),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16)),
                       filled: true,
@@ -350,9 +336,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             const SizedBox(height: 20),
             Expanded(
               child: _budgets.isEmpty
-                  ? const Center(
-                child: Text('Лимиты на этот период не установлены',
-                    style: TextStyle(color: Colors.grey)),
+                  ? Center(
+                child: Text(LanguageManager.t('no_budgets_subtitle'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.grey)),
               )
                   : ListView.builder(
                 physics: const ClampingScrollPhysics(
@@ -411,7 +398,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                         mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text(b.category.name.toUpperCase(),
+                                          Text(b.category.getLocalizedName(context),
                                               style: const TextStyle(
                                                   fontWeight: FontWeight.bold)),
                                           Expanded(
@@ -462,7 +449,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                       ),
                                       if (isExceeded) ...[
                                         const SizedBox(height: 8),
-                                        Text('Лимит превышен',
+                                        Text('${LanguageManager.t('budget_exceeded')}!',
                                             style: TextStyle(
                                                 color: Colors.orange.shade900,
                                                 fontSize: 12,

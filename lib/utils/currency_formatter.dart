@@ -1,4 +1,5 @@
 import 'package:family_budget/services/preferences_service.dart';
+import 'package:family_budget/utils/language_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -18,6 +19,15 @@ enum Currency {
   final double maxAmount; // Максимально допустимая сумма для ввода
 
   const Currency(this.code, this.symbol, this.readableName, this.symbolBefore, this.defaultDecimalDigits, this.maxAmount);
+
+  String get localizedSymbol {
+    if (this == Currency.uzs) {
+      return LanguageManager.t('uzs_symbol');
+    }
+    return symbol;
+  }
+
+  String get localizedName => LanguageManager.t('${code.toLowerCase()}_name');
 }
 
 /// Утилита для форматирования и валидации денежных сумм.
@@ -61,11 +71,11 @@ class CurrencyFormatter {
 
   /// Проверяет корректность введенной суммы и соблюдение лимитов.
   static String? validateAmount(String? value) {
-    if (value == null || value.isEmpty) return 'Введите сумму';
+    if (value == null || value.isEmpty) return LanguageManager.t('enter_amount');
     final amount = parseInput(value);
-    if (amount == null || amount <= 0) return 'Некорректная сумма';
+    if (amount == null || amount <= 0) return LanguageManager.t('invalid_amount');
     if (amount > _currentCurrency.maxAmount) {
-      return 'Макс. сумма: ${format(_currentCurrency.maxAmount)}';
+      return '${LanguageManager.t('max_amount_prefix')}: ${format(_currentCurrency.maxAmount)}';
     }
     return null;
   }
@@ -95,9 +105,9 @@ class CurrencyFormatter {
 
     // Позиционирование символа валюты
     if (_currentCurrency.symbolBefore) {
-      return '$sign${_currentCurrency.symbol}$formatted';
+      return '$sign${_currentCurrency.localizedSymbol}$formatted';
     } else {
-      return '$sign$formatted ${_currentCurrency.symbol}';
+      return '$sign$formatted ${_currentCurrency.localizedSymbol}';
     }
   }
 

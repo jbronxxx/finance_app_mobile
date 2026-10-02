@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../widgets/app_alerts.dart';
+import '../utils/language_manager.dart';
+import '../main.dart';
 
 /// Централизованный обработчик ошибок приложения.
 /// 
@@ -33,10 +35,13 @@ class AppErrorHandler {
         
         AppAlerts.showErrorDialog(
           context,
-          title: 'Сессия истекла',
-          message: 'Пожалуйста, войдите в аккаунт снова для продолжения работы.',
+          title: LanguageManager.t('session_expired_title'),
+          message: LanguageManager.t('session_expired_desc'),
           onPressed: () {
-            // В будущем здесь можно добавить навигацию на экран входа
+            navigatorKey.currentState?.pushNamedAndRemoveUntil(
+              '/login',
+              (route) => false,
+            );
           },
         );
         return;
@@ -48,7 +53,7 @@ class AppErrorHandler {
 
   /// Обрабатывает исключения Dio и возвращает локализованное сообщение.
   static String _handleDioError(DioException error) {
-    String message = 'Произошла ошибка при связи с сервером';
+    String message = LanguageManager.t('server_error_general');
 
     if (error.response != null) {
       final data = error.response?.data;
@@ -73,31 +78,31 @@ class AppErrorHandler {
       } else {
         // Резервный механизм на основе HTTP статус-кодов
         switch (error.response?.statusCode) {
-          case 400: message = 'Некорректный запрос'; break;
-          case 401: message = 'Необходима авторизация'; break;
-          case 403: message = 'Доступ запрещен'; break;
-          case 404: message = 'Ресурс не найден'; break;
-          case 500: message = 'Внутренняя ошибка сервера'; break;
-          default: message = 'Ошибка сервера: ${error.response?.statusCode}';
+          case 400: message = LanguageManager.t('http_400'); break;
+          case 401: message = LanguageManager.t('http_401'); break;
+          case 403: message = LanguageManager.t('http_403'); break;
+          case 404: message = LanguageManager.t('http_404'); break;
+          case 500: message = LanguageManager.t('http_500'); break;
+          default: message = '${LanguageManager.t('server_error_code')}: ${error.response?.statusCode}';
         }
       }
     } else {
       // Ошибки транспортного уровня (сеть, таймауты)
       switch (error.type) {
         case DioExceptionType.connectionTimeout:
-          message = 'Превышено время ожидания соединения';
+          message = LanguageManager.t('err_connection_timeout');
           break;
         case DioExceptionType.sendTimeout:
-          message = 'Превышено время отправки данных';
+          message = LanguageManager.t('err_send_timeout');
           break;
         case DioExceptionType.receiveTimeout:
-          message = 'Превышено время получения данных';
+          message = LanguageManager.t('err_receive_timeout');
           break;
         case DioExceptionType.connectionError:
-          message = 'Отсутствует интернет-соединение или сервер недоступен';
+          message = LanguageManager.t('err_connection_error');
           break;
         default:
-          message = 'Ошибка сети: проверьте подключение';
+          message = LanguageManager.t('err_network_default');
       }
     }
 

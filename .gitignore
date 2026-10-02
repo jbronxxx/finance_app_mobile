@@ -69,3 +69,6 @@ windows/flutter/ephemeral/
 
 # Coverage
 coverage/
+
+# Documentation
+PROJECT_GUIDE.md

@@ -5,6 +5,7 @@ import 'package:family_budget/widgets/swipe_hint_wrapper.dart';
 import 'package:family_budget/widgets/custom_pull_to_refresh.dart';
 import 'package:family_budget/utils/currency_formatter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:family_budget/utils/language_manager.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
@@ -52,36 +53,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final int _pageSize = 20;
   bool _hasMore = true;
   bool _isLoading = false;
-
-  final List<String> _monthsNames = [
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь'
-  ];
-
-  final List<String> _monthsNamesGenitive = [
-    'Января',
-    'Февраля',
-    'Марта',
-    'Апреля',
-    'Мая',
-    'Июня',
-    'Июля',
-    'Августа',
-    'Сентября',
-    'Октября',
-    'Ноября',
-    'Декабря'
-  ];
 
   @override
   void initState() {
@@ -183,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _handleRefresh() async {
     if (!ApiService.instance.isAuthenticated) {
-      AppAlerts.warning(context, 'Войдите в аккаунт для синхронизации');
+      AppAlerts.warning(context, LanguageManager.t('sync_login_required'));
       return;
     }
 
@@ -191,7 +162,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
-        AppAlerts.error(context, 'Нет подключения к сети для синхронизации');
+        AppAlerts.error(context, LanguageManager.t('sync_no_internet_alert'));
       }
       return;
     }
@@ -219,12 +190,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       
       _loadTransactions();
       if (mounted) {
-        AppAlerts.success(context, 'Данные синхронизированы');
+        AppAlerts.success(context, LanguageManager.t('sync_success'));
       }
     } catch (e) {
       if (kDebugMode) debugPrint('[Dashboard] Sync error: $e');
       if (mounted) {
-        AppErrorHandler.show(context, e, title: 'Синхронизация');
+        AppErrorHandler.show(context, e, title: LanguageManager.t('cloud'));
       }
     }
   }
@@ -239,7 +210,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ApiService.instance.deleteTransactionEverywhere(transaction);
     _loadTransactions();
 
-    AppAlerts.info(context, 'Запись удалена');
+    AppAlerts.info(context, LanguageManager.t('transaction_deleted'));
   }
 
   /// Открывает форму добавления новой записи или редактирования существующей.
@@ -315,7 +286,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final email = ApiService.instance.email;
     if (email != null && email.isNotEmpty) return email;
 
-    return 'Профиль';
+    return LanguageManager.t('profile');
   }
 
   void _showPeriodPicker() {
@@ -345,9 +316,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Text(
-                'Выберите период',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                LanguageManager.t('select_period'),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               Row(
@@ -358,7 +329,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       borderRadius: BorderRadius.circular(24),
                       alignment: Alignment.center,
                       decoration: InputDecoration(
-                        labelText: 'Месяц',
+                        labelText: LanguageManager.t('month_label'),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16)),
                       ),
@@ -371,7 +342,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           value: monthValue,
                           alignment: Alignment.center,
                           child: Text(
-                            _monthsNames[index],
+                            LanguageManager.monthsNames[index],
                             style: TextStyle(
                               fontWeight: isCurrentMonth
                                   ? FontWeight.bold
@@ -395,7 +366,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       borderRadius: BorderRadius.circular(24),
                       alignment: Alignment.center,
                       decoration: InputDecoration(
-                        labelText: 'Год',
+                        labelText: LanguageManager.t('year_label'),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16)),
                       ),
@@ -444,8 +415,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     });
                     Navigator.pop(context);
                   },
-                  child: const Text('Применить',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(LanguageManager.t('continue_btn'),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -457,7 +428,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String currentMonthName = _monthsNames[_selectedMonth - 1];
+    String currentMonthName = LanguageManager.monthsNames[_selectedMonth - 1];
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -469,12 +440,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '$currentMonthName $_selectedYear',
-                style: const TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18),
+              Flexible(
+                child: Text(
+                  '$currentMonthName $_selectedYear',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18),
+                ),
               ),
               const SizedBox(width: 4),
               const Icon(Icons.arrow_drop_down, color: Colors.black87),
@@ -522,10 +497,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Вход / Регистрация',
-                style:
-                TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 130),
+                child: Text(
+                  LanguageManager.t('login_or_register'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
               ),
             ),
           )
@@ -562,7 +542,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 size: 16, color: Colors.amber.shade800),
                             const SizedBox(width: 8),
                             Text(
-                              'Режим гостя (данные хранятся локально)',
+                              '${LanguageManager.t('guest_mode')} (${LanguageManager.t('cloud_not_connected').toLowerCase()})',
                               style: TextStyle(
                                   color: Colors.amber.shade900,
                                   fontSize: 12,
@@ -573,21 +553,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     _buildBalanceCard(_totalBalance, _totalIncome, _totalExpense),
                     const SizedBox(height: 24),
-                    const Text(
-                      'История операций',
-                      style: TextStyle(
+                    Text(
+                      LanguageManager.t('balance'),
+                      style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87),
                     ),
                     const SizedBox(height: 12),
                     if (_transactions.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 40.0),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 40.0),
                         child: Center(
                           child: Text(
-                            'В этом месяце пока нет записей',
-                            style: TextStyle(color: Colors.grey),
+                            LanguageManager.t('no_transactions'),
+                            style: const TextStyle(color: Colors.grey),
                           ),
                         ),
                       ),
@@ -656,9 +636,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Общий баланс',
-            style: TextStyle(
+          Text(
+            LanguageManager.t('total_balance'),
+            style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 14,
                 fontWeight: FontWeight.w500),
@@ -676,12 +656,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Expanded(
                 child: _buildIncomeExpenseInfo(
-                    'Доход', income, Icons.arrow_downward, Colors.white),
+                    LanguageManager.t('income_title'), income, Icons.arrow_downward, Colors.white),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildIncomeExpenseInfo(
-                    'Расход', expense, Icons.arrow_upward, Colors.white),
+                    LanguageManager.t('expense_title'), expense, Icons.arrow_upward, Colors.white),
               ),
             ],
           ),
@@ -726,8 +706,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildDayGroup(DateTime date, Map<Category, List<Transaction>> categories,
       {bool showHintOnFirstCategory = false}) {
-    final dayStr = date.day.toString();
-    final monthStr = _monthsNamesGenitive[date.month - 1];
+    final formattedDate = LanguageManager.formatDayMonth(date);
     final isToday = DateTime.now().year == date.year &&
         DateTime.now().month == date.month &&
         DateTime.now().day == date.day;
@@ -738,7 +717,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: Text(
-            isToday ? 'Сегодня, $dayStr $monthStr' : '$dayStr $monthStr',
+            isToday ? '${LanguageManager.t('today')}, $formattedDate' : formattedDate,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -824,7 +803,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Icon(categoryIcon, color: categoryColor, size: 20),
         ),
         title: Text(
-          category.name.toUpperCase(),
+          category.getLocalizedName(context),
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
         trailing: ConstrainedBox(
@@ -876,7 +855,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onTap: () => _openTransactionSheet(transaction),
           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
           title: Text(
-            transaction.description.isEmpty ? 'Без описания' : transaction.description,
+            transaction.description.isEmpty ? LanguageManager.t('no_description') : transaction.description,
             style: const TextStyle(fontSize: 13),
           ),
           trailing: ConstrainedBox(

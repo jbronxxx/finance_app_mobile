@@ -3,6 +3,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/api_service.dart';
 import '../widgets/app_alerts.dart';
 import '../utils/app_error_handler.dart';
+import '../utils/language_manager.dart';
 
 /// Экран входа/регистрации.
 class AuthScreen extends StatefulWidget {
@@ -34,11 +35,11 @@ class _AuthScreenState extends State<AuthScreen> {
     final name = _nameController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      AppAlerts.warning(context, 'Заполните все поля');
+      AppAlerts.warning(context, LanguageManager.t('fill_all_fields'));
       return;
     }
     if (!_isLoginMode && name.isEmpty) {
-      AppAlerts.warning(context, 'Введите имя');
+      AppAlerts.warning(context, LanguageManager.t('enter_name_alert'));
       return;
     }
 
@@ -49,7 +50,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppAlerts.error(context, 'Для входа или регистрации необходимо интернет-соединение');
+        AppAlerts.error(context, LanguageManager.t('auth_network_required'));
       }
       return;
     }
@@ -79,7 +80,11 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      AppErrorHandler.show(context, e, title: _isLoginMode ? 'Ошибка входа' : 'Ошибка регистрации');
+      AppErrorHandler.show(
+        context,
+        e,
+        title: LanguageManager.t(_isLoginMode ? 'login_error_title' : 'register_error_title'),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -104,7 +109,7 @@ class _AuthScreenState extends State<AuthScreen> {
             children: [
               const SizedBox(height: 20),
               Text(
-                _isLoginMode ? 'С возвращением!' : 'Создать аккаунт',
+                LanguageManager.t(_isLoginMode ? 'welcome_back' : 'create_account'),
                 style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -112,9 +117,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                _isLoginMode
-                    ? 'Войдите, чтобы синхронизировать данные с сервером'
-                    : 'Зарегистрируйтесь для доступа к облачному хранилищу',
+                LanguageManager.t(_isLoginMode ? 'login_subtitle' : 'register_subtitle'),
                 style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 32),
@@ -122,7 +125,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 TextField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Имя',
+                    labelText: LanguageManager.t('name_label'),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                     prefixIcon: const Icon(Icons.person_outline),
@@ -134,7 +137,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: 'Email',
+                  labelText: LanguageManager.t('email_label'),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16)),
                   prefixIcon: const Icon(Icons.email_outlined),
@@ -145,7 +148,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Пароль',
+                  labelText: LanguageManager.t('password_label'),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16)),
                   prefixIcon: const Icon(Icons.lock_outline),
@@ -171,7 +174,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               color: Colors.white, strokeWidth: 2),
                         )
                       : Text(
-                          _isLoginMode ? 'Войти' : 'Зарегистрироваться',
+                          LanguageManager.t(_isLoginMode ? 'login_btn' : 'register_btn'),
                           style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold),
                         ),
@@ -186,9 +189,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     });
                   },
                   child: Text(
-                    _isLoginMode
-                        ? 'Нет аккаунта? Зарегистрируйтесь'
-                        : 'Уже есть аккаунт? Войдите',
+                    LanguageManager.t(_isLoginMode ? 'no_account_prompt' : 'have_account_prompt'),
                     style: const TextStyle(
                         color: primaryTeal, fontWeight: FontWeight.bold),
                   ),
