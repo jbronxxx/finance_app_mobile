@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/local_db_service.dart';
 import 'services/pending_deletions_store.dart';
 import 'utils/currency_formatter.dart';
@@ -45,7 +46,7 @@ void main() async {
   await CurrencyFormatter.loadSavedCurrency();
   await LanguageManager.loadSavedLanguage();
 
-  // Фиксируем ориентацию и стиль системных панелей до запуска приложения, 
+  // Фиксируем ориентацию и стиль системных панелей до запуска приложения,
   // чтобы избежать скачков верстки при инициализации первого кадра.
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -82,6 +83,11 @@ class FinanceApp extends StatelessWidget {
             Locale('ru'),
             Locale('uz'),
             Locale('en'),
+          ],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
           ],
           routes: {
             '/': (context) => const MainShell(),
