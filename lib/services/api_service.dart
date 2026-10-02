@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:family_budget/models/auth_model.dart';
 import 'package:family_budget/models/budget_model.dart';
 import 'package:family_budget/models/local_db_models.dart';
+import 'package:family_budget/models/paginated_response.dart';
 import 'package:family_budget/models/sync_model.dart';
 import 'package:family_budget/models/transaction_model.dart';
 import 'package:flutter/foundation.dart';
@@ -314,16 +315,53 @@ class ApiService {
     _authStream.add(false);
   }
 
-  /// Получить транзакции.
-  Future<List<TransactionModel>> getTransactions() async {
+  /// Запрашивает список транзакций с бэкенда с поддержкой пагинации и фильтрации по дате.
+  /// Ограничивает `limit` диапазоном от 1 до 100 и предотвращает отрицательные значения `offset`.
+  Future<PaginatedResponse<TransactionModel>> getTransactions({
+    int limit = 50,
+    int offset = 0,
+    DateTime? since,
+  }) async {
     try {
+      final queryParams = <String, dynamic>{
+        'limit': limit.clamp(1, 100),
+        'offset': offset < 0 ? 0 : offset,
+        if (since != null) 'since': since.toUtc().toIso8601String(),
+      };
+
       final response = await _dio.get(
         ApiConfig.transactions,
+        queryParameters: queryParams,
         options: _authOptions(),
       );
 
-      final List<dynamic> list = response.data['data'];
-      return list.map((json) => TransactionModel.fromJson(json)).toList();
+      final dynamic data = response.data is Map ? response.data['data'] : response.data;
+      if (data is Map) {
+        return PaginatedResponse<TransactionModel>.fromJson(
+          Map<String, dynamic>.from(data),
+          (item) => TransactionModel.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        );
+      } else if (data is List) {
+        final items = data
+            .whereType<Map>()
+            .map((json) => TransactionModel.fromJson(Map<String, dynamic>.from(json)))
+            .toList();
+        return PaginatedResponse<TransactionModel>(
+          items: items,
+          total: items.length,
+          limit: limit,
+          offset: offset,
+        );
+      }
+
+      return PaginatedResponse<TransactionModel>(
+        items: const [],
+        total: 0,
+        limit: limit,
+        offset: offset,
+      );
     } catch (e) {
       if (kDebugMode) debugPrint('[ApiService] Get transactions error: $e');
       rethrow;
@@ -741,31 +779,66 @@ class ApiService {
     return totalDone;
   }
 
-  Future<List<Transaction>?> _fetchRemoteTransactions(String token) async {
+  Future<List<Transaction>?> _fetchRemoteTransactions(String token, {DateTime? since}) async {
     final options = _authOptions(token);
     options.validateStatus = (status) => status != null && ((status >= 200 && status < 300) || status == 304);
     if (_transactionsEtag != null) {
       options.headers?['If-None-Match'] = _transactionsEtag;
     }
 
-    final response = await _dio.get(
+    const pageSize = 100;
+    int currentOffset = 0;
+    final allTransactions = <Transaction>[];
+
+    final firstResponse = await _dio.get(
       ApiConfig.transactions,
+      queryParameters: {
+        'limit': pageSize,
+        'offset': currentOffset,
+        if (since != null) 'since': since.toUtc().toIso8601String(),
+      },
       options: options,
     );
 
-    if (response.statusCode == 304) {
+    if (firstResponse.statusCode == 304) {
       return null;
     }
 
-    final newEtag = response.headers.value('etag');
+    final newEtag = firstResponse.headers.value('etag');
     if (newEtag != null) {
       _transactionsEtag = newEtag;
       await _storage.write(key: 'transactions_etag', value: newEtag);
     }
 
-    return _asJsonList(response.data['data'])
-        .map(Transaction.fromJson)
-        .toList();
+    final firstData = firstResponse.data is Map ? firstResponse.data['data'] : null;
+    final firstItems = _asJsonList(firstData);
+    allTransactions.addAll(firstItems.map(Transaction.fromJson));
+
+    if (firstData is Map && firstData['total'] is num) {
+      final total = (firstData['total'] as num).toInt();
+      currentOffset += firstItems.length;
+
+      while (currentOffset < total) {
+        final nextResponse = await _dio.get(
+          ApiConfig.transactions,
+          queryParameters: {
+            'limit': pageSize,
+            'offset': currentOffset,
+            if (since != null) 'since': since.toUtc().toIso8601String(),
+          },
+          options: _authOptions(token),
+        );
+
+        final nextData = nextResponse.data is Map ? nextResponse.data['data'] : null;
+        final nextItems = _asJsonList(nextData);
+        if (nextItems.isEmpty) break;
+
+        allTransactions.addAll(nextItems.map(Transaction.fromJson));
+        currentOffset += nextItems.length;
+      }
+    }
+
+    return allTransactions;
   }
 
   Future<List<Budget>?> _fetchRemoteBudgets(String token) async {
@@ -930,6 +1003,12 @@ class ApiService {
   }
 
   List<Map<String, dynamic>> _asJsonList(dynamic value) {
+    if (value is Map && value['items'] is List) {
+      return (value['items'] as List)
+          .whereType<Map>()
+          .map((e) => e.cast<String, dynamic>())
+          .toList();
+    }
     if (value is! List) return const [];
     return value
         .whereType<Map>()

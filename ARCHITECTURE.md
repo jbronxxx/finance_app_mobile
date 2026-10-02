@@ -28,7 +28,8 @@ lib/
 ├── models/
 │   ├── auth_model.dart          # DTO для авторизации (Login, Register, Me)
 │   ├── budget_model.dart        # DTO для бюджетов
-│   ├── transaction_model.dart   # DTO для транзакций
+│   ├── paginated_response.dart  # Универсальный DTO для пагинированных ответов (items, total, limit, offset)
+│   ├── transaction_model.dart   # DTO для транзакций (с поддержкой created_at и безопасного парсинга дат)
 │   ├── sync_model.dart          # Модель для пакетной синхронизации
 │   └── local_db_models.dart     # Сущности ObjectBox (Transaction, Budget)
 ├── services/
@@ -78,6 +79,7 @@ main.dart`. Это было исправлено переносом состоя
 - `Transaction` и `Budget` — сущности ObjectBox (`@Entity()`).
 - **Денежные суммы (Decimal / Numeric(12, 2))**: На бэкенде денежные поля переведены на `Decimal(12, 2)` (`amount`, `limit_amount`, `spent`, `remaining`). На клиенте десериализация моделей (`Transaction`, `Budget`, `TransactionModel`, `BudgetModel`) выполняется через безопасный хелпер `parseAmount()`, корректно обрабатывающий как числовой `num` (int/double), так и строковый формат `"123.45"`, исключая ошибки приведения типов.
 - **Временные метки**: Все даты передаются по API в формате UTC ISO 8601 (`.toUtc().toIso8601String()`), а на клиенте разбираются через `.toLocal()`.
+- **Пагинация транзакций (API GET /api/v1/transactions/)**: Эндпоинт поддерживает Query-параметры `limit` (1..100, default 50), `offset` (min 0) и `since` (ISO 8601). Ответ бэкенда возвращается в формате `PaginatedResponse<TransactionModel>` (`items`, `total`, `limit`, `offset`). Фоновый процесс синхронизации `syncBackendDataToLocal` прозрачно выкачивает все страницы при первичной или полной загрузке.
 - **Синхронизация**: Двусторонняя (push/pull).
   - `syncLocalDataToBackend`: Отправляет локальные записи без `serverId`, а для офлайн-удаленных бюджетов передает `is_deleted: true` и массив `deleted_budget_ids`.
   - `syncBackendDataToLocal`: Загружает актуальные данные с сервера и сверяет с локальными.

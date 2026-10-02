@@ -157,7 +157,9 @@ class Transaction {
       dbCategory: json['category'] as String? ?? Category.other.name,
       dbType: json['type'] as String? ?? TransactionType.expense.name,
       dateMilliseconds: date.millisecondsSinceEpoch,
-      dateCreatedMilliseconds: (parseServerDate(json['date_created']) ?? date)
+      dateCreatedMilliseconds: (parseServerDate(json['created_at']) ??
+              parseServerDate(json['date_created']) ??
+              date)
           .millisecondsSinceEpoch,
       isModified: false,
     );

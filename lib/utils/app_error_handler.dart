@@ -27,12 +27,16 @@ class AppErrorHandler {
       final data = error.response?.data;
       final code = (data is Map) ? data['code'] : null;
 
-      // Обработка истечения срока действия сессии
-      if (error.response?.statusCode == 401 || 
-          code == 'EXPIRED_TOKEN' || 
-          code == 'INVALID_TOKEN' || 
-          code == 'TOKEN_REVOKED') {
-        
+      final path = error.requestOptions.path;
+      final isAuthEndpoint =
+          path.contains('/auth/login') || path.contains('/auth/register');
+
+      // Обработка истечения срока действия сессии (только для защищенных запросов)
+      if (!isAuthEndpoint &&
+          (error.response?.statusCode == 401 ||
+              code == 'EXPIRED_TOKEN' ||
+              code == 'INVALID_TOKEN' ||
+              code == 'TOKEN_REVOKED')) {
         AppAlerts.showErrorDialog(
           context,
           title: LanguageManager.t('session_expired_title'),
