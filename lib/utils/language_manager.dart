@@ -143,6 +143,8 @@ class LanguageManager {
     'insights_header_title': { AppLanguage.ru: 'AI-Инсайты и Аналитика', AppLanguage.uz: 'AI-Insaytlar va Tahlil', AppLanguage.en: 'AI Insights & Analytics' },
     'insights_header_subtitle': { AppLanguage.ru: 'Умный анализ ваших финансов на базе ИИ', AppLanguage.uz: 'Moliyangizning aqlli tahlili (AI)', AppLanguage.en: 'Smart analysis of your finances powered by AI' },
     'personal_recs_title': { AppLanguage.ru: 'Персональные рекомендации', AppLanguage.uz: 'Shaxsiy tavsiyalar', AppLanguage.en: 'Personalized Recommendations' },
+    'insights_updated_prefix': { AppLanguage.ru: 'Обновлено', AppLanguage.uz: 'Yangilangan', AppLanguage.en: 'Updated' },
+    'insights_cache_hint': { AppLanguage.ru: 'Советы обновляются автоматически при добавлении новых расходов', AppLanguage.uz: 'Maslahatlar yangi xarajatlar qo\'shilganda avtomatik ravishda yangilanadi', AppLanguage.en: 'Insights update automatically when new expenses are added' },
     
     // Месяцы и время
     'month_1': { AppLanguage.ru: 'Январь', AppLanguage.uz: 'Yanvar', AppLanguage.en: 'January' },
@@ -263,6 +265,34 @@ class LanguageManager {
       case AppLanguage.en:
         return '$monthGen $day';
     }
+  }
+
+  static String formatDateTime(DateTime date) {
+    final dayMonth = formatDayMonth(date);
+    final hours = date.hour.toString().padLeft(2, '0');
+    final minutes = date.minute.toString().padLeft(2, '0');
+    final timeStr = '$hours:$minutes';
+
+    final now = DateTime.now();
+    if (date.year != now.year) {
+      switch (_currentLanguage) {
+        case AppLanguage.ru:
+          return '$dayMonth ${date.year}, $timeStr';
+        case AppLanguage.uz:
+          return '${date.year}-yil $dayMonth, $timeStr';
+        case AppLanguage.en:
+          return '$dayMonth, ${date.year}, $timeStr';
+      }
+    }
+
+    return '$dayMonth, $timeStr';
+  }
+
+  static String formatDate(DateTime date, {bool includeTime = true}) {
+    if (includeTime) {
+      return formatDateTime(date);
+    }
+    return formatDayMonth(date);
   }
 
   static String t(String key) {

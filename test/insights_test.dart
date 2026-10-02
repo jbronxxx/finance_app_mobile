@@ -1,0 +1,216 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:dio/dio.dart';
+import 'package:family_budget/services/api_service.dart';
+import 'package:family_budget/screens/insights_screen.dart';
+import 'package:family_budget/models/insights_model.dart';
+import 'package:family_budget/utils/language_manager.dart';
+
+import 'dart:convert';
+import 'package:flutter/services.dart';
+
+void main() {
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+      (MethodCall methodCall) async => null,
+    );
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('dev.fluttercommunity.plus/connectivity'),
+      (MethodCall methodCall) async => ['wifi'],
+    );
+  });
+
+  group('InsightsModel Tests', () {
+    test('parses ISO-8601 generated_at and list of insights', () {
+      final json = {
+        'insights': ['Save 15% on dining', 'Invest in index funds'],
+        'generated_at': '2026-10-02T13:45:00Z',
+      };
+
+      final model = InsightsModel.fromJson(json);
+
+      expect(model.insights.length, 2);
+      expect(model.insights.first, 'Save 15% on dining');
+      expect(model.generatedAt, isNotNull);
+      expect(model.generatedAt, DateTime.parse('2026-10-02T13:45:00Z').toLocal());
+    });
+
+    test('parses unix timestamp in milliseconds and seconds', () {
+      const ms = 1727874000000;
+      final modelMs = InsightsModel.fromJson({
+        'insights': ['Tip 1'],
+        'generated_at': ms,
+      });
+      expect(modelMs.generatedAt, DateTime.fromMillisecondsSinceEpoch(ms));
+
+      const sec = 1727874000;
+      final modelSec = InsightsModel.fromJson({
+        'insights': ['Tip 2'],
+        'generated_at': sec,
+      });
+      expect(modelSec.generatedAt, DateTime.fromMillisecondsSinceEpoch(sec * 1000));
+    });
+
+    test('handles null generated_at and empty insights', () {
+      final model = InsightsModel.fromJson({});
+      expect(model.insights, isEmpty);
+      expect(model.generatedAt, isNull);
+    });
+
+    test('handles wrapped data field in json', () {
+      final json = {
+        'status': 'success',
+        'data': {
+          'insights': ['Advice A'],
+          'generated_at': '2026-10-02T10:00:00Z',
+        }
+      };
+
+      final model = InsightsModel.fromJson(json);
+      expect(model.insights, ['Advice A']);
+      expect(model.generatedAt, isNotNull);
+    });
+
+    test('toJson produces valid map', () {
+      final model = InsightsModel(
+        insights: ['Advice 1'],
+        generatedAt: DateTime.utc(2026, 10, 2, 12, 0),
+      );
+
+      final json = model.toJson();
+      expect(json['insights'], ['Advice 1']);
+      expect(json['generated_at'], '2026-10-02T12:00:00.000Z');
+    });
+  });
+
+  group('LanguageManager Date Formatting & Translations', () {
+    test('formatDate and formatDateTime format with time in RU, UZ, EN', () {
+      final testDate = DateTime(2026, 10, 2, 14, 30);
+
+      LanguageManager.setLanguage(AppLanguage.ru);
+      expect(LanguageManager.formatDate(testDate), '2 октября, 14:30');
+      expect(LanguageManager.t('insights_updated_prefix'), 'Обновлено');
+      expect(LanguageManager.t('insights_cache_hint'), contains('Советы обновляются автоматически'));
+
+      LanguageManager.setLanguage(AppLanguage.uz);
+      expect(LanguageManager.formatDate(testDate), '2-oktabr, 14:30');
+      expect(LanguageManager.t('insights_updated_prefix'), 'Yangilangan');
+      expect(LanguageManager.t('insights_cache_hint'), contains('avtomatik ravishda yangilanadi'));
+
+      LanguageManager.setLanguage(AppLanguage.en);
+      expect(LanguageManager.formatDate(testDate), 'October 2, 14:30');
+      expect(LanguageManager.t('insights_updated_prefix'), 'Updated');
+      expect(LanguageManager.t('insights_cache_hint'), contains('Insights update automatically'));
+
+      // Restore RU
+      LanguageManager.setLanguage(AppLanguage.ru);
+    });
+  });
+
+  test('ApiService getInsights method accepts cancelToken and custom timeouts', () async {
+    final cancelToken = CancelToken();
+    try {
+      await ApiService.instance.getInsights(cancelToken: cancelToken);
+    } catch (_) {
+      // Expected without backend server
+    }
+  });
+
+  test('CancelToken can abort getInsights request', () async {
+    final cancelToken = CancelToken();
+    cancelToken.cancel('user left');
+
+    expect(
+      () => ApiService.instance.getInsights(cancelToken: cancelToken),
+      throwsA(isA<DioException>().having(
+        (e) => e.type,
+        'type',
+        DioExceptionType.cancel,
+      )),
+    );
+  });
+
+  testWidgets('InsightsScreen renders and disposes cleanly with CancelToken', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: InsightsScreen()));
+    await tester.pump();
+
+    expect(find.byType(InsightsScreen), findsOneWidget);
+
+    // Unmount widget to trigger dispose() and verify no crashes or errors occur
+    await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+    await tester.pump();
+
+    expect(find.byType(InsightsScreen), findsNothing);
+  });
+
+  testWidgets('InsightsScreen displays updated date and cache hint when generated_at is present', (tester) async {
+    await ApiService.instance.setTokens('test_token', 'test_refresh');
+
+    final originalAdapter = ApiService.instance.dio.httpClientAdapter;
+    const testGeneratedAt = '2026-10-02T13:45:00Z';
+    final parsedDate = DateTime.parse(testGeneratedAt).toLocal();
+    final expectedFormatted = LanguageManager.formatDate(parsedDate);
+
+    ApiService.instance.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+      if (options.path.contains('/insights/')) {
+        return ResponseBody.fromString(
+          jsonEncode({
+            'status': 'success',
+            'data': {
+              'insights': ['Следите за расходами на рестораны'],
+              'generated_at': testGeneratedAt,
+            }
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      }
+      return ResponseBody.fromString('{}', 404);
+    });
+
+    try {
+      await tester.pumpWidget(const MaterialApp(home: InsightsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('insights_updated_at')), findsOneWidget);
+      expect(find.text('${LanguageManager.t('insights_updated_prefix')}: $expectedFormatted'), findsOneWidget);
+
+      expect(find.byKey(const Key('insights_cache_hint')), findsOneWidget);
+      expect(find.text(LanguageManager.t('insights_cache_hint')), findsOneWidget);
+
+      expect(find.text('Следите за расходами на рестораны'), findsOneWidget);
+    } finally {
+      ApiService.instance.dio.httpClientAdapter = originalAdapter;
+      await ApiService.instance.clearAllUserData();
+    }
+  });
+}
+
+class _MockHttpClientAdapter implements HttpClientAdapter {
+  final Future<ResponseBody> Function(RequestOptions options) handler;
+
+  _MockHttpClientAdapter(this.handler);
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) {
+    return handler(options);
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+

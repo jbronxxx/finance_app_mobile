@@ -22,7 +22,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 5574192560812130677),
     name: 'Budget',
-    lastPropertyId: const obx_int.IdUid(8, 6053026932893744209),
+    lastPropertyId: const obx_int.IdUid(9, 8255407588655905292),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -74,6 +74,12 @@ final _entities = <obx_int.ModelEntity>[
         type: 8,
         flags: 0,
       ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 8255407588655905292),
+        name: 'isModified',
+        type: 1,
+        flags: 0,
+      ),
     ],
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
@@ -81,7 +87,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(2, 4394803372386859630),
     name: 'Transaction',
-    lastPropertyId: const obx_int.IdUid(8, 7388451711990150673),
+    lastPropertyId: const obx_int.IdUid(9, 3156196231427403429),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -131,6 +137,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(8, 7388451711990150673),
         name: 'dateCreatedMilliseconds',
         type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 3156196231427403429),
+        name: 'isModified',
+        type: 1,
         flags: 0,
       ),
     ],
@@ -204,7 +216,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
             ? null
             : fbb.writeString(object.serverId!);
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
-        fbb.startTable(9);
+        fbb.startTable(10);
         fbb.addInt64(0, object.localId);
         fbb.addOffset(1, serverIdOffset);
         fbb.addOffset(2, dbCategoryOffset);
@@ -213,6 +225,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt64(5, object.year);
         fbb.addFloat64(6, object.spent);
         fbb.addFloat64(7, object.remaining);
+        fbb.addBool(8, object.isModified);
         fbb.finish(fbb.endTable());
         return object.localId;
       },
@@ -261,6 +274,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
           18,
           0,
         );
+        final isModifiedParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          20,
+          false,
+        );
         final object = Budget(
           localId: localIdParam,
           serverId: serverIdParam,
@@ -270,6 +289,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           year: yearParam,
           spent: spentParam,
           remaining: remainingParam,
+          isModified: isModifiedParam,
         );
 
         return object;
@@ -290,7 +310,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final descriptionOffset = fbb.writeString(object.description);
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
         final dbTypeOffset = fbb.writeString(object.dbType);
-        fbb.startTable(9);
+        fbb.startTable(10);
         fbb.addInt64(0, object.localId);
         fbb.addOffset(1, serverIdOffset);
         fbb.addFloat64(2, object.amount);
@@ -299,6 +319,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(5, dbTypeOffset);
         fbb.addInt64(6, object.dateMilliseconds);
         fbb.addInt64(7, object.dateCreatedMilliseconds);
+        fbb.addBool(8, object.isModified);
         fbb.finish(fbb.endTable());
         return object.localId;
       },
@@ -341,6 +362,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
           18,
           0,
         );
+        final isModifiedParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          20,
+          false,
+        );
         final object = Transaction(
           localId: localIdParam,
           serverId: serverIdParam,
@@ -350,6 +377,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           dbType: dbTypeParam,
           dateMilliseconds: dateMillisecondsParam,
           dateCreatedMilliseconds: dateCreatedMillisecondsParam,
+          isModified: isModifiedParam,
         );
 
         return object;
@@ -401,6 +429,11 @@ class Budget_ {
   static final remaining = obx.QueryDoubleProperty<Budget>(
     _entities[0].properties[7],
   );
+
+  /// See [Budget.isModified].
+  static final isModified = obx.QueryBooleanProperty<Budget>(
+    _entities[0].properties[8],
+  );
 }
 
 /// [Transaction] entity fields to define ObjectBox queries.
@@ -443,5 +476,10 @@ class Transaction_ {
   /// See [Transaction.dateCreatedMilliseconds].
   static final dateCreatedMilliseconds = obx.QueryIntegerProperty<Transaction>(
     _entities[1].properties[7],
+  );
+
+  /// See [Transaction.isModified].
+  static final isModified = obx.QueryBooleanProperty<Transaction>(
+    _entities[1].properties[8],
   );
 }

@@ -31,8 +31,22 @@ class ApiService {
     },
   ));
 
+  @visibleForTesting
+  Dio get dio => _dio;
+
   ApiService._internal() {
     _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final token = _token;
+        if (token != null &&
+            !options.headers.containsKey('Authorization') &&
+            options.path != ApiConfig.refreshToken &&
+            options.path != ApiConfig.login &&
+            options.path != ApiConfig.register) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        return handler.next(options);
+      },
       onError: (DioException e, handler) async {
         if (e.response?.statusCode == 401 &&
             e.requestOptions.path != ApiConfig.refreshToken) {
@@ -447,11 +461,15 @@ class ApiService {
   }
 
   /// Получить AI-инсайты.
-  Future<Map<String, dynamic>> getInsights() async {
+  Future<Map<String, dynamic>> getInsights({CancelToken? cancelToken}) async {
     try {
       final response = await _dio.get(
         ApiConfig.insights,
-        options: _authOptions(),
+        options: Options(
+          receiveTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+        cancelToken: cancelToken,
       );
 
       return response.data['data'] as Map<String, dynamic>;
@@ -691,7 +709,19 @@ class ApiService {
 
   void _assignTransactionIds(List<Transaction> sent, dynamic remote) {
     final remoteItems = _asJsonList(remote);
-    if (remoteItems.isEmpty) return;
+    if (remoteItems.isEmpty) {
+      final synced = <Transaction>[];
+      for (final local in sent) {
+        if (local.isModified) {
+          local.isModified = false;
+          synced.add(local);
+        }
+      }
+      if (synced.isNotEmpty) {
+        LocalDbService.instance.putTransactions(synced);
+      }
+      return;
+    }
 
     final synced = <Transaction>[];
 
@@ -701,21 +731,37 @@ class ApiService {
 
         if (id is String) {
           sent[i].serverId = id;
+          sent[i].isModified = false;
           synced.add(sent[i]);
         }
       }
     } else {
+      final byId = <String, Map<String, dynamic>>{};
       final byKey = <String, Map<String, dynamic>>{};
 
       for (final json in remoteItems) {
+        final id = json['id'];
+        if (id is String) {
+          byId[id] = json;
+        }
         byKey[_remoteTransactionKey(json)] = json;
       }
       for (final local in sent) {
-        final id = byKey[_localTransactionKey(local)]?['id'];
-
-        if (id is String) {
-          local.serverId = id;
+        if (local.serverId != null && byId.containsKey(local.serverId)) {
+          local.isModified = false;
           synced.add(local);
+        } else {
+          final matchedJson = byKey[_localTransactionKey(local)];
+          final id = matchedJson?['id'];
+
+          if (id is String) {
+            local.serverId = id;
+            local.isModified = false;
+            synced.add(local);
+          } else if (local.serverId != null) {
+            local.isModified = false;
+            synced.add(local);
+          }
         }
       }
     }
@@ -728,7 +774,19 @@ class ApiService {
 
   void _assignBudgetIds(List<Budget> sent, dynamic remote) {
     final remoteItems = _asJsonList(remote);
-    if (remoteItems.isEmpty) return;
+    if (remoteItems.isEmpty) {
+      final synced = <Budget>[];
+      for (final local in sent) {
+        if (local.isModified) {
+          local.isModified = false;
+          synced.add(local);
+        }
+      }
+      if (synced.isNotEmpty) {
+        LocalDbService.instance.putBudgets(synced);
+      }
+      return;
+    }
 
     final synced = <Budget>[];
 
@@ -738,22 +796,38 @@ class ApiService {
 
         if (id is String) {
           sent[i].serverId = id;
+          sent[i].isModified = false;
           synced.add(sent[i]);
         }
       }
     } else {
+      final byId = <String, Map<String, dynamic>>{};
       final byKey = <String, Map<String, dynamic>>{};
 
       for (final json in remoteItems) {
+        final id = json['id'];
+        if (id is String) {
+          byId[id] = json;
+        }
         byKey['${json['category']}|${json['month']}|${json['year']}'] = json;
       }
       for (final local in sent) {
-        final id =
-            byKey['${local.category.name}|${local.month}|${local.year}']?['id'];
-
-        if (id is String) {
-          local.serverId = id;
+        if (local.serverId != null && byId.containsKey(local.serverId)) {
+          local.isModified = false;
           synced.add(local);
+        } else {
+          final matchedJson =
+              byKey['${local.category.name}|${local.month}|${local.year}'];
+          final id = matchedJson?['id'];
+
+          if (id is String) {
+            local.serverId = id;
+            local.isModified = false;
+            synced.add(local);
+          } else if (local.serverId != null) {
+            local.isModified = false;
+            synced.add(local);
+          }
         }
       }
     }

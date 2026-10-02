@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import '../services/api_service.dart';
 import '../widgets/custom_pull_to_refresh.dart';
 import '../utils/app_error_handler.dart';
 import '../utils/language_manager.dart';
+import '../models/insights_model.dart';
 
 /// Экран AI-инсайтов.
 class InsightsScreen extends StatefulWidget {
@@ -17,12 +19,24 @@ class InsightsScreen extends StatefulWidget {
 class _InsightsScreenState extends State<InsightsScreen> {
   bool _isLoading = false;
   List<String> _insights = [];
+  DateTime? _generatedAt;
   String? _error;
+  CancelToken? _cancelToken;
+
+  /// Дата генерации аналитики (для тестов и отладки).
+  @visibleForTesting
+  DateTime? get generatedAt => _generatedAt;
 
   @override
   void initState() {
     super.initState();
     _loadInsights();
+  }
+
+  @override
+  void dispose() {
+    _cancelToken?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadInsights() async {
@@ -31,6 +45,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
         _insights = [
           LanguageManager.t('insight_login_hint'),
         ];
+        _generatedAt = null;
       });
       return;
     }
@@ -45,6 +60,10 @@ class _InsightsScreenState extends State<InsightsScreen> {
       return;
     }
 
+    _cancelToken?.cancel();
+    final cancelToken = CancelToken();
+    _cancelToken = cancelToken;
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -52,14 +71,19 @@ class _InsightsScreenState extends State<InsightsScreen> {
 
     try {
       if (kDebugMode) debugPrint('[Insights] Loading insights via pull-to-refresh');
-      final data = await ApiService.instance.getInsights();
+      final data = await ApiService.instance.getInsights(cancelToken: cancelToken);
+      if (!mounted) return;
+      final parsed = InsightsModel.fromJson(data);
       setState(() {
-        _insights = List<String>.from(data['insights'] ?? []);
-        if (_insights.isEmpty) {
-          _insights = [LanguageManager.t('insight_no_data')];
-        }
+        _generatedAt = parsed.generatedAt;
+        _insights = parsed.insights.isNotEmpty
+            ? parsed.insights
+            : [LanguageManager.t('insight_no_data')];
       });
     } catch (e) {
+      if (e is DioException && CancelToken.isCancel(e)) {
+        return;
+      }
       if (mounted) {
         AppErrorHandler.show(context, e, title: LanguageManager.t('insights_header_title'));
         setState(() {
@@ -67,7 +91,9 @@ class _InsightsScreenState extends State<InsightsScreen> {
         });
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -161,6 +187,62 @@ class _InsightsScreenState extends State<InsightsScreen> {
                     fontWeight: FontWeight.bold,
                     color: Colors.black87),
               ),
+              if (_generatedAt != null && _error == null) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(Icons.schedule, size: 14, color: Colors.grey.shade600),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${LanguageManager.t('insights_updated_prefix')}: ${LanguageManager.formatDate(_generatedAt!)}',
+                      key: const Key('insights_updated_at'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if ((_generatedAt != null ||
+                      (ApiService.instance.isAuthenticated &&
+                          _error == null &&
+                          !_isLoading &&
+                          _insights.isNotEmpty &&
+                          !_insights.contains(
+                              LanguageManager.t('insight_login_hint')))) &&
+                  _error == null) ...[
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline,
+                          size: 15, color: Colors.blueGrey.shade500),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          LanguageManager.t('insights_cache_hint'),
+                          key: const Key('insights_cache_hint'),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: Colors.blueGrey.shade700,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               Expanded(
                 child: _isLoading
