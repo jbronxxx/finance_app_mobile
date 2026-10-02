@@ -46,6 +46,20 @@ class AppErrorHandler {
         );
         return;
       }
+
+      // Обработка временной недоступности сервиса (HTTP 503 / SERVICE_UNAVAILABLE)
+      if (error.response?.statusCode == 503 ||
+          code == 'SERVICE_UNAVAILABLE' ||
+          (data is Map && data['status'] == 'SERVICE_UNAVAILABLE')) {
+        final customMsg = (data is Map && data['message'] != null && data['message'].toString().isNotEmpty)
+            ? data['message'].toString()
+            : null;
+        AppAlerts.showServiceUnavailableDialog(
+          context,
+          message: customMsg,
+        );
+        return;
+      }
     }
 
     AppAlerts.error(context, message, title: title);
@@ -61,7 +75,11 @@ class AppErrorHandler {
       if (data is Map) {
         // Извлечение сообщения из унифицированного контракта ErrorResponse
         if (data['message'] != null && data['message'].toString().isNotEmpty) {
-          message = data['message'];
+          message = data['message'].toString();
+        } else if (data['code'] == 'SERVICE_UNAVAILABLE' ||
+            data['status'] == 'SERVICE_UNAVAILABLE' ||
+            error.response?.statusCode == 503) {
+          message = LanguageManager.t('http_503');
         }
 
         // Обработка детальных ошибок валидации (VALIDATION_ERROR)
@@ -83,6 +101,7 @@ class AppErrorHandler {
           case 403: message = LanguageManager.t('http_403'); break;
           case 404: message = LanguageManager.t('http_404'); break;
           case 500: message = LanguageManager.t('http_500'); break;
+          case 503: message = LanguageManager.t('http_503'); break;
           default: message = '${LanguageManager.t('server_error_code')}: ${error.response?.statusCode}';
         }
       }

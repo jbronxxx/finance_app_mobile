@@ -12,6 +12,7 @@ import 'utils/currency_formatter.dart';
 import 'utils/language_manager.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth_screen.dart';
+import 'screens/service_unavailable_screen.dart';
 
 /// Точка входа в приложение.
 void main() async {
@@ -92,6 +93,7 @@ class FinanceApp extends StatelessWidget {
           routes: {
             '/': (context) => const MainShell(),
             '/login': (context) => const AuthScreen(),
+            '/service-unavailable': (context) => const ServiceUnavailableScreen(),
           },
           theme: ThemeData(
             useMaterial3: true,

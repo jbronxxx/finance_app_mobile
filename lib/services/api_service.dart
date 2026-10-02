@@ -9,6 +9,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
 import 'local_db_service.dart';
 import 'pending_deletions_store.dart';
+import 'tracing_interceptor.dart';
 import 'dart:async';
 
 /// Клиент для работы с API бэкенда.
@@ -35,6 +36,7 @@ class ApiService {
   Dio get dio => _dio;
 
   ApiService._internal() {
+    _dio.interceptors.add(TracingInterceptor());
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
         final token = _token;
@@ -487,6 +489,17 @@ class ApiService {
       return response.data['data'] as Map<String, dynamic>;
     } catch (e) {
       if (kDebugMode) debugPrint('[ApiService] Get insights error: $e');
+      rethrow;
+    }
+  }
+
+  /// Проверка состояния сервера (/health).
+  Future<Map<String, dynamic>> checkHealth() async {
+    try {
+      final response = await _dio.get(ApiConfig.health);
+      return response.data is Map ? (response.data as Map).cast<String, dynamic>() : {'status': 'ok'};
+    } catch (e) {
+      if (kDebugMode) debugPrint('[ApiService] Health check error: $e');
       rethrow;
     }
   }

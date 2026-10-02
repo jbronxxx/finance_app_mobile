@@ -37,7 +37,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('Баланс'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.text('Баланс'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Лимиты'), findsOneWidget);
   });
 }
