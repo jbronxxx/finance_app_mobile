@@ -3,21 +3,18 @@ import 'local_db_models.dart';
 /// Модель пагинированного ответа API (`PaginatedResponse<T>`).
 class PaginatedResponse<T> {
   final List<T> items;
-  final int total;
+  final bool hasMore;
+  final String? nextCursor;
   final int limit;
-  final int offset;
 
   const PaginatedResponse({
     required this.items,
-    required this.total,
+    required this.hasMore,
+    this.nextCursor,
     required this.limit,
-    required this.offset,
   });
 
-  /// Вычисляет наличие следующей страницы на основе текущего смещения и общего числа элементов.
-  bool get hasMore => offset + items.length < total;
-
-  /// Разбирает структуру ответа с элементами `items` и метаданными пагинации `total`, `limit`, `offset`.
+  /// Разбирает структуру ответа с элементами `items` и метаданными пагинации `has_more`, `limit`, `next_cursor`.
   factory PaginatedResponse.fromJson(
     Map<String, dynamic> json,
     T Function(dynamic item) fromJsonT,
@@ -29,9 +26,9 @@ class PaginatedResponse<T> {
 
     return PaginatedResponse<T>(
       items: itemsList,
-      total: parseInteger(json['total']),
+      hasMore: json['has_more'] as bool? ?? false,
+      nextCursor: json['next_cursor'] as String?,
       limit: parseInteger(json['limit'], 50),
-      offset: parseInteger(json['offset']),
     );
   }
 
@@ -39,9 +36,9 @@ class PaginatedResponse<T> {
   Map<String, dynamic> toJson(Map<String, dynamic> Function(T item) toJsonT) {
     return {
       'items': items.map((e) => toJsonT(e)).toList(),
-      'total': total,
+      'has_more': hasMore,
+      'next_cursor': nextCursor,
       'limit': limit,
-      'offset': offset,
     };
   }
 }

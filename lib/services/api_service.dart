@@ -316,16 +316,16 @@ class ApiService {
   }
 
   /// Запрашивает список транзакций с бэкенда с поддержкой пагинации и фильтрации по дате.
-  /// Ограничивает `limit` диапазоном от 1 до 100 и предотвращает отрицательные значения `offset`.
+  /// Ограничивает `limit` диапазоном от 1 до 100.
   Future<PaginatedResponse<TransactionModel>> getTransactions({
     int limit = 50,
-    int offset = 0,
+    String? cursor,
     DateTime? since,
   }) async {
     try {
       final queryParams = <String, dynamic>{
         'limit': limit.clamp(1, 100),
-        'offset': offset < 0 ? 0 : offset,
+        if (cursor != null) 'cursor': cursor,
         if (since != null) 'since': since.toUtc().toIso8601String(),
       };
 
@@ -350,17 +350,15 @@ class ApiService {
             .toList();
         return PaginatedResponse<TransactionModel>(
           items: items,
-          total: items.length,
+          hasMore: false,
           limit: limit,
-          offset: offset,
         );
       }
 
       return PaginatedResponse<TransactionModel>(
         items: const [],
-        total: 0,
+        hasMore: false,
         limit: limit,
-        offset: offset,
       );
     } catch (e) {
       if (kDebugMode) debugPrint('[ApiService] Get transactions error: $e');
@@ -787,14 +785,13 @@ class ApiService {
     }
 
     const pageSize = 100;
-    int currentOffset = 0;
+    String? currentCursor;
     final allTransactions = <Transaction>[];
 
     final firstResponse = await _dio.get(
       ApiConfig.transactions,
       queryParameters: {
         'limit': pageSize,
-        'offset': currentOffset,
         if (since != null) 'since': since.toUtc().toIso8601String(),
       },
       options: options,
@@ -814,16 +811,16 @@ class ApiService {
     final firstItems = _asJsonList(firstData);
     allTransactions.addAll(firstItems.map(Transaction.fromJson));
 
-    if (firstData is Map && firstData['total'] is num) {
-      final total = (firstData['total'] as num).toInt();
-      currentOffset += firstItems.length;
+    if (firstData is Map) {
+      bool hasMore = firstData['has_more'] == true;
+      currentCursor = firstData['next_cursor'] as String?;
 
-      while (currentOffset < total) {
+      while (hasMore && currentCursor != null) {
         final nextResponse = await _dio.get(
           ApiConfig.transactions,
           queryParameters: {
             'limit': pageSize,
-            'offset': currentOffset,
+            'cursor': currentCursor,
             if (since != null) 'since': since.toUtc().toIso8601String(),
           },
           options: _authOptions(token),
@@ -834,7 +831,13 @@ class ApiService {
         if (nextItems.isEmpty) break;
 
         allTransactions.addAll(nextItems.map(Transaction.fromJson));
-        currentOffset += nextItems.length;
+        
+        if (nextData is Map) {
+          hasMore = nextData['has_more'] == true;
+          currentCursor = nextData['next_cursor'] as String?;
+        } else {
+          hasMore = false;
+        }
       }
     }
 

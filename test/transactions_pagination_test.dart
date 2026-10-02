@@ -53,9 +53,9 @@ void main() {
             'created_at': '2026-09-10T10:30:00Z',
           }
         ],
-        'total': 120,
+        'has_more': true,
+        'next_cursor': 'cursor_123',
         'limit': 50,
-        'offset': 0,
       };
 
       final paginated = PaginatedResponse<TransactionModel>.fromJson(
@@ -63,9 +63,9 @@ void main() {
         (item) => TransactionModel.fromJson(item as Map<String, dynamic>),
       );
 
-      expect(paginated.total, 120);
+      expect(paginated.hasMore, isTrue);
+      expect(paginated.nextCursor, 'cursor_123');
       expect(paginated.limit, 50);
-      expect(paginated.offset, 0);
       expect(paginated.items.length, 1);
       expect(paginated.hasMore, isTrue);
 
@@ -91,9 +91,9 @@ void main() {
             'date': '2026-09-10T10:00:00Z',
           }
         ],
-        'total': 1,
+        'has_more': false,
+        'next_cursor': null,
         'limit': 50,
-        'offset': 0,
       };
 
       final paginated = PaginatedResponse<TransactionModel>.fromJson(
@@ -154,7 +154,7 @@ void main() {
       );
     });
 
-    test('ApiService.getTransactions sends limit, offset, since and parses PaginatedResponse', () async {
+    test('ApiService.getTransactions sends limit, cursor, since and parses PaginatedResponse', () async {
       final api = ApiService.instance;
       await api.setTokens('test_access_token', 'test_refresh_token');
 
@@ -184,9 +184,9 @@ void main() {
                       'created_at': '2026-09-10T10:30:00Z',
                     }
                   ],
-                  'total': 120,
+                  'has_more': true,
+                  'next_cursor': 'cursor_123',
                   'limit': 25,
-                  'offset': 10,
                 },
               },
             ));
@@ -201,19 +201,19 @@ void main() {
         final sinceDate = DateTime.utc(2026, 9, 1);
         final result = await api.getTransactions(
           limit: 25,
-          offset: 10,
+          cursor: 'cursor_1',
           since: sinceDate,
         );
 
         expect(capturedQueryParams, isNotNull);
         expect(capturedQueryParams!['limit'], 25);
-        expect(capturedQueryParams!['offset'], 10);
+        expect(capturedQueryParams!['cursor'], 'cursor_1');
         expect(capturedQueryParams!['since'], '2026-09-01T00:00:00.000Z');
         expect(capturedHeaders!['Authorization'], 'Bearer test_access_token');
 
-        expect(result.total, 120);
+        expect(result.hasMore, isTrue);
+        expect(result.nextCursor, 'cursor_123');
         expect(result.limit, 25);
-        expect(result.offset, 10);
         expect(result.items.length, 1);
         expect(result.items.first.id, '550e8400-e29b-41d4-a716-446655440001');
       } finally {
@@ -221,7 +221,7 @@ void main() {
       }
     });
 
-    test('ApiService.getTransactions clamps limit to 1..100 and clamps offset >= 0', () async {
+    test('ApiService.getTransactions clamps limit to 1..100', () async {
       final api = ApiService.instance;
       await api.setTokens('test_token', 'test_refresh');
 
@@ -238,9 +238,8 @@ void main() {
                 'status': 'success',
                 'data': {
                   'items': [],
-                  'total': 0,
+                  'has_more': false,
                   'limit': 100,
-                  'offset': 0,
                 },
               },
             ));
@@ -252,15 +251,15 @@ void main() {
       api.dio.interceptors.insert(0, interceptor);
 
       try {
-        // limit > 100 should clamp to 100, offset < 0 should clamp to 0
-        await api.getTransactions(limit: 500, offset: -5);
+        // limit > 100 should clamp to 100
+        await api.getTransactions(limit: 500, cursor: 'c1');
         expect(capturedQueryParams!['limit'], 100);
-        expect(capturedQueryParams!['offset'], 0);
+        expect(capturedQueryParams!['cursor'], 'c1');
 
         // limit < 1 should clamp to 1
-        await api.getTransactions(limit: 0, offset: 5);
+        await api.getTransactions(limit: 0);
         expect(capturedQueryParams!['limit'], 1);
-        expect(capturedQueryParams!['offset'], 5);
+        expect(capturedQueryParams!.containsKey('cursor'), isFalse);
       } finally {
         api.dio.interceptors.remove(interceptor);
       }
@@ -300,7 +299,7 @@ void main() {
       try {
         final result = await api.getTransactions();
         expect(result.items.length, 1);
-        expect(result.total, 1);
+        expect(result.hasMore, isFalse);
         expect(result.items.first.id, 'legacy-tx-1');
       } finally {
         api.dio.interceptors.remove(interceptor);
