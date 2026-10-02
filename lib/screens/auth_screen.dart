@@ -9,6 +9,24 @@ import '../utils/language_manager.dart';
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
+  /// Проверяет соответствие пароля правилам безопасности:
+  /// длина от 6 до 72 символов, наличие хотя бы одной буквы и одной цифры.
+  static String? validatePassword(String? password) {
+    if (password == null || password.isEmpty) {
+      return LanguageManager.t('fill_all_fields');
+    }
+    if (password.length < 6 || password.length > 72) {
+      return LanguageManager.t('password_validation_error');
+    }
+    // Проверка регулярными выражениями наличия буквенных символов и цифр
+    final hasLetter = RegExp(r'[a-zA-Z\p{L}]', unicode: true).hasMatch(password);
+    final hasDigit = RegExp(r'[0-9]').hasMatch(password);
+    if (!hasLetter || !hasDigit) {
+      return LanguageManager.t('password_validation_error');
+    }
+    return null;
+  }
+
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -41,6 +59,14 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!_isLoginMode && name.isEmpty) {
       AppAlerts.warning(context, LanguageManager.t('enter_name_alert'));
       return;
+    }
+
+    if (!_isLoginMode) {
+      final passwordError = AuthScreen.validatePassword(password);
+      if (passwordError != null) {
+        AppAlerts.warning(context, passwordError);
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -149,6 +175,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: LanguageManager.t('password_label'),
+                  helperText: !_isLoginMode ? LanguageManager.t('password_requirements_hint') : null,
+                  helperMaxLines: 2,
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16)),
                   prefixIcon: const Icon(Icons.lock_outline),
