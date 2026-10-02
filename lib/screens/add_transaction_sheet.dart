@@ -63,10 +63,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
     if (widget.transactionToEdit != null) {
       final t = widget.transactionToEdit!;
-      // serverId и дату создания обязательно переносим в новый объект: без
-      // них уже выгруженная запись снова попадёт в
-      // `getUnsyncedTransactions()` и создаст дубликат на сервере при
-      // следующей синхронизации.
+      // serverId и дату создания обязательно переносим в новый объект.
+      // Если у транзакции уже есть serverId, выставляем isModified = true,
+      // чтобы изменения были отправлены на бэкенд при следующей синхронизации.
       final updated = Transaction(
         localId: t.localId,
         serverId: t.serverId,
@@ -76,6 +75,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         dateMilliseconds: t.date.millisecondsSinceEpoch,
         description: _descriptionController.text.trim(),
         dateCreatedMilliseconds: t.dateCreatedMilliseconds,
+        isModified: t.serverId != null,
       );
       LocalDbService.instance.saveTransaction(updated);
     } else {

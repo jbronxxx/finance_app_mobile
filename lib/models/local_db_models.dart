@@ -83,6 +83,7 @@ class Transaction {
   final String dbType;
   final int dateMilliseconds;
   final int dateCreatedMilliseconds;
+  bool isModified;
 
   Transaction({
     this.localId = 0,
@@ -93,6 +94,7 @@ class Transaction {
     required this.dbType,
     required this.dateMilliseconds,
     required this.dateCreatedMilliseconds,
+    this.isModified = false,
   });
 
   @Transient()
@@ -124,6 +126,7 @@ class Transaction {
       dateMilliseconds: date.millisecondsSinceEpoch,
       dateCreatedMilliseconds: (parseServerDate(json['date_created']) ?? date)
           .millisecondsSinceEpoch,
+      isModified: false,
     );
   }
 
@@ -160,6 +163,7 @@ class Budget {
   final int year;
   final double spent;
   final double remaining;
+  bool isModified;
 
   Budget({
     this.localId = 0,
@@ -170,6 +174,7 @@ class Budget {
     required this.year,
     required this.spent,
     required this.remaining,
+    this.isModified = false,
   });
 
   @Transient()
@@ -190,6 +195,7 @@ class Budget {
       year: (json['year'] as num?)?.toInt() ?? 0,
       spent: (json['spent'] as num?)?.toDouble() ?? 0.0,
       remaining: (json['remaining'] as num?)?.toDouble() ?? 0.0,
+      isModified: false,
     );
   }
 

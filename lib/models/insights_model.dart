@@ -1,0 +1,48 @@
+/// DTO модели ответа AI-аналитики (`GET /api/v1/insights/`).
+class InsightsModel {
+  final List<String> insights;
+  final DateTime? generatedAt;
+
+  const InsightsModel({
+    required this.insights,
+    this.generatedAt,
+  });
+
+  /// Безопасный парсинг даты из ответа бэкенда.
+  ///
+  /// Поддерживает ISO-8601 строки (включая UTC с суффиксом Z),
+  /// а также unix-timestamp в секундах или миллисекундах.
+  static DateTime? parseGeneratedAt(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      return DateTime.tryParse(value)?.toLocal();
+    }
+    if (value is num) {
+      final intVal = value.toInt();
+      return intVal > 100000000000
+          ? DateTime.fromMillisecondsSinceEpoch(intVal)
+          : DateTime.fromMillisecondsSinceEpoch(intVal * 1000);
+    }
+    return null;
+  }
+
+  factory InsightsModel.fromJson(Map<String, dynamic> json) {
+    final payload = json.containsKey('data') && json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+
+    return InsightsModel(
+      insights: (payload['insights'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      generatedAt: parseGeneratedAt(payload['generated_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'insights': insights,
+        'generated_at': generatedAt?.toIso8601String(),
+      };
+}

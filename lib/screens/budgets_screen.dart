@@ -206,6 +206,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           year: _selectedYear,
                           spent: spent,
                           remaining: amount - spent,
+                          isModified: budgetToEdit?.serverId != null,
                         );
                         LocalDbService.instance.saveBudget(newBudget);
                         Navigator.pop(context);

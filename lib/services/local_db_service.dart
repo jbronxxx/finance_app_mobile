@@ -123,10 +123,10 @@ class LocalDbService {
   /// [claimed] — локальные `localId`, уже занятые другими записями в рамках
   /// одного прохода сверки; нужен, чтобы две серверные записи не «прилипли»
   /// к одной локальной строке.
-  void _linkToExistingTransaction(Transaction transaction,
+  int? _linkToExistingTransaction(Transaction transaction,
       {Set<int>? claimed}) {
     final serverId = transaction.serverId;
-    if (serverId == null) return;
+    if (serverId == null) return null;
 
     final query =
         _transactionBox.query(Transaction_.serverId.equals(serverId)).build();
@@ -136,7 +136,7 @@ class LocalDbService {
     if (existing != null) {
       transaction.localId = existing.localId;
       claimed?.add(existing.localId);
-      return;
+      return existing.localId;
     }
 
     // Записи с таким serverId локально нет. Прежде чем вставлять новую
@@ -150,7 +150,10 @@ class LocalDbService {
     if (twin != null) {
       transaction.localId = twin.localId;
       claimed?.add(twin.localId);
+      return twin.localId;
     }
+
+    return null;
   }
 
   /// Ищет невыгруженную локальную транзакцию, совпадающую с [remote] по
@@ -201,10 +204,15 @@ class LocalDbService {
     _transactionBox.putMany(transactions);
   }
 
-  /// Возвращает транзакции, ещё не отправленные на сервер (`serverId == null`).
-  /// Используется при синхронизации гостевых данных после входа/регистрации.
+  /// Возвращает транзакции, ещё не отправленные на сервер (`serverId == null`
+  /// или `isModified == true`).
+  /// Используется при синхронизации гостевых/локальных данных после входа/редактирования.
   List<Transaction> getUnsyncedTransactions() {
-    final query = _transactionBox.query(Transaction_.serverId.isNull()).build();
+    final query = _transactionBox
+        .query(Transaction_.serverId
+            .isNull()
+            .or(Transaction_.isModified.equals(true)))
+        .build();
     final results = query.find();
     query.close();
     return results;
@@ -219,9 +227,9 @@ class LocalDbService {
   /// 2. удаление локальных записей, у которых `serverId` есть, но в [remote]
   ///    его нет, — значит запись удалили на сервере.
   ///
-  /// Записи с `serverId == null` не удаляются никогда: это данные, созданные
-  /// офлайн и ещё не выгруженные (см. [getUnsyncedTransactions]). Стереть их
-  /// означало бы потерять ровно то, что синхронизация призвана сохранить.
+  /// Записи с `serverId == null` или `isModified == true` не удаляются
+  /// и не перезаписываются устаревшими данными сервера: это локальные изменения,
+  /// еще не выгруженные на бэкенд (см. [getUnsyncedTransactions]).
   ///
   /// Вызывать ТОЛЬКО с полным ответом сервера: для отфильтрованной или
   /// частичной выборки «нет в [remote]» не означает «удалено на сервере»,
@@ -236,18 +244,30 @@ class LocalDbService {
   int reconcileTransactions(List<Transaction> remote) {
     return _store.runInTransaction(TxMode.write, () {
       final claimed = <int>{};
+      final toPut = <Transaction>[];
 
       for (final transaction in remote) {
-        _linkToExistingTransaction(transaction, claimed: claimed);
+        final localId =
+            _linkToExistingTransaction(transaction, claimed: claimed);
+        if (localId != null) {
+          final existing = _transactionBox.get(localId);
+          if (existing != null && existing.isModified) {
+            continue;
+          }
+        }
+        toPut.add(transaction);
       }
-      _transactionBox.putMany(remote);
+      _transactionBox.putMany(toPut);
 
       final remoteIds =
           remote.map((t) => t.serverId).whereType<String>().toSet();
 
       final stale = _transactionBox
           .getAll()
-          .where((t) => t.serverId != null && !remoteIds.contains(t.serverId))
+          .where((t) =>
+              t.serverId != null &&
+              !t.isModified &&
+              !remoteIds.contains(t.serverId))
           .map((t) => t.localId)
           .toList();
 
@@ -292,7 +312,7 @@ class LocalDbService {
   /// сервера строка находилась только по натуральному ключу — из-за чего
   /// `serverId` мог продублироваться между строками и `put` падал с
   /// `UniqueViolationException`.
-  void _linkToExistingBudget(Budget budget) {
+  int? _linkToExistingBudget(Budget budget) {
     final serverId = budget.serverId;
 
     if (serverId != null) {
@@ -303,7 +323,7 @@ class LocalDbService {
 
       if (existing != null) {
         budget.localId = existing.localId;
-        return;
+        return existing.localId;
       }
     }
 
@@ -320,7 +340,10 @@ class LocalDbService {
 
     if (existing != null) {
       budget.localId = existing.localId;
+      return existing.localId;
     }
+
+    return null;
   }
 
   /// Массово сохраняет бюджеты, которым только что проставили `serverId`
@@ -330,10 +353,15 @@ class LocalDbService {
     _budgetBox.putMany(budgets);
   }
 
-  /// Возвращает лимиты бюджета, ещё не отправленные на сервер (`serverId == null`).
-  /// Используется при синхронизации гостевых данных после входа/регистрации.
+  /// Возвращает лимиты бюджета, ещё не отправленные на сервер (`serverId == null`
+  /// или `isModified == true`).
+  /// Используется при синхронизации гостевых/локальных данных после входа/редактирования.
   List<Budget> getUnsyncedBudgets() {
-    final query = _budgetBox.query(Budget_.serverId.isNull()).build();
+    final query = _budgetBox
+        .query(Budget_.serverId
+            .isNull()
+            .or(Budget_.isModified.equals(true)))
+        .build();
     final results = query.find();
     query.close();
     return results;
@@ -343,17 +371,29 @@ class LocalDbService {
   /// см. [reconcileTransactions], правила те же.
   int reconcileBudgets(List<Budget> remote) {
     return _store.runInTransaction(TxMode.write, () {
+      final toPut = <Budget>[];
+
       for (final budget in remote) {
-        _linkToExistingBudget(budget);
+        final localId = _linkToExistingBudget(budget);
+        if (localId != null) {
+          final existing = _budgetBox.get(localId);
+          if (existing != null && existing.isModified) {
+            continue;
+          }
+        }
+        toPut.add(budget);
       }
-      _budgetBox.putMany(remote);
+      _budgetBox.putMany(toPut);
 
       final remoteIds =
           remote.map((b) => b.serverId).whereType<String>().toSet();
 
       final stale = _budgetBox
           .getAll()
-          .where((b) => b.serverId != null && !remoteIds.contains(b.serverId))
+          .where((b) =>
+              b.serverId != null &&
+              !b.isModified &&
+              !remoteIds.contains(b.serverId))
           .map((b) => b.localId)
           .toList();
 

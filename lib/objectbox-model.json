@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:5574192560812130677",
-      "lastPropertyId": "8:6053026932893744209",
+      "lastPropertyId": "9:8255407588655905292",
       "name": "Budget",
       "properties": [
         {
@@ -50,13 +50,18 @@
           "id": "8:6053026932893744209",
           "name": "remaining",
           "type": 8
+        },
+        {
+          "id": "9:8255407588655905292",
+          "name": "isModified",
+          "type": 1
         }
       ],
       "relations": []
     },
     {
       "id": "2:4394803372386859630",
-      "lastPropertyId": "8:7388451711990150673",
+      "lastPropertyId": "9:3156196231427403429",
       "name": "Transaction",
       "properties": [
         {
@@ -101,6 +106,11 @@
           "id": "8:7388451711990150673",
           "name": "dateCreatedMilliseconds",
           "type": 6
+        },
+        {
+          "id": "9:3156196231427403429",
+          "name": "isModified",
+          "type": 1
         }
       ],
       "relations": []
