@@ -182,8 +182,9 @@ class LanguageManager {
     'auth_network_required': { AppLanguage.ru: 'Для входа или регистрации необходимо интернет-соединение', AppLanguage.uz: 'Kirish yoki ro\'yxatdan o\'tish uchun tarmoqqa ulanish zarur', AppLanguage.en: 'Internet connection is required to log in or register' },
     'login_error_title': { AppLanguage.ru: 'Ошибка входа', AppLanguage.uz: 'Kirishda xatolik', AppLanguage.en: 'Login Error' },
     'register_error_title': { AppLanguage.ru: 'Ошибка регистрации', AppLanguage.uz: 'Ro\'yxatdan o\'tishda xatolik', AppLanguage.en: 'Registration Error' },
-    'password_validation_error': { AppLanguage.ru: 'Пароль должен содержать от 6 до 72 символов, включая минимум одну букву и одну цифру', AppLanguage.uz: 'Parol kamida bitta harf va bitta raqamdan iborat 6 dan 72 gacha belgidan iborat bo\'lishi kerak', AppLanguage.en: 'Password must be 6 to 72 characters, including at least one letter and one number' },
-    'password_requirements_hint': { AppLanguage.ru: 'От 6 до 72 символов (минимум 1 буква и 1 цифра)', AppLanguage.uz: '6 dan 72 gacha belgi (kamida 1 harf va 1 raqam)', AppLanguage.en: '6 to 72 characters (at least 1 letter and 1 number)' },
+    'password_validation_error': { AppLanguage.ru: 'Пароль должен содержать минимум 6 символов, включая минимум одну букву и одну цифру', AppLanguage.uz: 'Parol kamida bitta harf va bitta raqamdan iborat kamida 6 belgidan iborat bo\'lishi kerak', AppLanguage.en: 'Password must be at least 6 characters, including at least one letter and one number' },
+    'password_requirements_hint': { AppLanguage.ru: 'Минимум 6 символов (1 буква и 1 цифра)', AppLanguage.uz: 'Kamida 6 belgi (1 harf va 1 raqam)', AppLanguage.en: 'Min 6 characters (1 letter and 1 number)' },
+    'password_too_long_bytes': { AppLanguage.ru: 'Пароль слишком длинный (макс. 72 байта)', AppLanguage.uz: 'Parol juda uzun (maks. 72 bayt)', AppLanguage.en: 'Password is too long (max 72 bytes)' },
     'sync_login_required': { AppLanguage.ru: 'Войдите в аккаунт для синхронизации', AppLanguage.uz: 'Sinxronizatsiya uchun hisobga kiring', AppLanguage.en: 'Log in to sync' },
     'uzs_symbol': { AppLanguage.ru: 'сум', AppLanguage.uz: "so'm", AppLanguage.en: 'UZS' },
 
