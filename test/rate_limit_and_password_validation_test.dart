@@ -38,9 +38,12 @@ void main() {
       expect(AuthScreen.validatePassword('Pass1'), equals(LanguageManager.t('password_validation_error')));
     });
 
-    test('Password longer than 72 characters is rejected', () {
-      final longPassword = 'A1${'x' * 71}'; // 73 characters
-      expect(AuthScreen.validatePassword(longPassword), equals(LanguageManager.t('password_validation_error')));
+    test('Password exceeding 72 bytes is rejected', () {
+      final longPasswordAscii = 'A1${'x' * 71}'; // 73 bytes
+      expect(AuthScreen.validatePassword(longPasswordAscii), equals(LanguageManager.t('password_too_long_bytes')));
+
+      final longPasswordUtf8 = 'A1${'я' * 36}'; // 2 + 36 * 2 = 74 bytes
+      expect(AuthScreen.validatePassword(longPasswordUtf8), equals(LanguageManager.t('password_too_long_bytes')));
     });
 
     test('Password without letters is rejected', () {
@@ -67,6 +70,9 @@ void main() {
       final maxBoundary = 'a1${'b' * 70}';
       expect(maxBoundary.length, equals(72));
       expect(AuthScreen.validatePassword(maxBoundary), isNull);
+
+      final maxBoundaryUtf8 = 'a1${'я' * 35}'; // 2 + 35 * 2 = 72 bytes, 37 characters
+      expect(AuthScreen.validatePassword(maxBoundaryUtf8), isNull);
     });
   });
 

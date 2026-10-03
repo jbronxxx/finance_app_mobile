@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/api_service.dart';
@@ -10,12 +11,19 @@ class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
   /// Проверяет соответствие пароля правилам безопасности:
-  /// длина от 6 до 72 символов, наличие хотя бы одной буквы и одной цифры.
+  /// длина минимум 6 символов, максимум 72 байта (UTF-8), наличие хотя бы одной буквы и одной цифры.
   static String? validatePassword(String? password) {
     if (password == null || password.isEmpty) {
       return LanguageManager.t('fill_all_fields');
     }
-    if (password.length < 6 || password.length > 72) {
+
+    // Проверяем длину в байтах, так как серверный bcrypt поддерживает максимум 72 байта
+    final byteLength = utf8.encode(password).length;
+    if (byteLength > 72) {
+      return LanguageManager.t('password_too_long_bytes');
+    }
+
+    if (password.length < 6) {
       return LanguageManager.t('password_validation_error');
     }
     // Проверка регулярными выражениями наличия буквенных символов и цифр
