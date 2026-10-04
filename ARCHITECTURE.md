@@ -97,9 +97,6 @@ main.dart`. Это было исправлено переносом состоя
   - На клиенте реализована предварительная валидация через `AuthScreen.validatePassword` с подсказками в форме ввода, а ошибки сервера HTTP 422 (`VALIDATION_ERROR` с `details.fields.password`) централизованно форматируются `AppErrorHandler`.
 - **Обработка HTTP 503 (Service Unavailable)**: При получении статуса HTTP 503 или кода ошибки `SERVICE_UNAVAILABLE` (например, при технических работах или недоступности бэкенда/эндпоинта `/health`), `AppErrorHandler` перехватывает ошибку и отображает модальный диалог `AppAlerts.showServiceUnavailableDialog` либо перенаправляет на экран `ServiceUnavailableScreen` с поддержкой повтора запроса (`onRetry`) и полной мультиязычностью (RU, UZ, EN).
 
-## Известные ограничения
 
-1. **AI-инсайты — статичный текст.** `InsightsScreen` пока не обращается к эндпоинту `/insights`.
-2. **Настройки не сохраняются.** Выбор в `SettingsScreen` живет только в памяти виджета.
 
 
