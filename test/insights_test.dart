@@ -115,10 +115,14 @@ void main() {
     });
   });
 
-  test('ApiService getInsights method accepts cancelToken and custom timeouts', () async {
+  test('ApiService getInsights method accepts cancelToken, currency, locale, and custom timeouts', () async {
     final cancelToken = CancelToken();
     try {
-      await ApiService.instance.getInsights(cancelToken: cancelToken);
+      await ApiService.instance.getInsights(
+        currency: 'USD',
+        locale: 'en',
+        cancelToken: cancelToken,
+      );
     } catch (_) {
       // Expected without backend server
     }
