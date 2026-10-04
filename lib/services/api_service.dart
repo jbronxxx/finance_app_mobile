@@ -511,10 +511,14 @@ class ApiService {
   }
 
   /// Получить AI-инсайты.
-  Future<Map<String, dynamic>> getInsights({CancelToken? cancelToken}) async {
+  Future<Map<String, dynamic>> getInsights({String? currency, String? locale, CancelToken? cancelToken}) async {
     try {
       final response = await _dio.get(
         ApiConfig.insights,
+        queryParameters: {
+          if (currency != null) 'currency': currency,
+          if (locale != null) 'locale': locale,
+        },
         options: Options(
           receiveTimeout: const Duration(seconds: 30),
           sendTimeout: const Duration(seconds: 15),

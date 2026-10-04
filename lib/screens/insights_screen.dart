@@ -7,6 +7,7 @@ import '../widgets/custom_pull_to_refresh.dart';
 import '../utils/app_error_handler.dart';
 import '../utils/language_manager.dart';
 import '../models/insights_model.dart';
+import '../utils/currency_formatter.dart';
 
 /// Экран AI-инсайтов.
 class InsightsScreen extends StatefulWidget {
@@ -31,10 +32,14 @@ class _InsightsScreenState extends State<InsightsScreen> {
   void initState() {
     super.initState();
     _loadInsights();
+    CurrencyFormatter.currencyNotifier.addListener(_loadInsights);
+    LanguageManager.languageNotifier.addListener(_loadInsights);
   }
 
   @override
   void dispose() {
+    CurrencyFormatter.currencyNotifier.removeListener(_loadInsights);
+    LanguageManager.languageNotifier.removeListener(_loadInsights);
     _cancelToken?.cancel();
     super.dispose();
   }
@@ -71,7 +76,11 @@ class _InsightsScreenState extends State<InsightsScreen> {
 
     try {
       if (kDebugMode) debugPrint('[Insights] Loading insights via pull-to-refresh');
-      final data = await ApiService.instance.getInsights(cancelToken: cancelToken);
+      final data = await ApiService.instance.getInsights(
+        currency: CurrencyFormatter.currentCurrency.code,
+        locale: LanguageManager.code,
+        cancelToken: cancelToken,
+      );
       if (!mounted) return;
       final parsed = InsightsModel.fromJson(data);
       setState(() {
