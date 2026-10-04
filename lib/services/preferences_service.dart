@@ -14,6 +14,8 @@ class PreferencesService {
   static const _keyTotalSessions = 'ux_hint_sessions_completed';
   static const _keyCurrency = 'selected_currency';
   static const _keyLanguage = 'selected_language';
+  static const _keyNotifications = 'settings_notifications';
+  static const _keyDarkMode = 'settings_dark_mode';
 
   /// Сохраняет выбранную валюту.
   Future<void> saveCurrency(String currencyCode) async {
@@ -33,6 +35,24 @@ class PreferencesService {
   /// Получает сохраненный язык.
   Future<String?> getLanguage() async {
     return await _storage.read(key: _keyLanguage);
+  }
+
+  Future<void> saveNotificationsEnabled(bool enabled) async {
+    await _storage.write(key: _keyNotifications, value: enabled.toString());
+  }
+
+  Future<bool> getNotificationsEnabled() async {
+    final val = await _storage.read(key: _keyNotifications);
+    return val == null || val == 'true';
+  }
+
+  Future<void> saveDarkMode(bool enabled) async {
+    await _storage.write(key: _keyDarkMode, value: enabled.toString());
+  }
+
+  Future<bool> getDarkMode() async {
+    final val = await _storage.read(key: _keyDarkMode);
+    return val == 'true';
   }
 
   // Храним идентификаторы экранов, где хинт уже был показан в этой сессии
