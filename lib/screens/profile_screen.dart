@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../widgets/app_alerts.dart';
 import '../utils/app_error_handler.dart';
 import '../utils/language_manager.dart';
+import '../services/preferences_service.dart';
 
 /// Экран профиля пользователя, совмещенный с настройками приложения.
 class ProfileScreen extends StatefulWidget {
@@ -32,7 +33,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Color _syncColor = const Color(0xFF0F766E);
   late StreamSubscription<bool> _authSubscription;
 
-  // Состояние настроек (пока локальное)
   bool _notificationsEnabled = true;
   bool _isDarkMode = false;
 
@@ -42,6 +42,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _authSubscription = ApiService.instance.authStream.listen((_) {
       if (mounted) setState(() {});
     });
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final notifications =
+        await PreferencesService.instance.getNotificationsEnabled();
+    final darkMode = await PreferencesService.instance.getDarkMode();
+    if (mounted) {
+      setState(() {
+        _notificationsEnabled = notifications;
+        _isDarkMode = darkMode;
+      });
+    }
   }
 
   @override
@@ -469,7 +482,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: const TextStyle(fontSize: 12)),
             value: _isDarkMode,
             activeColor: primaryColor,
-            onChanged: (val) => setState(() => _isDarkMode = val),
+            onChanged: (val) {
+              setState(() => _isDarkMode = val);
+              PreferencesService.instance.saveDarkMode(val);
+            },
           ),
           ListTile(
             title: Text(LanguageManager.t('language'),
@@ -522,7 +538,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: const TextStyle(fontSize: 12)),
             value: _notificationsEnabled,
             activeColor: primaryColor,
-            onChanged: (val) => setState(() => _notificationsEnabled = val),
+            onChanged: (val) {
+              setState(() => _notificationsEnabled = val);
+              PreferencesService.instance.saveNotificationsEnabled(val);
+            },
           ),
         ],
       ),
