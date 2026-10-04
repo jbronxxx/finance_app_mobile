@@ -17,7 +17,10 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.29.3'
+
+      - name: Create empty .env file
+        run: touch .env
 
       - name: Install dependencies
         run: flutter pub get
