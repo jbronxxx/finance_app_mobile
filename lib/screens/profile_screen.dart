@@ -478,8 +478,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: Text(LanguageManager.t('dark_mode'),
                 style:
                     const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-            subtitle: Text(LanguageManager.t('soon'),
-                style: const TextStyle(fontSize: 12)),
             value: _isDarkMode,
             activeColor: primaryColor,
             onChanged: (val) {
