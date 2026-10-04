@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:family_budget/models/auth_model.dart';
-import 'package:family_budget/models/budget_model.dart';
-import 'package:family_budget/models/local_db_models.dart';
-import 'package:family_budget/models/paginated_response.dart';
-import 'package:family_budget/models/sync_model.dart';
-import 'package:family_budget/models/transaction_model.dart';
+import 'package:getbalanceai_mobile/models/auth_model.dart';
+import 'package:getbalanceai_mobile/models/budget_model.dart';
+import 'package:getbalanceai_mobile/models/local_db_models.dart';
+import 'package:getbalanceai_mobile/models/paginated_response.dart';
+import 'package:getbalanceai_mobile/models/sync_model.dart';
+import 'package:getbalanceai_mobile/models/transaction_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';

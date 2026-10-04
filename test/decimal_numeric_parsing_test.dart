@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:family_budget/models/local_db_models.dart';
-import 'package:family_budget/models/transaction_model.dart';
-import 'package:family_budget/models/budget_model.dart';
+import 'package:getbalanceai_mobile/models/local_db_models.dart';
+import 'package:getbalanceai_mobile/models/transaction_model.dart';
+import 'package:getbalanceai_mobile/models/budget_model.dart';
 
 void main() {
   group('Decimal / Numeric(12, 2) Safe Parsing & Compatibility Tests', () {

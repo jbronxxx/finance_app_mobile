@@ -1,5 +1,5 @@
-import 'package:family_budget/utils/currency_formatter.dart';
-import 'package:family_budget/utils/language_manager.dart';
+import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
+import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:flutter/material.dart';
 import '../models/local_db_models.dart';
 import '../services/local_db_service.dart';

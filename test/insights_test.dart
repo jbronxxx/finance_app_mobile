@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
-import 'package:family_budget/services/api_service.dart';
-import 'package:family_budget/screens/insights_screen.dart';
-import 'package:family_budget/models/insights_model.dart';
-import 'package:family_budget/utils/language_manager.dart';
+import 'package:getbalanceai_mobile/services/api_service.dart';
+import 'package:getbalanceai_mobile/screens/insights_screen.dart';
+import 'package:getbalanceai_mobile/models/insights_model.dart';
+import 'package:getbalanceai_mobile/utils/language_manager.dart';
 
 import 'dart:convert';
 import 'package:flutter/services.dart';

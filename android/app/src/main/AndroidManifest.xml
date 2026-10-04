@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application
-        android:label="finance_app_mobile"
+        android:label="GetBalance AI"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

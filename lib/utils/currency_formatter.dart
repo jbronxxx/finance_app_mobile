@@ -1,5 +1,5 @@
-import 'package:family_budget/services/preferences_service.dart';
-import 'package:family_budget/utils/language_manager.dart';
+import 'package:getbalanceai_mobile/services/preferences_service.dart';
+import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

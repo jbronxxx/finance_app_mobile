@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
-import 'package:family_budget/config/api_config.dart';
-import 'package:family_budget/models/auth_model.dart';
-import 'package:family_budget/models/budget_model.dart';
-import 'package:family_budget/models/local_db_models.dart';
-import 'package:family_budget/models/sync_model.dart';
-import 'package:family_budget/models/transaction_model.dart';
-import 'package:family_budget/services/api_service.dart';
+import 'package:getbalanceai_mobile/config/api_config.dart';
+import 'package:getbalanceai_mobile/models/auth_model.dart';
+import 'package:getbalanceai_mobile/models/budget_model.dart';
+import 'package:getbalanceai_mobile/models/local_db_models.dart';
+import 'package:getbalanceai_mobile/models/sync_model.dart';
+import 'package:getbalanceai_mobile/models/transaction_model.dart';
+import 'package:getbalanceai_mobile/services/api_service.dart';
 
 void main() {
   final Map<String, String> mockSecureStorage = {};

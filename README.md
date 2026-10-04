@@ -1,4 +1,4 @@
-# Family Budget (finance_app_mobile)
+# GetBalance AI (getbalanceai_mobile)
 
 Flutter-приложение для учёта личных/семейных финансов: баланс, операции,
 лимиты бюджета по категориям, AI-инсайты. Работает офлайн (ObjectBox) с
@@ -108,7 +108,7 @@ fvm flutter build appbundle --release
 ```
 
 > Перед публикацией в Google Play замените `applicationId` в
-> `android/app/build.gradle.kts` (сейчас `com.example.finance_app_mobile` —
+> `android/app/build.gradle.kts` (сейчас `com.example.getbalanceai_mobile` —
 > шаблонное значение) и настройте боевой ключ подписи вместо debug-ключа,
 > которым сейчас подписывается release-сборка (см. `signingConfig` там же).
 > Ключ подписи и его пароли храните вне репозитория — например,

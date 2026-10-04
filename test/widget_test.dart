@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:family_budget/main.dart';
-import 'package:family_budget/services/local_db_service.dart';
+import 'package:getbalanceai_mobile/main.dart';
+import 'package:getbalanceai_mobile/services/local_db_service.dart';
 
 void main() {
   setUpAll(() async {

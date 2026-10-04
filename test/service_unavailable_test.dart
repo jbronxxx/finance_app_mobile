@@ -2,10 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:family_budget/screens/service_unavailable_screen.dart';
-import 'package:family_budget/utils/app_error_handler.dart';
-import 'package:family_budget/utils/language_manager.dart';
-import 'package:family_budget/widgets/app_alerts.dart';
+import 'package:getbalanceai_mobile/screens/service_unavailable_screen.dart';
+import 'package:getbalanceai_mobile/utils/app_error_handler.dart';
+import 'package:getbalanceai_mobile/utils/language_manager.dart';
+import 'package:getbalanceai_mobile/widgets/app_alerts.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

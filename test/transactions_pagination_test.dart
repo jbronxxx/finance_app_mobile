@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:family_budget/models/local_db_models.dart';
-import 'package:family_budget/models/paginated_response.dart';
-import 'package:family_budget/models/transaction_model.dart';
-import 'package:family_budget/services/api_service.dart';
+import 'package:getbalanceai_mobile/models/local_db_models.dart';
+import 'package:getbalanceai_mobile/models/paginated_response.dart';
+import 'package:getbalanceai_mobile/models/transaction_model.dart';
+import 'package:getbalanceai_mobile/services/api_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';

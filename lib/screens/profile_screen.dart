@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:family_budget/utils/currency_formatter.dart';
+import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';

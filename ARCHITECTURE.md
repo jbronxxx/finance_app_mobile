@@ -1,4 +1,4 @@
-# Архитектура Family Budget (finance_app_mobile)
+# Архитектура GetBalance AI (getbalanceai_mobile)
 
 Кроссплатформенное Flutter-приложение для учёта личных/семейных финансов.
 Работает офлайн-first: все данные сначала пишутся в локальную базу на

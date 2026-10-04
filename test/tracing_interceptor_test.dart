@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:family_budget/services/tracing_interceptor.dart';
+import 'package:getbalanceai_mobile/services/tracing_interceptor.dart';
 
 void main() {
   group('TracingInterceptor Tests', () {
