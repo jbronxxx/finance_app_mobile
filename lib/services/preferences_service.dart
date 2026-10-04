@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Сервис для управления UX-подсказками.
@@ -10,6 +11,7 @@ class PreferencesService {
   static final PreferencesService instance = PreferencesService._internal();
 
   final _storage = const FlutterSecureStorage();
+  final ValueNotifier<bool> darkModeNotifier = ValueNotifier(false);
 
   static const _keyTotalSessions = 'ux_hint_sessions_completed';
   static const _keyCurrency = 'selected_currency';
@@ -46,8 +48,13 @@ class PreferencesService {
     return val == null || val == 'true';
   }
 
+  Future<void> loadSavedDarkMode() async {
+    darkModeNotifier.value = await getDarkMode();
+  }
+
   Future<void> saveDarkMode(bool enabled) async {
     await _storage.write(key: _keyDarkMode, value: enabled.toString());
+    darkModeNotifier.value = enabled;
   }
 
   Future<bool> getDarkMode() async {
