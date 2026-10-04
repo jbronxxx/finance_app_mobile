@@ -23,7 +23,9 @@ void main() {
       LanguageManager.setLanguage(AppLanguage.ru);
     });
 
-    test('AppErrorHandler.getMessage formats HTTP 503 error without custom body', () {
+    test(
+        'AppErrorHandler.getMessage formats HTTP 503 error without custom body',
+        () {
       final reqOptions = RequestOptions(path: '/api/v1/health');
       final err = DioException(
         requestOptions: reqOptions,
@@ -38,7 +40,8 @@ void main() {
       expect(msg, contains('Сервис временно недоступен'));
     });
 
-    test('AppErrorHandler.getMessage formats SERVICE_UNAVAILABLE error payload', () {
+    test('AppErrorHandler.getMessage formats SERVICE_UNAVAILABLE error payload',
+        () {
       final reqOptions = RequestOptions(path: '/api/v1/health');
       final err = DioException(
         requestOptions: reqOptions,
@@ -57,7 +60,9 @@ void main() {
       expect(msg, equals('Плановое обновление базы данных до 03:00 UTC'));
     });
 
-    test('AppErrorHandler.getMessage formats SERVICE_UNAVAILABLE code without custom message', () {
+    test(
+        'AppErrorHandler.getMessage formats SERVICE_UNAVAILABLE code without custom message',
+        () {
       final reqOptions = RequestOptions(path: '/api/v1/sync/');
       final err = DioException(
         requestOptions: reqOptions,
@@ -72,21 +77,29 @@ void main() {
       );
 
       final msg = AppErrorHandler.getMessage(err);
-      expect(msg, equals('Сервис временно недоступен. Ведутся технические работы'));
+      expect(msg,
+          equals('Сервис временно недоступен. Ведутся технические работы'));
     });
 
-    test('LanguageManager returns translations for service unavailable across all languages', () {
+    test(
+        'LanguageManager returns translations for service unavailable across all languages',
+        () {
       LanguageManager.setLanguage(AppLanguage.ru);
-      expect(LanguageManager.t('service_unavailable_title'), equals('Сервис временно недоступен'));
+      expect(LanguageManager.t('service_unavailable_title'),
+          equals('Сервис временно недоступен'));
 
       LanguageManager.setLanguage(AppLanguage.uz);
-      expect(LanguageManager.t('service_unavailable_title'), equals('Xizmat vaqtincha ishlamayapti'));
+      expect(LanguageManager.t('service_unavailable_title'),
+          equals('Xizmat vaqtincha ishlamayapti'));
 
       LanguageManager.setLanguage(AppLanguage.en);
-      expect(LanguageManager.t('service_unavailable_title'), equals('Service Unavailable'));
+      expect(LanguageManager.t('service_unavailable_title'),
+          equals('Service Unavailable'));
     });
 
-    testWidgets('ServiceUnavailableScreen renders correctly and triggers onRetry callback', (tester) async {
+    testWidgets(
+        'ServiceUnavailableScreen renders correctly and triggers onRetry callback',
+        (tester) async {
       LanguageManager.setLanguage(AppLanguage.ru);
       bool retried = false;
 
@@ -102,7 +115,10 @@ void main() {
 
       expect(find.byIcon(Icons.engineering_rounded), findsOneWidget);
       expect(find.text('Сервис временно недоступен'), findsOneWidget);
-      expect(find.text('Ведутся технические работы. Пожалуйста, повторите попытку позже.'), findsOneWidget);
+      expect(
+          find.text(
+              'Ведутся технические работы. Пожалуйста, повторите попытку позже.'),
+          findsOneWidget);
       expect(find.text('Повторить попытку'), findsOneWidget);
 
       await tester.tap(find.text('Повторить попытку'));
@@ -111,8 +127,10 @@ void main() {
       expect(retried, isTrue);
     });
 
-    testWidgets('ServiceUnavailableScreen displays customMessage when provided', (tester) async {
-      const customMessage = 'Сервер обновляется. Ожидаемое время завершения: 15 минут.';
+    testWidgets('ServiceUnavailableScreen displays customMessage when provided',
+        (tester) async {
+      const customMessage =
+          'Сервер обновляется. Ожидаемое время завершения: 15 минут.';
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -125,7 +143,8 @@ void main() {
       expect(find.text(customMessage), findsOneWidget);
     });
 
-    testWidgets('AppAlerts.showServiceUnavailableDialog renders and dismisses', (tester) async {
+    testWidgets('AppAlerts.showServiceUnavailableDialog renders and dismisses',
+        (tester) async {
       LanguageManager.setLanguage(AppLanguage.ru);
       bool retried = false;
 

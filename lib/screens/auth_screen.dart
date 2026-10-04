@@ -27,7 +27,8 @@ class AuthScreen extends StatefulWidget {
       return LanguageManager.t('password_validation_error');
     }
     // Проверка регулярными выражениями наличия буквенных символов и цифр
-    final hasLetter = RegExp(r'[a-zA-Z\p{L}]', unicode: true).hasMatch(password);
+    final hasLetter =
+        RegExp(r'[a-zA-Z\p{L}]', unicode: true).hasMatch(password);
     final hasDigit = RegExp(r'[0-9]').hasMatch(password);
     if (!hasLetter || !hasDigit) {
       return LanguageManager.t('password_validation_error');
@@ -117,7 +118,8 @@ class _AuthScreenState extends State<AuthScreen> {
       AppErrorHandler.show(
         context,
         e,
-        title: LanguageManager.t(_isLoginMode ? 'login_error_title' : 'register_error_title'),
+        title: LanguageManager.t(
+            _isLoginMode ? 'login_error_title' : 'register_error_title'),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -143,7 +145,8 @@ class _AuthScreenState extends State<AuthScreen> {
             children: [
               const SizedBox(height: 20),
               Text(
-                LanguageManager.t(_isLoginMode ? 'welcome_back' : 'create_account'),
+                LanguageManager.t(
+                    _isLoginMode ? 'welcome_back' : 'create_account'),
                 style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -151,7 +154,8 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                LanguageManager.t(_isLoginMode ? 'login_subtitle' : 'register_subtitle'),
+                LanguageManager.t(
+                    _isLoginMode ? 'login_subtitle' : 'register_subtitle'),
                 style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 32),
@@ -183,7 +187,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: LanguageManager.t('password_label'),
-                  helperText: !_isLoginMode ? LanguageManager.t('password_requirements_hint') : null,
+                  helperText: !_isLoginMode
+                      ? LanguageManager.t('password_requirements_hint')
+                      : null,
                   helperMaxLines: 2,
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16)),
@@ -210,7 +216,8 @@ class _AuthScreenState extends State<AuthScreen> {
                               color: Colors.white, strokeWidth: 2),
                         )
                       : Text(
-                          LanguageManager.t(_isLoginMode ? 'login_btn' : 'register_btn'),
+                          LanguageManager.t(
+                              _isLoginMode ? 'login_btn' : 'register_btn'),
                           style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold),
                         ),
@@ -225,7 +232,9 @@ class _AuthScreenState extends State<AuthScreen> {
                     });
                   },
                   child: Text(
-                    LanguageManager.t(_isLoginMode ? 'no_account_prompt' : 'have_account_prompt'),
+                    LanguageManager.t(_isLoginMode
+                        ? 'no_account_prompt'
+                        : 'have_account_prompt'),
                     style: const TextStyle(
                         color: primaryTeal, fontWeight: FontWeight.bold),
                   ),

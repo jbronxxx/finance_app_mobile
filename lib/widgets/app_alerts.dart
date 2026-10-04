@@ -6,7 +6,7 @@ enum AlertType { success, error, warning, info }
 
 class AppAlerts {
   /// Отображает всплывающее уведомление (Toast) с кастомным дизайном.
-  /// 
+  ///
   /// Поддерживает различные типы [type] для визуальной дифференциации.
   static void showToast(
     BuildContext context, {
@@ -98,7 +98,8 @@ class AppAlerts {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.close, size: 16, color: iconColor.withValues(alpha: 0.5)),
+              icon: Icon(Icons.close,
+                  size: 16, color: iconColor.withValues(alpha: 0.5)),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               onPressed: () {
@@ -132,7 +133,7 @@ class AppAlerts {
   }
 
   /// Отображает критическое модальное окно, требующее действия пользователя.
-  /// 
+  ///
   /// Используется для критических ошибок или важных системных уведомлений.
   static void showErrorDialog(
     BuildContext context, {
@@ -147,7 +148,8 @@ class AppAlerts {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           elevation: 0,
           backgroundColor: Colors.white,
           child: Padding(
@@ -230,7 +232,8 @@ class AppAlerts {
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           elevation: 0,
           backgroundColor: Colors.white,
           child: Padding(
@@ -347,7 +350,8 @@ class AppAlerts {
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           elevation: 0,
           backgroundColor: Colors.white,
           child: Padding(
@@ -380,7 +384,8 @@ class _RateLimitDialogContent extends StatefulWidget {
   });
 
   @override
-  State<_RateLimitDialogContent> createState() => _RateLimitDialogContentState();
+  State<_RateLimitDialogContent> createState() =>
+      _RateLimitDialogContentState();
 }
 
 class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
@@ -394,7 +399,8 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
     if (initial != null && initial > 0) {
       _secondsLeft = initial;
       // Запуск посекундного декремента счетчика до нуля
-      _timerSubscription = Stream.periodic(const Duration(seconds: 1), (i) => i).listen((_) {
+      _timerSubscription =
+          Stream.periodic(const Duration(seconds: 1), (i) => i).listen((_) {
         if (!mounted) return;
         if (_secondsLeft > 1) {
           setState(() => _secondsLeft--);
@@ -451,7 +457,8 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
           ),
           textAlign: TextAlign.center,
         ),
-        if (widget.retryAfterSeconds != null && widget.retryAfterSeconds! > 0) ...[
+        if (widget.retryAfterSeconds != null &&
+            widget.retryAfterSeconds! > 0) ...[
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -464,7 +471,9 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  _secondsLeft > 0 ? Icons.timer_outlined : Icons.check_circle_outline,
+                  _secondsLeft > 0
+                      ? Icons.timer_outlined
+                      : Icons.check_circle_outline,
                   size: 18,
                   color: const Color(0xFFD97706),
                 ),
@@ -540,7 +549,6 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
     );
   }
 }
-
 
 extension ColorExtension on Color {
   Color darken([double amount = .1]) {

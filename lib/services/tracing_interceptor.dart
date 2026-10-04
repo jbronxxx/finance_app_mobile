@@ -31,7 +31,8 @@ class TracingInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     final requestId = extractResponseRequestId(response);
     if (kDebugMode) {
-      debugPrint('[Network Tracing] Success [$requestId]: ${response.requestOptions.method} ${response.requestOptions.uri} (${response.statusCode})');
+      debugPrint(
+          '[Network Tracing] Success [$requestId]: ${response.requestOptions.method} ${response.requestOptions.uri} (${response.statusCode})');
     }
     super.onResponse(response, handler);
   }
@@ -40,7 +41,9 @@ class TracingInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final requestId = extractRequestId(err);
     final retryAfter = err.response?.headers.value('retry-after');
-    final retrySuffix = (retryAfter != null && retryAfter.isNotEmpty) ? ' [Retry-After: ${retryAfter}s]' : '';
+    final retrySuffix = (retryAfter != null && retryAfter.isNotEmpty)
+        ? ' [Retry-After: ${retryAfter}s]'
+        : '';
     if (kDebugMode) {
       debugPrint(
         'Request failed [$requestId]$retrySuffix: ${err.requestOptions.method} ${err.requestOptions.uri} '

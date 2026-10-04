@@ -21,7 +21,9 @@ void main() {
         expect(parseAmount('-12.50'), -12.50);
       });
 
-      test('handles null, invalid strings, and unexpected types safely with fallback', () {
+      test(
+          'handles null, invalid strings, and unexpected types safely with fallback',
+          () {
         expect(parseAmount(null), 0.0);
         expect(parseAmount(null, 10.0), 10.0);
         expect(parseAmount('invalid_number'), 0.0);
@@ -45,7 +47,9 @@ void main() {
         expect(parseInteger('5.0'), 5);
       });
 
-      test('handles null, invalid strings, and unexpected types safely with fallback', () {
+      test(
+          'handles null, invalid strings, and unexpected types safely with fallback',
+          () {
         expect(parseInteger(null), 0);
         expect(parseInteger(null, 1), 1);
         expect(parseInteger('invalid'), 0);
@@ -91,7 +95,8 @@ void main() {
         expect(tx.type, TransactionType.expense);
       });
 
-      test('parses Transaction with missing amount safely defaulting to 0.0', () {
+      test('parses Transaction with missing amount safely defaulting to 0.0',
+          () {
         final json = {
           'id': 'tx-empty-amount',
           'description': 'No amount',
@@ -104,7 +109,9 @@ void main() {
     });
 
     group('Budget entity deserialization with Decimal fields', () {
-      test('parses Budget with Decimal string amount fields (limit_amount, spent, remaining)', () {
+      test(
+          'parses Budget with Decimal string amount fields (limit_amount, spent, remaining)',
+          () {
         final json = {
           'id': 'b-decimal-1',
           'category': 'food',
@@ -143,7 +150,9 @@ void main() {
         expect(budget.remaining, 400.0);
       });
 
-      test('parses Budget with missing/null amount fields safely defaulting to 0.0', () {
+      test(
+          'parses Budget with missing/null amount fields safely defaulting to 0.0',
+          () {
         final json = {
           'id': 'b-nulls',
           'category': 'other',
@@ -159,7 +168,8 @@ void main() {
       });
     });
 
-    group('TransactionModel and BudgetModel REST DTO Decimal compatibility', () {
+    group('TransactionModel and BudgetModel REST DTO Decimal compatibility',
+        () {
       test('TransactionModel parses Decimal string amount', () {
         final json = {
           'id': 'dto-tx-1',

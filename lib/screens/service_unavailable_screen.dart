@@ -70,7 +70,8 @@ class ServiceUnavailableScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  customMessage ?? LanguageManager.t('service_unavailable_desc'),
+                  customMessage ??
+                      LanguageManager.t('service_unavailable_desc'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,

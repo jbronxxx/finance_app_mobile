@@ -29,31 +29,41 @@ void main() {
     });
 
     test('Empty or null password returns fill_all_fields error', () {
-      expect(AuthScreen.validatePassword(null), equals(LanguageManager.t('fill_all_fields')));
-      expect(AuthScreen.validatePassword(''), equals(LanguageManager.t('fill_all_fields')));
+      expect(AuthScreen.validatePassword(null),
+          equals(LanguageManager.t('fill_all_fields')));
+      expect(AuthScreen.validatePassword(''),
+          equals(LanguageManager.t('fill_all_fields')));
     });
 
     test('Password shorter than 6 characters is rejected', () {
-      expect(AuthScreen.validatePassword('a1'), equals(LanguageManager.t('password_validation_error')));
-      expect(AuthScreen.validatePassword('Pass1'), equals(LanguageManager.t('password_validation_error')));
+      expect(AuthScreen.validatePassword('a1'),
+          equals(LanguageManager.t('password_validation_error')));
+      expect(AuthScreen.validatePassword('Pass1'),
+          equals(LanguageManager.t('password_validation_error')));
     });
 
     test('Password exceeding 72 bytes is rejected', () {
       final longPasswordAscii = 'A1${'x' * 71}'; // 73 bytes
-      expect(AuthScreen.validatePassword(longPasswordAscii), equals(LanguageManager.t('password_too_long_bytes')));
+      expect(AuthScreen.validatePassword(longPasswordAscii),
+          equals(LanguageManager.t('password_too_long_bytes')));
 
       final longPasswordUtf8 = 'A1${'я' * 36}'; // 2 + 36 * 2 = 74 bytes
-      expect(AuthScreen.validatePassword(longPasswordUtf8), equals(LanguageManager.t('password_too_long_bytes')));
+      expect(AuthScreen.validatePassword(longPasswordUtf8),
+          equals(LanguageManager.t('password_too_long_bytes')));
     });
 
     test('Password without letters is rejected', () {
-      expect(AuthScreen.validatePassword('123456'), equals(LanguageManager.t('password_validation_error')));
-      expect(AuthScreen.validatePassword('1234567890'), equals(LanguageManager.t('password_validation_error')));
+      expect(AuthScreen.validatePassword('123456'),
+          equals(LanguageManager.t('password_validation_error')));
+      expect(AuthScreen.validatePassword('1234567890'),
+          equals(LanguageManager.t('password_validation_error')));
     });
 
     test('Password without numbers is rejected', () {
-      expect(AuthScreen.validatePassword('password'), equals(LanguageManager.t('password_validation_error')));
-      expect(AuthScreen.validatePassword('StrongPassword'), equals(LanguageManager.t('password_validation_error')));
+      expect(AuthScreen.validatePassword('password'),
+          equals(LanguageManager.t('password_validation_error')));
+      expect(AuthScreen.validatePassword('StrongPassword'),
+          equals(LanguageManager.t('password_validation_error')));
     });
 
     test('Valid passwords (6-72 chars, letter + digit) are accepted', () {
@@ -61,7 +71,7 @@ void main() {
       expect(AuthScreen.validatePassword('SecurePass1'), isNull);
       expect(AuthScreen.validatePassword('P@ssw0rd!2026'), isNull);
       expect(AuthScreen.validatePassword('пароль123'), isNull);
-      
+
       // Exact boundary limits: 6 chars and 72 chars
       final minBoundary = 'a1${'b' * 4}';
       expect(minBoundary.length, equals(6));
@@ -71,7 +81,8 @@ void main() {
       expect(maxBoundary.length, equals(72));
       expect(AuthScreen.validatePassword(maxBoundary), isNull);
 
-      final maxBoundaryUtf8 = 'a1${'я' * 35}'; // 2 + 35 * 2 = 72 bytes, 37 characters
+      final maxBoundaryUtf8 =
+          'a1${'я' * 35}'; // 2 + 35 * 2 = 72 bytes, 37 characters
       expect(AuthScreen.validatePassword(maxBoundaryUtf8), isNull);
     });
   });
@@ -97,7 +108,8 @@ void main() {
       expect(msg, contains('Превышен лимит запросов'));
     });
 
-    test('AppErrorHandler.getMessage formats RATE_LIMIT_EXCEEDED error payload', () {
+    test('AppErrorHandler.getMessage formats RATE_LIMIT_EXCEEDED error payload',
+        () {
       final reqOptions = RequestOptions(path: '/api/v1/auth/login');
       final err = DioException(
         requestOptions: reqOptions,
@@ -107,17 +119,22 @@ void main() {
           data: {
             'status': 'error',
             'code': 'RATE_LIMIT_EXCEEDED',
-            'message': 'Превышен лимит запросов. Пожалуйста, повторите попытку позже.',
+            'message':
+                'Превышен лимит запросов. Пожалуйста, повторите попытку позже.',
             'details': {'limit': '5 per 1 minute'},
           },
         ),
       );
 
       final msg = AppErrorHandler.getMessage(err);
-      expect(msg, equals('Превышен лимит запросов. Пожалуйста, повторите попытку позже.'));
+      expect(
+          msg,
+          equals(
+              'Превышен лимит запросов. Пожалуйста, повторите попытку позже.'));
     });
 
-    test('AppErrorHandler.getMessage handles VALIDATION_ERROR field message', () {
+    test('AppErrorHandler.getMessage handles VALIDATION_ERROR field message',
+        () {
       final reqOptions = RequestOptions(path: '/api/v1/auth/register');
       final err = DioException(
         requestOptions: reqOptions,
@@ -130,7 +147,8 @@ void main() {
             'message': 'Validation failed',
             'details': {
               'fields': {
-                'password': 'Пароль должен содержать минимум 6 символов, 1 букву и 1 цифру',
+                'password':
+                    'Пароль должен содержать минимум 6 символов, 1 букву и 1 цифру',
               },
             },
           },
@@ -138,10 +156,15 @@ void main() {
       );
 
       final msg = AppErrorHandler.getMessage(err);
-      expect(msg, equals('Пароль должен содержать минимум 6 символов, 1 букву и 1 цифру'));
+      expect(
+          msg,
+          equals(
+              'Пароль должен содержать минимум 6 символов, 1 букву и 1 цифру'));
     });
 
-    testWidgets('AppErrorHandler.show displays RateLimitDialog on 429 with retry-after header', (tester) async {
+    testWidgets(
+        'AppErrorHandler.show displays RateLimitDialog on 429 with retry-after header',
+        (tester) async {
       LanguageManager.setLanguage(AppLanguage.ru);
       final reqOptions = RequestOptions(path: '/api/v1/auth/login');
       final err = DioException(
@@ -181,7 +204,9 @@ void main() {
       expect(find.textContaining('15'), findsOneWidget);
     });
 
-    testWidgets('AppAlerts.showRateLimitDialog countdown decrements and enables actions', (tester) async {
+    testWidgets(
+        'AppAlerts.showRateLimitDialog countdown decrements and enables actions',
+        (tester) async {
       LanguageManager.setLanguage(AppLanguage.ru);
       bool retried = false;
 
@@ -222,8 +247,10 @@ void main() {
       expect(find.text(LanguageManager.t('rate_limit_ready')), findsOneWidget);
 
       // Retry button is now visible
-      expect(find.text(LanguageManager.t('service_unavailable_retry')), findsOneWidget);
-      await tester.tap(find.text(LanguageManager.t('service_unavailable_retry')));
+      expect(find.text(LanguageManager.t('service_unavailable_retry')),
+          findsOneWidget);
+      await tester
+          .tap(find.text(LanguageManager.t('service_unavailable_retry')));
       await tester.pumpAndSettle();
 
       expect(retried, isTrue);
@@ -231,7 +258,9 @@ void main() {
   });
 
   group('AuthScreen Registration UI Validation Tests', () {
-    testWidgets('Password helper hint appears in register mode and validation prevents submission', (tester) async {
+    testWidgets(
+        'Password helper hint appears in register mode and validation prevents submission',
+        (tester) async {
       LanguageManager.setLanguage(AppLanguage.ru);
 
       await tester.pumpWidget(
@@ -241,25 +270,34 @@ void main() {
       );
 
       // Initial mode is Login: no password requirements helper text
-      expect(find.text(LanguageManager.t('password_requirements_hint')), findsNothing);
+      expect(find.text(LanguageManager.t('password_requirements_hint')),
+          findsNothing);
 
       // Switch to Register mode
       await tester.tap(find.text(LanguageManager.t('no_account_prompt')));
       await tester.pumpAndSettle();
 
       // Password requirements hint is visible
-      expect(find.text(LanguageManager.t('password_requirements_hint')), findsOneWidget);
+      expect(find.text(LanguageManager.t('password_requirements_hint')),
+          findsOneWidget);
 
       // Enter name, email, and short password (<6 chars)
-      await tester.enterText(find.widgetWithText(TextField, LanguageManager.t('name_label')), 'Alex');
-      await tester.enterText(find.widgetWithText(TextField, LanguageManager.t('email_label')), 'alex@example.com');
-      await tester.enterText(find.widgetWithText(TextField, LanguageManager.t('password_label')), '12345');
+      await tester.enterText(
+          find.widgetWithText(TextField, LanguageManager.t('name_label')),
+          'Alex');
+      await tester.enterText(
+          find.widgetWithText(TextField, LanguageManager.t('email_label')),
+          'alex@example.com');
+      await tester.enterText(
+          find.widgetWithText(TextField, LanguageManager.t('password_label')),
+          '12345');
 
       await tester.tap(find.text(LanguageManager.t('register_btn')));
       await tester.pump();
 
       // SnackBar with password validation error is shown
-      expect(find.text(LanguageManager.t('password_validation_error')), findsOneWidget);
+      expect(find.text(LanguageManager.t('password_validation_error')),
+          findsOneWidget);
     });
   });
 }

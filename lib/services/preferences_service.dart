@@ -10,7 +10,7 @@ class PreferencesService {
   static final PreferencesService instance = PreferencesService._internal();
 
   final _storage = const FlutterSecureStorage();
-  
+
   static const _keyTotalSessions = 'ux_hint_sessions_completed';
   static const _keyCurrency = 'selected_currency';
   static const _keyLanguage = 'selected_language';
@@ -42,10 +42,10 @@ class PreferencesService {
   /// Можно ли показать хинт для конкретного экрана?
   Future<bool> shouldShowSwipeHint(String screenId) async {
     final totalSessions = await _getTotalSessions();
-    
+
     // Если пользователь уже прошел 3 сессии обучения — больше не показываем нигде
     if (totalSessions >= 3) return false;
-    
+
     // В рамках одной сессии показываем только если на этом экране еще не видели
     return !_shownScreensInSession.contains(screenId);
   }
@@ -54,12 +54,13 @@ class PreferencesService {
   Future<void> recordHintShown(String screenId) async {
     _shownScreensInSession.add(screenId);
 
-    // Если это вообще первый показ в этой сессии (на любом экране), 
+    // Если это вообще первый показ в этой сессии (на любом экране),
     // увеличиваем счетчик глобальных сессий обучения.
     if (!_sessionAlreadyCounted) {
       _sessionAlreadyCounted = true;
       final total = await _getTotalSessions();
-      await _storage.write(key: _keyTotalSessions, value: (total + 1).toString());
+      await _storage.write(
+          key: _keyTotalSessions, value: (total + 1).toString());
     }
   }
 

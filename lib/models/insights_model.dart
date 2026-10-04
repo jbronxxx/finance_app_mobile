@@ -28,9 +28,10 @@ class InsightsModel {
   }
 
   factory InsightsModel.fromJson(Map<String, dynamic> json) {
-    final payload = json.containsKey('data') && json['data'] is Map<String, dynamic>
-        ? json['data'] as Map<String, dynamic>
-        : json;
+    final payload =
+        json.containsKey('data') && json['data'] is Map<String, dynamic>
+            ? json['data'] as Map<String, dynamic>
+            : json;
 
     return InsightsModel(
       insights: (payload['insights'] as List<dynamic>?)

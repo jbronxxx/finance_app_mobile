@@ -32,7 +32,8 @@ void main() {
     await LocalDbService.init();
   });
 
-  testWidgets('Приложение запускается и показывает нижнюю навигацию', (tester) async {
+  testWidgets('Приложение запускается и показывает нижнюю навигацию',
+      (tester) async {
     await tester.pumpWidget(const FinanceApp());
     await tester.pumpAndSettle();
 

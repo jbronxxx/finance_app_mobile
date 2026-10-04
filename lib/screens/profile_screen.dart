@@ -104,7 +104,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
+        padding:
+            const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -144,7 +145,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final isSelected = currentCurrency == currency;
         // Отображаем знак и полное читаемое название из LanguageManager
         final currencyNameKey = '${currency.code.toLowerCase()}_name';
-        final label = '${currency.localizedSymbol} — ${LanguageManager.t(currencyNameKey)}';
+        final label =
+            '${currency.localizedSymbol} — ${LanguageManager.t(currencyNameKey)}';
         return ListTile(
           title: Text(
             label,
@@ -172,7 +174,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
+        padding:
+            const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -216,9 +219,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: isSelected ? const Color(0xFF0F766E) : Colors.black87,
         ),
       ),
-      trailing: isSelected
-          ? const Icon(Icons.check, color: Color(0xFF0F766E))
-          : null,
+      trailing:
+          isSelected ? const Icon(Icons.check, color: Color(0xFF0F766E)) : null,
       onTap: () {
         LanguageManager.setLanguage(lang);
         Navigator.pop(context);
@@ -257,11 +259,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await ApiService.instance.logout();
       if (!mounted) return;
       widget.onLogout();
-      
+
       AppAlerts.info(context, LanguageManager.t('logout_info'));
     } catch (e) {
       if (!mounted) return;
-      AppErrorHandler.show(context, e, title: LanguageManager.t('logout_error_title'));
+      AppErrorHandler.show(context, e,
+          title: LanguageManager.t('logout_error_title'));
     }
   }
 
@@ -303,31 +306,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: isAuthenticated 
-                  ? TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                child: isAuthenticated
+                    ? TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: _handleLogout,
+                        icon: const Icon(Icons.logout),
+                        label: Text(LanguageManager.t('logout'),
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
+                      )
+                    : FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: primaryTeal,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: _handleLogin,
+                        icon: const Icon(Icons.login),
+                        label: Text(LanguageManager.t('login_or_register'),
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
-                      onPressed: _handleLogout,
-                      icon: const Icon(Icons.logout),
-                      label: Text(LanguageManager.t('logout'),
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
-                    )
-                  : FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: primaryTeal,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: _handleLogin,
-                      icon: const Icon(Icons.login),
-                      label: Text(LanguageManager.t('login_or_register'),
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
-                    ),
               ),
               const SizedBox(height: 40),
             ],
@@ -344,8 +347,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           radius: 50,
           backgroundColor: primaryColor.withValues(alpha: 0.1),
           child: Text(
-            isAuthenticated && widget.userName.isNotEmpty 
-                ? widget.userName[0].toUpperCase() 
+            isAuthenticated && widget.userName.isNotEmpty
+                ? widget.userName[0].toUpperCase()
                 : (isAuthenticated ? 'U' : '?'),
             style: TextStyle(
                 fontSize: 40, fontWeight: FontWeight.bold, color: primaryColor),
@@ -353,15 +356,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          isAuthenticated && widget.userName.isNotEmpty 
-              ? widget.userName 
-              : (isAuthenticated ? LanguageManager.t('user') : LanguageManager.t('guest_mode')),
+          isAuthenticated && widget.userName.isNotEmpty
+              ? widget.userName
+              : (isAuthenticated
+                  ? LanguageManager.t('user')
+                  : LanguageManager.t('guest_mode')),
           style: const TextStyle(
               fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         const SizedBox(height: 4),
         Text(
-          isAuthenticated ? widget.userEmail : LanguageManager.t('login_cloud_hint'),
+          isAuthenticated
+              ? widget.userEmail
+              : LanguageManager.t('login_cloud_hint'),
           style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
         ),
       ],
@@ -426,9 +433,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(LanguageManager.t('sync_status'),
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     Text(
-                      isAuthenticated ? LanguageManager.t(_syncStatusKey) : LanguageManager.t('cloud_not_connected'),
-                      style: TextStyle(
-                          color: Colors.grey.shade600, fontSize: 13),
+                      isAuthenticated
+                          ? LanguageManager.t(_syncStatusKey)
+                          : LanguageManager.t('cloud_not_connected'),
+                      style:
+                          TextStyle(color: Colors.grey.shade600, fontSize: 13),
                     ),
                   ],
                 ),
@@ -454,15 +463,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           SwitchListTile(
             title: Text(LanguageManager.t('dark_mode'),
-                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-            subtitle: Text(LanguageManager.t('soon'), style: const TextStyle(fontSize: 12)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+            subtitle: Text(LanguageManager.t('soon'),
+                style: const TextStyle(fontSize: 12)),
             value: _isDarkMode,
             activeColor: primaryColor,
             onChanged: (val) => setState(() => _isDarkMode = val),
           ),
           ListTile(
             title: Text(LanguageManager.t('language'),
-                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -480,14 +492,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ListTile(
             title: Text(LanguageManager.t('currency'),
-                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
             trailing: ValueListenableBuilder<Currency>(
               valueListenable: CurrencyFormatter.currencyNotifier,
               builder: (context, currency, child) {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(LanguageManager.t('${currency.code.toLowerCase()}_name'),
+                    Text(
+                        LanguageManager.t(
+                            '${currency.code.toLowerCase()}_name'),
                         style: TextStyle(
                             color: primaryColor,
                             fontWeight: FontWeight.bold,
@@ -501,8 +516,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           SwitchListTile(
             title: Text(LanguageManager.t('notifications'),
-                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-            subtitle: Text(LanguageManager.t('limits_and_budgets'), style: const TextStyle(fontSize: 12)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+            subtitle: Text(LanguageManager.t('limits_and_budgets'),
+                style: const TextStyle(fontSize: 12)),
             value: _notificationsEnabled,
             activeColor: primaryColor,
             onChanged: (val) => setState(() => _notificationsEnabled = val),

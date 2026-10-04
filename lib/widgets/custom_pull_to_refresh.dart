@@ -47,7 +47,8 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600), // Плавная кинематографическая анимация возврата
+      duration: const Duration(
+          milliseconds: 600), // Плавная кинематографическая анимация возврата
     );
   }
 
@@ -67,20 +68,27 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
       if (notification.overscroll < 0) {
         setState(() {
           // Натяжение с коэффициентом сопротивления 0.5 (эффект тугой нативной резины)
-          _dragOffset = (_dragOffset - notification.overscroll * 0.5).clamp(0.0, _maxDragOffset);
-          
+          _dragOffset = (_dragOffset - notification.overscroll * 0.5)
+              .clamp(0.0, _maxDragOffset);
+
           final newCanRefresh = _dragOffset > _refreshThreshold;
           if (newCanRefresh != _canRefresh) {
             _canRefresh = newCanRefresh;
-            if (_canRefresh) HapticFeedback.lightImpact(); // Легкая вибрация при пересечении порога активации
+            if (_canRefresh) {
+              HapticFeedback
+                  .lightImpact(); // Легкая вибрация при пересечении порога активации
+            }
           }
         });
       }
     } else if (notification is ScrollUpdateNotification) {
       // Плавное уменьшение смещения, если пользователь ведет палец обратно вверх до того, как отпустить
-      if (_dragOffset > 0 && notification.scrollDelta != null && notification.metrics.pixels <= 0) {
+      if (_dragOffset > 0 &&
+          notification.scrollDelta != null &&
+          notification.metrics.pixels <= 0) {
         setState(() {
-          _dragOffset = (_dragOffset - notification.scrollDelta!).clamp(0.0, _maxDragOffset);
+          _dragOffset = (_dragOffset - notification.scrollDelta!)
+              .clamp(0.0, _maxDragOffset);
           if (_dragOffset <= 0) _canRefresh = false;
         });
       }
@@ -106,7 +114,7 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
 
     // Фиксируем шторку на уровне порога на время выполнения асинхронного метода
     _animateTo(_refreshThreshold);
-    
+
     HapticFeedback.mediumImpact(); // Подтверждающая вибрация старта загрузки
 
     try {
@@ -124,10 +132,10 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
   void _animateTo(double target) {
     final double start = _dragOffset;
     _controller.reset();
-    
+
     // Используем более плавную и вязкую кривую вместо прыгучего elasticOut
     final curve = target == 0.0 ? Curves.easeOutBack : Curves.easeOutCubic;
-    
+
     final animation = Tween<double>(begin: start, end: target).animate(
       CurvedAnimation(parent: _controller, curve: curve),
     );
@@ -168,10 +176,13 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
                   const SizedBox(height: 8),
                   Text(
                     _isRefreshing
-                        ? (widget.refreshingText ?? LanguageManager.t('refreshing_data'))
+                        ? (widget.refreshingText ??
+                            LanguageManager.t('refreshing_data'))
                         : (_canRefresh
-                            ? (widget.releaseText ?? LanguageManager.t('release_to_refresh'))
-                            : (widget.pullText ?? LanguageManager.t('pull_to_refresh'))),
+                            ? (widget.releaseText ??
+                                LanguageManager.t('release_to_refresh'))
+                            : (widget.pullText ??
+                                LanguageManager.t('pull_to_refresh'))),
                     style: TextStyle(
                       color: widget.foregroundColor,
                       fontWeight: FontWeight.bold,

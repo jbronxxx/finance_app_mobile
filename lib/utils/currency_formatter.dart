@@ -6,10 +6,11 @@ import 'package:flutter/services.dart';
 /// Поддерживаемые валюты с их параметрами.
 enum Currency {
   uzs('UZS', 'сум', 'Узбекский сум', false, 0, 100000000000), // Лимит 100 млрд
-  kzt('KZT', '₸', 'Казахстанский тенге', false, 0, 10000000000),    // Лимит 10 млрд
-  rub('RUB', '₽', 'Российский рубль', false, 2, 1000000000),     // Лимит 1 млрд
-  eur('EUR', '€', 'Евро', true, 2, 100000000),       // Лимит 100 млн
-  usd('USD', r'$', 'Доллар США', true, 2, 100000000);      // Лимит 100 млн
+  kzt('KZT', '₸', 'Казахстанский тенге', false, 0,
+      10000000000), // Лимит 10 млрд
+  rub('RUB', '₽', 'Российский рубль', false, 2, 1000000000), // Лимит 1 млрд
+  eur('EUR', '€', 'Евро', true, 2, 100000000), // Лимит 100 млн
+  usd('USD', r'$', 'Доллар США', true, 2, 100000000); // Лимит 100 млн
 
   final String code; // Код валюты (ISO)
   final String symbol; // Символ валюты
@@ -18,7 +19,8 @@ enum Currency {
   final int defaultDecimalDigits; // Сколько знаков после запятой отображать
   final double maxAmount; // Максимально допустимая сумма для ввода
 
-  const Currency(this.code, this.symbol, this.readableName, this.symbolBefore, this.defaultDecimalDigits, this.maxAmount);
+  const Currency(this.code, this.symbol, this.readableName, this.symbolBefore,
+      this.defaultDecimalDigits, this.maxAmount);
 
   String get localizedSymbol {
     if (this == Currency.uzs) {
@@ -33,9 +35,10 @@ enum Currency {
 /// Утилита для форматирования и валидации денежных сумм.
 class CurrencyFormatter {
   static Currency _currentCurrency = Currency.rub;
-  
+
   /// Уведомляет слушателей (UI) об изменении выбранной валюты.
-  static final ValueNotifier<Currency> currencyNotifier = ValueNotifier(Currency.rub);
+  static final ValueNotifier<Currency> currencyNotifier =
+      ValueNotifier(Currency.rub);
 
   /// Устанавливает текущую валюту и уведомляет UI.
   static void setCurrency(Currency currency) {
@@ -71,9 +74,13 @@ class CurrencyFormatter {
 
   /// Проверяет корректность введенной суммы и соблюдение лимитов.
   static String? validateAmount(String? value) {
-    if (value == null || value.isEmpty) return LanguageManager.t('enter_amount');
+    if (value == null || value.isEmpty) {
+      return LanguageManager.t('enter_amount');
+    }
     final amount = parseInput(value);
-    if (amount == null || amount <= 0) return LanguageManager.t('invalid_amount');
+    if (amount == null || amount <= 0) {
+      return LanguageManager.t('invalid_amount');
+    }
     if (amount > _currentCurrency.maxAmount) {
       return '${LanguageManager.t('max_amount_prefix')}: ${format(_currentCurrency.maxAmount)}';
     }
@@ -82,19 +89,20 @@ class CurrencyFormatter {
 
   /// Основной метод форматирования суммы в строку.
   /// Добавляет разделители тысяч (пробелы) и символ валюты.
-  static String format(double amount, {bool showSymbol = true, int? decimalDigits, bool showSign = false}) {
+  static String format(double amount,
+      {bool showSymbol = true, int? decimalDigits, bool showSign = false}) {
     final digits = decimalDigits ?? _currentCurrency.defaultDecimalDigits;
     String sign = '';
-    
+
     // Добавление знака + или - если требуется
     if (showSign) {
       if (amount > 0) sign = '+';
       if (amount < 0) sign = '-';
     }
-    
+
     final absAmount = amount.abs();
     String formatted = absAmount.toStringAsFixed(digits);
-    
+
     // Добавление пробелов как разделителей тысяч (регулярное выражение)
     final parts = formatted.split('.');
     final RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
@@ -113,7 +121,8 @@ class CurrencyFormatter {
 
   /// Виджет для безопасного отображения текста суммы.
   /// Использует FittedBox или ellipsis, чтобы длинные числа (UZS/KZT) не ломали верстку.
-  static Widget formatText(double amount, {
+  static Widget formatText(
+    double amount, {
     TextStyle? style,
     bool showSymbol = true,
     int? decimalDigits,
@@ -122,7 +131,10 @@ class CurrencyFormatter {
     bool showSign = false,
   }) {
     final text = Text(
-      format(amount, showSymbol: showSymbol, decimalDigits: decimalDigits, showSign: showSign),
+      format(amount,
+          showSymbol: showSymbol,
+          decimalDigits: decimalDigits,
+          showSign: showSign),
       style: style,
       textAlign: textAlign,
       maxLines: 1,
@@ -140,16 +152,17 @@ class CurrencyFormatter {
   }
 }
 
-/// Форматировщик для TextField. 
+/// Форматировщик для TextField.
 /// Автоматически расставляет пробелы при вводе и ограничивает ввод некорректных символов.
 class CurrencyInputFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.isEmpty) return newValue;
 
     // Оставляем только цифры и один разделитель (точку или запятую)
     final text = newValue.text.replaceAll(' ', '').replaceAll(',', '.');
-    
+
     // Если ввод не является числом (и не в процессе ввода точки), отменяем изменение
     if (text != '.' && double.tryParse(text) == null && !text.endsWith('.')) {
       return oldValue;
@@ -158,8 +171,9 @@ class CurrencyInputFormatter extends TextInputFormatter {
     final parts = text.split('.');
     // Форматируем целую часть с пробелами
     final RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-    String formattedInt = parts[0].replaceAllMapped(reg, (Match m) => '${m[1]} ');
-    
+    String formattedInt =
+        parts[0].replaceAllMapped(reg, (Match m) => '${m[1]} ');
+
     String finalString = formattedInt;
     // Добавляем дробную часть обратно, если она есть
     if (text.contains('.')) {

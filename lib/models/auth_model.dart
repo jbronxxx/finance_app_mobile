@@ -61,7 +61,8 @@ class LoginResponseModel {
   });
 
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] is Map ? json['data'] as Map<String, dynamic> : json;
+    final data =
+        json['data'] is Map ? json['data'] as Map<String, dynamic> : json;
     return LoginResponseModel(
       accessToken: (data['access_token'] ?? '') as String,
       tokenType: (data['token_type'] ?? 'bearer') as String,

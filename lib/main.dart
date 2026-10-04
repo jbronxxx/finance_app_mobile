@@ -93,7 +93,8 @@ class FinanceApp extends StatelessWidget {
           routes: {
             '/': (context) => const MainShell(),
             '/login': (context) => const AuthScreen(),
-            '/service-unavailable': (context) => const ServiceUnavailableScreen(),
+            '/service-unavailable': (context) =>
+                const ServiceUnavailableScreen(),
           },
           theme: ThemeData(
             useMaterial3: true,

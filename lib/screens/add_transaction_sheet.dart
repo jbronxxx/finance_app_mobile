@@ -57,7 +57,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     }
 
     if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
-      AppAlerts.warning(context, '${LanguageManager.t('alert_amount_too_large')} ${CurrencyFormatter.currentCurrency.code}');
+      AppAlerts.warning(context,
+          '${LanguageManager.t('alert_amount_too_large')} ${CurrencyFormatter.currentCurrency.code}');
       return;
     }
 
@@ -131,7 +132,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isEditing ? LanguageManager.t('edit_transaction') : LanguageManager.t('new_transaction'),
+                isEditing
+                    ? LanguageManager.t('edit_transaction')
+                    : LanguageManager.t('new_transaction'),
                 style:
                     const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
@@ -225,7 +228,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             inputFormatters: [CurrencyInputFormatter()],
             autofocus: false,
             decoration: InputDecoration(
-              labelText: '${LanguageManager.t('amount_label')} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
+              labelText:
+                  '${LanguageManager.t('amount_label')} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -272,7 +276,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               ),
               onPressed: _save,
               child: Text(
-                isEditing ? LanguageManager.t('save_changes_btn') : LanguageManager.t('add_btn'),
+                isEditing
+                    ? LanguageManager.t('save_changes_btn')
+                    : LanguageManager.t('add_btn'),
                 style:
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
