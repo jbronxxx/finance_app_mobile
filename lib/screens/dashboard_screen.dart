@@ -78,7 +78,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _checkSwipeHint() async {
-    final canShow = await PreferencesService.instance.shouldShowSwipeHint('dashboard');
+    final canShow =
+        await PreferencesService.instance.shouldShowSwipeHint('dashboard');
     if (canShow) {
       setState(() {
         _shouldShowSwipeHint = true;
@@ -104,10 +105,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     setState(() => _isLoading = true);
 
-    // 1. Загружаем итоги месяца (только если это не дозагрузка, 
+    // 1. Загружаем итоги месяца (только если это не дозагрузка,
     //    так как итоги для месяца не меняются от пагинации списка)
     if (!isLoadMore) {
-      final totals = LocalDbService.instance.getMonthTotals(_selectedMonth, _selectedYear);
+      final totals =
+          LocalDbService.instance.getMonthTotals(_selectedMonth, _selectedYear);
       _totalIncome = totals['income'] ?? 0;
       _totalExpense = totals['expense'] ?? 0;
       _totalBalance = _totalIncome - _totalExpense;
@@ -129,7 +131,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _offset += newBatch.length;
 
     // 3. Группируем (обновляем существующую карту)
-    final Map<DateTime, Map<Category, List<Transaction>>> grouped = 
+    final Map<DateTime, Map<Category, List<Transaction>>> grouped =
         isLoadMore ? Map.from(_groupedTransactions) : {};
 
     for (var t in newBatch) {
@@ -168,8 +170,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     try {
-      if (kDebugMode) debugPrint('[Dashboard] Forced pull-to-refresh transactions sync');
-      
+      if (kDebugMode) {
+        debugPrint('[Dashboard] Forced pull-to-refresh transactions sync');
+      }
+
       // 1. Выгружаем отложенные удаления
       final pendingTransactions = PendingDeletionsStore.instance.transactionIds;
       if (pendingTransactions.isNotEmpty) {
@@ -187,7 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       // 2. Выгружаем локальные изменения и скачиваем новые данные в одном вызове syncAll
       await ApiService.instance.syncAll();
-      
+
       _loadTransactions();
       if (mounted) {
         AppAlerts.success(context, LanguageManager.t('sync_success'));
@@ -297,7 +301,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
+        padding:
+            const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -318,7 +323,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               Text(
                 LanguageManager.t('select_period'),
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               Row(
@@ -335,8 +341,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       items: List.generate(12, (index) {
                         final monthValue = index + 1;
-                        final isCurrentMonth = monthValue == DateTime.now().month &&
-                            tempYear == DateTime.now().year;
+                        final isCurrentMonth =
+                            monthValue == DateTime.now().month &&
+                                tempYear == DateTime.now().year;
 
                         return DropdownMenuItem(
                           value: monthValue,
@@ -462,52 +469,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.only(right: 16.0),
             child: ApiService.instance.isAuthenticated
                 ? TextButton.icon(
-              onPressed: _openProfile,
-              icon: const Icon(Icons.person, size: 18),
-              label: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: Text(
-                  _userLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF0F766E),
-                backgroundColor:
-                const Color(0xFF0F766E).withValues(alpha: 0.1),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            )
+                    onPressed: _openProfile,
+                    icon: const Icon(Icons.person, size: 18),
+                    label: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 120),
+                      child: Text(
+                        _userLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF0F766E),
+                      backgroundColor:
+                          const Color(0xFF0F766E).withValues(alpha: 0.1),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  )
                 : TextButton(
-              onPressed: _openAuthScreen,
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF0F766E),
-                backgroundColor:
-                const Color(0xFF0F766E).withValues(alpha: 0.1),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 130),
-                child: Text(
-                  LanguageManager.t('login_or_register'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
-            ),
+                    onPressed: _openAuthScreen,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF0F766E),
+                      backgroundColor:
+                          const Color(0xFF0F766E).withValues(alpha: 0.1),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 130),
+                      child: Text(
+                        LanguageManager.t('login_or_register'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
+                  ),
           )
         ],
       ),
@@ -520,97 +527,100 @@ class _DashboardScreenState extends State<DashboardScreen> {
               parent: AlwaysScrollableScrollPhysics(),
             ),
             slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!ApiService.instance.isAuthenticated)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.amber.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline,
-                                size: 16, color: Colors.amber.shade800),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${LanguageManager.t('guest_mode')} (${LanguageManager.t('cloud_not_connected').toLowerCase()})',
-                              style: TextStyle(
-                                  color: Colors.amber.shade900,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-                      ),
-                    _buildBalanceCard(_totalBalance, _totalIncome, _totalExpense),
-                    const SizedBox(height: 24),
-                    Text(
-                      LanguageManager.t('balance'),
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87),
-                    ),
-                    const SizedBox(height: 12),
-                    if (_transactions.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 40.0),
-                        child: Center(
-                          child: Text(
-                            LanguageManager.t('no_transactions'),
-                            style: const TextStyle(color: Colors.grey),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!ApiService.instance.isAuthenticated)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.amber.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline,
+                                  size: 16, color: Colors.amber.shade800),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${LanguageManager.t('guest_mode')} (${LanguageManager.t('cloud_not_connected').toLowerCase()})',
+                                style: TextStyle(
+                                    color: Colors.amber.shade900,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ],
                           ),
                         ),
+                      _buildBalanceCard(
+                          _totalBalance, _totalIncome, _totalExpense),
+                      const SizedBox(height: 24),
+                      Text(
+                        LanguageManager.t('balance'),
+                        style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87),
                       ),
-                  ],
-                ),
-              ),
-            ),
-            if (_transactions.isNotEmpty)
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                      final date = _groupedTransactions.keys.elementAt(index);
-                      final categories = _groupedTransactions[date]!;
-
-                      return _buildDayGroup(
-                        date,
-                        categories,
-                        showHintOnFirstCategory: index == 0 && _shouldShowSwipeHint,
-                      );
-                    },
-                    childCount: _groupedTransactions.length,
+                      const SizedBox(height: 12),
+                      if (_transactions.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 40.0),
+                          child: Center(
+                            child: Text(
+                              LanguageManager.t('no_transactions'),
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
-            if (_isLoading && _transactions.isNotEmpty)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Color(0xFF0F766E),
+              if (_transactions.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final date = _groupedTransactions.keys.elementAt(index);
+                        final categories = _groupedTransactions[date]!;
+
+                        return _buildDayGroup(
+                          date,
+                          categories,
+                          showHintOnFirstCategory:
+                              index == 0 && _shouldShowSwipeHint,
+                        );
+                      },
+                      childCount: _groupedTransactions.length,
                     ),
                   ),
                 ),
-              ),
-            const SliverToBoxAdapter(child: SizedBox(height: 80)),
-          ],
+              if (_isLoading && _transactions.isNotEmpty)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF0F766E),
+                      ),
+                    ),
+                  ),
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: 80)),
+            ],
+          ),
         ),
       ),
-    ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openTransactionSheet(),
         child: const Icon(Icons.add, size: 32),
@@ -656,12 +666,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Expanded(
                 child: _buildIncomeExpenseInfo(
-                    LanguageManager.t('income_title'), income, Icons.arrow_downward, Colors.white),
+                    LanguageManager.t('income_title'),
+                    income,
+                    Icons.arrow_downward,
+                    Colors.white),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildIncomeExpenseInfo(
-                    LanguageManager.t('expense_title'), expense, Icons.arrow_upward, Colors.white),
+                    LanguageManager.t('expense_title'),
+                    expense,
+                    Icons.arrow_upward,
+                    Colors.white),
               ),
             ],
           ),
@@ -703,8 +719,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-
-  Widget _buildDayGroup(DateTime date, Map<Category, List<Transaction>> categories,
+  Widget _buildDayGroup(
+      DateTime date, Map<Category, List<Transaction>> categories,
       {bool showHintOnFirstCategory = false}) {
     final formattedDate = LanguageManager.formatDayMonth(date);
     final isToday = DateTime.now().year == date.year &&
@@ -717,7 +733,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: Text(
-            isToday ? '${LanguageManager.t('today')}, $formattedDate' : formattedDate,
+            isToday
+                ? '${LanguageManager.t('today')}, $formattedDate'
+                : formattedDate,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -791,7 +809,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         key: Key('expansion_${category.name}_$showHintOnFirstTransaction'),
         initiallyExpanded: showHintOnFirstTransaction,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        collapsedShape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           width: 40,
@@ -832,7 +851,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTransactionItem(Transaction transaction, {bool isFirst = false, bool showHint = false}) {
+  Widget _buildTransactionItem(Transaction transaction,
+      {bool isFirst = false, bool showHint = false}) {
     final isExpense = transaction.type == TransactionType.expense;
 
     final background = Container(
@@ -853,9 +873,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color: Colors.white,
         child: ListTile(
           onTap: () => _openTransactionSheet(transaction),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
           title: Text(
-            transaction.description.isEmpty ? LanguageManager.t('no_description') : transaction.description,
+            transaction.description.isEmpty
+                ? LanguageManager.t('no_description')
+                : transaction.description,
             style: const TextStyle(fontSize: 13),
           ),
           trailing: ConstrainedBox(
@@ -892,5 +915,4 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return item;
   }
-
 }

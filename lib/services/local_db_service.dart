@@ -41,7 +41,8 @@ class LocalDbService {
 
   /// Возвращает транзакции за определенный месяц и год с поддержкой пагинации.
   /// Фильтрация происходит на уровне БД через диапазон миллисекунд.
-  List<Transaction> getTransactionsForPeriod(int month, int year, {int? limit, int offset = 0}) {
+  List<Transaction> getTransactionsForPeriod(int month, int year,
+      {int? limit, int offset = 0}) {
     final startOfMonth = DateTime(year, month, 1).millisecondsSinceEpoch;
     final endOfMonth = DateTime(year, month + 1, 1)
         .subtract(const Duration(milliseconds: 1))
@@ -70,15 +71,19 @@ class LocalDbService {
         .subtract(const Duration(milliseconds: 1))
         .millisecondsSinceEpoch;
 
-    final incomeQuery = _transactionBox.query(
-      Transaction_.dateMilliseconds.between(startOfMonth, endOfMonth) &
-      Transaction_.dbType.equals(TransactionType.income.name),
-    ).build();
-    
-    final expenseQuery = _transactionBox.query(
-      Transaction_.dateMilliseconds.between(startOfMonth, endOfMonth) &
-      Transaction_.dbType.equals(TransactionType.expense.name),
-    ).build();
+    final incomeQuery = _transactionBox
+        .query(
+          Transaction_.dateMilliseconds.between(startOfMonth, endOfMonth) &
+              Transaction_.dbType.equals(TransactionType.income.name),
+        )
+        .build();
+
+    final expenseQuery = _transactionBox
+        .query(
+          Transaction_.dateMilliseconds.between(startOfMonth, endOfMonth) &
+              Transaction_.dbType.equals(TransactionType.expense.name),
+        )
+        .build();
 
     final income = incomeQuery.property(Transaction_.amount).sum();
     final expense = expenseQuery.property(Transaction_.amount).sum();
@@ -109,7 +114,9 @@ class LocalDbService {
   void saveTransaction(Transaction transaction) {
     _linkToExistingTransaction(transaction);
     final id = _transactionBox.put(transaction);
-    if (kDebugMode) debugPrint('[LocalDbService] Saved transaction localId: $id');
+    if (kDebugMode) {
+      debugPrint('[LocalDbService] Saved transaction localId: $id');
+    }
   }
 
   /// Переносит на приехавшую с сервера транзакцию `localId` уже существующей
@@ -188,7 +195,9 @@ class LocalDbService {
   /// была найдена и удалена.
   bool deleteTransaction(int id) {
     final removed = _transactionBox.remove(id);
-    if (kDebugMode) debugPrint('[LocalDbService] Removed transaction $id: $removed');
+    if (kDebugMode) {
+      debugPrint('[LocalDbService] Removed transaction $id: $removed');
+    }
     return removed;
   }
 
@@ -358,9 +367,7 @@ class LocalDbService {
   /// Используется при синхронизации гостевых/локальных данных после входа/редактирования.
   List<Budget> getUnsyncedBudgets() {
     final query = _budgetBox
-        .query(Budget_.serverId
-            .isNull()
-            .or(Budget_.isModified.equals(true)))
+        .query(Budget_.serverId.isNull().or(Budget_.isModified.equals(true)))
         .build();
     final results = query.find();
     query.close();
@@ -415,8 +422,8 @@ class LocalDbService {
     final startOfMonth = DateTime(year, month, 1);
     final nextMonth = month == 12 ? 1 : month + 1;
     final nextYear = month == 12 ? year + 1 : year;
-    final endOfMonth =
-        DateTime(nextYear, nextMonth, 1).subtract(const Duration(milliseconds: 1));
+    final endOfMonth = DateTime(nextYear, nextMonth, 1)
+        .subtract(const Duration(milliseconds: 1));
 
     final query = _transactionBox
         .query(Transaction_.dbCategory.equals(categoryName) &

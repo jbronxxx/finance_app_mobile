@@ -40,7 +40,8 @@ void main() {
       expect(model.insights.length, 2);
       expect(model.insights.first, 'Save 15% on dining');
       expect(model.generatedAt, isNotNull);
-      expect(model.generatedAt, DateTime.parse('2026-10-02T13:45:00Z').toLocal());
+      expect(
+          model.generatedAt, DateTime.parse('2026-10-02T13:45:00Z').toLocal());
     });
 
     test('parses unix timestamp in milliseconds and seconds', () {
@@ -56,7 +57,8 @@ void main() {
         'insights': ['Tip 2'],
         'generated_at': sec,
       });
-      expect(modelSec.generatedAt, DateTime.fromMillisecondsSinceEpoch(sec * 1000));
+      expect(modelSec.generatedAt,
+          DateTime.fromMillisecondsSinceEpoch(sec * 1000));
     });
 
     test('handles null generated_at and empty insights', () {
@@ -98,24 +100,29 @@ void main() {
       LanguageManager.setLanguage(AppLanguage.ru);
       expect(LanguageManager.formatDate(testDate), '2 октября, 14:30');
       expect(LanguageManager.t('insights_updated_prefix'), 'Обновлено');
-      expect(LanguageManager.t('insights_cache_hint'), contains('Советы обновляются автоматически'));
+      expect(LanguageManager.t('insights_cache_hint'),
+          contains('Советы обновляются автоматически'));
 
       LanguageManager.setLanguage(AppLanguage.uz);
       expect(LanguageManager.formatDate(testDate), '2-oktabr, 14:30');
       expect(LanguageManager.t('insights_updated_prefix'), 'Yangilangan');
-      expect(LanguageManager.t('insights_cache_hint'), contains('avtomatik ravishda yangilanadi'));
+      expect(LanguageManager.t('insights_cache_hint'),
+          contains('avtomatik ravishda yangilanadi'));
 
       LanguageManager.setLanguage(AppLanguage.en);
       expect(LanguageManager.formatDate(testDate), 'October 2, 14:30');
       expect(LanguageManager.t('insights_updated_prefix'), 'Updated');
-      expect(LanguageManager.t('insights_cache_hint'), contains('Insights update automatically'));
+      expect(LanguageManager.t('insights_cache_hint'),
+          contains('Insights update automatically'));
 
       // Restore RU
       LanguageManager.setLanguage(AppLanguage.ru);
     });
   });
 
-  test('ApiService getInsights method accepts cancelToken, currency, locale, and custom timeouts', () async {
+  test(
+      'ApiService getInsights method accepts cancelToken, currency, locale, and custom timeouts',
+      () async {
     final cancelToken = CancelToken();
     try {
       await ApiService.instance.getInsights(
@@ -142,7 +149,8 @@ void main() {
     );
   });
 
-  testWidgets('InsightsScreen renders and disposes cleanly with CancelToken', (tester) async {
+  testWidgets('InsightsScreen renders and disposes cleanly with CancelToken',
+      (tester) async {
     await tester.pumpWidget(const MaterialApp(home: InsightsScreen()));
     await tester.pump();
 
@@ -155,7 +163,9 @@ void main() {
     expect(find.byType(InsightsScreen), findsNothing);
   });
 
-  testWidgets('InsightsScreen displays updated date and cache hint when generated_at is present', (tester) async {
+  testWidgets(
+      'InsightsScreen displays updated date and cache hint when generated_at is present',
+      (tester) async {
     await ApiService.instance.setTokens('test_token', 'test_refresh');
 
     final originalAdapter = ApiService.instance.dio.httpClientAdapter;
@@ -163,7 +173,8 @@ void main() {
     final parsedDate = DateTime.parse(testGeneratedAt).toLocal();
     final expectedFormatted = LanguageManager.formatDate(parsedDate);
 
-    ApiService.instance.dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
+    ApiService.instance.dio.httpClientAdapter =
+        _MockHttpClientAdapter((options) async {
       if (options.path.contains('/insights/')) {
         return ResponseBody.fromString(
           jsonEncode({
@@ -187,10 +198,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('insights_updated_at')), findsOneWidget);
-      expect(find.text('${LanguageManager.t('insights_updated_prefix')}: $expectedFormatted'), findsOneWidget);
+      expect(
+          find.text(
+              '${LanguageManager.t('insights_updated_prefix')}: $expectedFormatted'),
+          findsOneWidget);
 
       expect(find.byKey(const Key('insights_cache_hint')), findsOneWidget);
-      expect(find.text(LanguageManager.t('insights_cache_hint')), findsOneWidget);
+      expect(
+          find.text(LanguageManager.t('insights_cache_hint')), findsOneWidget);
 
       expect(find.text('Следите за расходами на рестораны'), findsOneWidget);
     } finally {
@@ -217,4 +232,3 @@ class _MockHttpClientAdapter implements HttpClientAdapter {
   @override
   void close({bool force = false}) {}
 }
-

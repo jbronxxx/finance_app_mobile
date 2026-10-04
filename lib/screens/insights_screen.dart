@@ -75,7 +75,9 @@ class _InsightsScreenState extends State<InsightsScreen> {
     });
 
     try {
-      if (kDebugMode) debugPrint('[Insights] Loading insights via pull-to-refresh');
+      if (kDebugMode) {
+        debugPrint('[Insights] Loading insights via pull-to-refresh');
+      }
       final data = await ApiService.instance.getInsights(
         currency: CurrencyFormatter.currentCurrency.code,
         locale: LanguageManager.code,
@@ -94,7 +96,8 @@ class _InsightsScreenState extends State<InsightsScreen> {
         return;
       }
       if (mounted) {
-        AppErrorHandler.show(context, e, title: LanguageManager.t('insights_header_title'));
+        AppErrorHandler.show(context, e,
+            title: LanguageManager.t('insights_header_title'));
         setState(() {
           _error = AppErrorHandler.getMessage(e);
         });

@@ -64,7 +64,8 @@ class _MainShellState extends State<MainShell> {
         child: PopScope(
           canPop: false, // Запрещаем закрывать по кнопке Назад без выбора
           child: Container(
-            padding: const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 32),
+            padding:
+                const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 32),
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -86,7 +87,8 @@ class _MainShellState extends State<MainShell> {
                 ),
                 Text(
                   LanguageManager.t('welcome_lang_title'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -99,14 +101,20 @@ class _MainShellState extends State<MainShell> {
                     return Column(
                       children: [
                         ...AppLanguage.values.map((lang) {
-                          final isSelected = LanguageManager.currentLanguage == lang;
+                          final isSelected =
+                              LanguageManager.currentLanguage == lang;
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFF0F766E).withValues(alpha: 0.05) : Colors.transparent,
+                              color: isSelected
+                                  ? const Color(0xFF0F766E)
+                                      .withValues(alpha: 0.05)
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: isSelected ? const Color(0xFF0F766E) : Colors.grey.shade200,
+                                color: isSelected
+                                    ? const Color(0xFF0F766E)
+                                    : Colors.grey.shade200,
                                 width: isSelected ? 2 : 1,
                               ),
                             ),
@@ -114,13 +122,19 @@ class _MainShellState extends State<MainShell> {
                               title: Text(
                                 '${lang.flag}   ${lang.displayName}',
                                 style: TextStyle(
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                  color: isSelected ? const Color(0xFF0F766E) : Colors.black87,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isSelected
+                                      ? const Color(0xFF0F766E)
+                                      : Colors.black87,
                                 ),
                               ),
                               trailing: isSelected
-                                  ? const Icon(Icons.check_circle, color: Color(0xFF0F766E))
-                                  : const Icon(Icons.circle_outlined, color: Colors.grey),
+                                  ? const Icon(Icons.check_circle,
+                                      color: Color(0xFF0F766E))
+                                  : const Icon(Icons.circle_outlined,
+                                      color: Colors.grey),
                               onTap: () {
                                 LanguageManager.setLanguage(lang);
                                 setModalState(() {});
@@ -137,14 +151,16 @@ class _MainShellState extends State<MainShell> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF0F766E),
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
                             ),
                             onPressed: () {
                               Navigator.pop(context);
                             },
                             child: Text(
                               LanguageManager.t('continue_btn'),
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),

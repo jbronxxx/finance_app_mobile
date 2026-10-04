@@ -37,14 +37,19 @@ void main() {
 
       final response = await dio.get('/health');
       expect(response.statusCode, 200);
-      expect(response.requestOptions.headers.containsKey(TracingInterceptor.headerName), isTrue);
+      expect(
+          response.requestOptions.headers
+              .containsKey(TracingInterceptor.headerName),
+          isTrue);
     });
 
-    test('Preserves existing X-Request-ID header if already specified', () async {
+    test('Preserves existing X-Request-ID header if already specified',
+        () async {
       const customId = 'custom-trace-uuid-12345';
 
       dio.httpClientAdapter = _MockHttpClientAdapter((options) async {
-        expect(options.headers[TracingInterceptor.headerName], equals(customId));
+        expect(
+            options.headers[TracingInterceptor.headerName], equals(customId));
         return ResponseBody.fromString(
           '{"status": "ok"}',
           200,
@@ -82,7 +87,9 @@ void main() {
       expect(id, equals('trace-header-from-response'));
     });
 
-    test('extractRequestId falls back to requestOptions headers if response is null', () {
+    test(
+        'extractRequestId falls back to requestOptions headers if response is null',
+        () {
       final reqOptions = RequestOptions(
         path: '/api',
         headers: {'X-Request-ID': 'trace-from-request'},
@@ -119,7 +126,8 @@ void main() {
         headers: headers,
       );
 
-      expect(TracingInterceptor.extractResponseRequestId(response), equals('res-trace-456'));
+      expect(TracingInterceptor.extractResponseRequestId(response),
+          equals('res-trace-456'));
     });
   });
 }

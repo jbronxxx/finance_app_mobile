@@ -54,9 +54,13 @@ class ApiService {
         if (e.response?.statusCode == 401 &&
             e.requestOptions.path != ApiConfig.refreshToken &&
             e.requestOptions.path != ApiConfig.login) {
-          final refreshToken = _refreshToken ?? await _storage.read(key: 'refresh_token');
+          final refreshToken =
+              _refreshToken ?? await _storage.read(key: 'refresh_token');
           if (refreshToken != null && refreshToken.isNotEmpty) {
-            if (kDebugMode) debugPrint('[ApiService] Token expired (401), attempting refresh...');
+            if (kDebugMode) {
+              debugPrint(
+                  '[ApiService] Token expired (401), attempting refresh...');
+            }
             try {
               final refreshResponse = await _dio.post(
                 ApiConfig.refreshToken,
@@ -70,11 +74,14 @@ class ApiService {
                   : <String, dynamic>{};
 
               final newAccess = resData['access_token'] as String?;
-              final newRefresh = resData['refresh_token'] as String? ?? refreshToken;
+              final newRefresh =
+                  resData['refresh_token'] as String? ?? refreshToken;
 
               if (newAccess != null && newAccess.isNotEmpty) {
                 await setTokens(newAccess, newRefresh);
-                if (kDebugMode) debugPrint('[ApiService] Token refreshed successfully');
+                if (kDebugMode) {
+                  debugPrint('[ApiService] Token refreshed successfully');
+                }
 
                 final options = e.requestOptions;
                 options.headers['Authorization'] = 'Bearer $newAccess';
@@ -83,12 +90,16 @@ class ApiService {
                 throw Exception('Empty access token returned on refresh');
               }
             } catch (err) {
-              if (kDebugMode) debugPrint('[ApiService] Token refresh failed: $err');
+              if (kDebugMode) {
+                debugPrint('[ApiService] Token refresh failed: $err');
+              }
               await _handleSessionExpired();
               return handler.reject(e);
             }
           } else {
-            if (kDebugMode) debugPrint('[ApiService] No refresh token available');
+            if (kDebugMode) {
+              debugPrint('[ApiService] No refresh token available');
+            }
             await _handleSessionExpired();
           }
         }
@@ -206,7 +217,8 @@ class ApiService {
       await setUserEmail(registerResponse.email);
     } on DioException catch (e) {
       if (kDebugMode) {
-        debugPrint('[ApiService] Register error: ${e.response?.data ?? e.message}');
+        debugPrint(
+            '[ApiService] Register error: ${e.response?.data ?? e.message}');
       }
       rethrow;
     }
@@ -252,7 +264,8 @@ class ApiService {
       return LoginResponseModel.fromJson(response.data);
     } on DioException catch (e) {
       if (kDebugMode) {
-        debugPrint('[ApiService] Login error: ${e.response?.data ?? e.message}');
+        debugPrint(
+            '[ApiService] Login error: ${e.response?.data ?? e.message}');
       }
       rethrow;
     }
@@ -276,7 +289,8 @@ class ApiService {
       }
     } on DioException catch (e) {
       if (kDebugMode) {
-        debugPrint('[ApiService] Fetch profile error: ${e.response?.data ?? e.message}');
+        debugPrint(
+            '[ApiService] Fetch profile error: ${e.response?.data ?? e.message}');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('[ApiService] Profile parse error: $e');
@@ -298,11 +312,14 @@ class ApiService {
 
       final logoutResponse = LogoutResponseModel.fromJson(response.data);
 
-      if (kDebugMode) debugPrint('[ApiService] Logout success: ${logoutResponse.message}');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Logout success: ${logoutResponse.message}');
+      }
       return logoutResponse;
     } on DioException catch (e) {
       if (kDebugMode) {
-        debugPrint('[ApiService] Logout error: ${e.response?.data ?? e.message}');
+        debugPrint(
+            '[ApiService] Logout error: ${e.response?.data ?? e.message}');
       }
       rethrow;
     } finally {
@@ -335,7 +352,8 @@ class ApiService {
         options: _authOptions(),
       );
 
-      final dynamic data = response.data is Map ? response.data['data'] : response.data;
+      final dynamic data =
+          response.data is Map ? response.data['data'] : response.data;
       if (data is Map) {
         return PaginatedResponse<TransactionModel>.fromJson(
           Map<String, dynamic>.from(data),
@@ -346,7 +364,8 @@ class ApiService {
       } else if (data is List) {
         final items = data
             .whereType<Map>()
-            .map((json) => TransactionModel.fromJson(Map<String, dynamic>.from(json)))
+            .map((json) =>
+                TransactionModel.fromJson(Map<String, dynamic>.from(json)))
             .toList();
         return PaginatedResponse<TransactionModel>(
           items: items,
@@ -410,7 +429,9 @@ class ApiService {
     try {
       await deleteTransaction(serverId);
     } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Server delete failed, deferring: $e');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Server delete failed, deferring: $e');
+      }
       await PendingDeletionsStore.instance.addTransaction(serverId);
     }
   }
@@ -483,7 +504,9 @@ class ApiService {
         options: _authOptions(token),
       );
     } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Delete budget by period error: $e');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Delete budget by period error: $e');
+      }
       rethrow;
     }
   }
@@ -511,7 +534,8 @@ class ApiService {
   }
 
   /// Получить AI-инсайты.
-  Future<Map<String, dynamic>> getInsights({String? currency, String? locale, CancelToken? cancelToken}) async {
+  Future<Map<String, dynamic>> getInsights(
+      {String? currency, String? locale, CancelToken? cancelToken}) async {
     try {
       final response = await _dio.get(
         ApiConfig.insights,
@@ -537,7 +561,9 @@ class ApiService {
   Future<Map<String, dynamic>> checkHealth() async {
     try {
       final response = await _dio.get(ApiConfig.health);
-      return response.data is Map ? (response.data as Map).cast<String, dynamic>() : {'status': 'ok'};
+      return response.data is Map
+          ? (response.data as Map).cast<String, dynamic>()
+          : {'status': 'ok'};
     } catch (e) {
       if (kDebugMode) debugPrint('[ApiService] Health check error: $e');
       rethrow;
@@ -546,7 +572,8 @@ class ApiService {
 
   /// Обновление пары JWT-токенов через POST /api/v1/auth/refresh.
   Future<bool> refreshAuthTokens() async {
-    final currentRefresh = _refreshToken ?? await _storage.read(key: 'refresh_token');
+    final currentRefresh =
+        _refreshToken ?? await _storage.read(key: 'refresh_token');
     if (currentRefresh == null || currentRefresh.isEmpty) {
       await _handleSessionExpired();
       return false;
@@ -591,7 +618,8 @@ class ApiService {
           LocalDbService.instance.getUnsyncedTransactions();
       final localBudgets = LocalDbService.instance.getUnsyncedBudgets();
       final pendingBudgets = PendingDeletionsStore.instance.budgetIds.toList();
-      final pendingTransactions = PendingDeletionsStore.instance.transactionIds.toList();
+      final pendingTransactions =
+          PendingDeletionsStore.instance.transactionIds.toList();
 
       if (localTransactions.isEmpty &&
           localBudgets.isEmpty &&
@@ -616,7 +644,8 @@ class ApiService {
         transactions: localTransactions.map((t) => t.toJson()).toList(),
         budgets: budgetsPayload,
         deletedBudgetIds: pendingBudgets.isNotEmpty ? pendingBudgets : null,
-        deletedTransactionIds: pendingTransactions.isNotEmpty ? pendingTransactions : null,
+        deletedTransactionIds:
+            pendingTransactions.isNotEmpty ? pendingTransactions : null,
       );
 
       final response = await _dio.post(
@@ -636,13 +665,16 @@ class ApiService {
         await PendingDeletionsStore.instance.removeBudgets(pendingBudgets);
       }
       if (pendingTransactions.isNotEmpty) {
-        await PendingDeletionsStore.instance.removeTransactions(pendingTransactions);
+        await PendingDeletionsStore.instance
+            .removeTransactions(pendingTransactions);
       }
 
       if (kDebugMode) debugPrint('[ApiService] Sync local -> backend success');
       return data is Map ? data.cast<String, dynamic>() : response.data;
     } on DioException catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Sync error: ${e.response?.statusCode}');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Sync error: ${e.response?.statusCode}');
+      }
       throw Exception('Ошибка синхронизации: ${e.response?.statusCode}');
     } catch (e) {
       if (kDebugMode) debugPrint('[ApiService] Sync unexpected error: $e');
@@ -666,7 +698,10 @@ class ApiService {
             LocalDbService.instance.reconcileTransactions(remoteTransactions);
         transLength = remoteTransactions.length;
       } else {
-        if (kDebugMode) debugPrint('[ApiService] Transactions not modified (304). Skipping reconciliation.');
+        if (kDebugMode) {
+          debugPrint(
+              '[ApiService] Transactions not modified (304). Skipping reconciliation.');
+        }
         transLength = LocalDbService.instance.getAllTransactions().length;
       }
 
@@ -677,13 +712,15 @@ class ApiService {
             LocalDbService.instance.reconcileBudgets(remoteBudgets);
         budgetsLength = remoteBudgets.length;
       } else {
-        if (kDebugMode) debugPrint('[ApiService] Budgets not modified (304). Skipping reconciliation.');
+        if (kDebugMode) {
+          debugPrint(
+              '[ApiService] Budgets not modified (304). Skipping reconciliation.');
+        }
         budgetsLength = LocalDbService.instance.getAllBudgets().length;
       }
 
       if (kDebugMode) {
-        debugPrint(
-            '[ApiService] Sync backend -> local: '
+        debugPrint('[ApiService] Sync backend -> local: '
             'T($transLength), B($budgetsLength); '
             'Removed: T($removedTransactions), B($removedBudgets)');
       }
@@ -695,7 +732,9 @@ class ApiService {
         'removed_budgets': removedBudgets,
       };
     } on DioException catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] Load error: ${e.response?.statusCode}');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Load error: ${e.response?.statusCode}');
+      }
       throw Exception('Ошибка загрузки данных: ${e.response?.statusCode}');
     } catch (e) {
       if (kDebugMode) debugPrint('[ApiService] Load unexpected error: $e');
@@ -781,9 +820,11 @@ class ApiService {
     return totalDone;
   }
 
-  Future<List<Transaction>?> _fetchRemoteTransactions(String token, {DateTime? since}) async {
+  Future<List<Transaction>?> _fetchRemoteTransactions(String token,
+      {DateTime? since}) async {
     final options = _authOptions(token);
-    options.validateStatus = (status) => status != null && ((status >= 200 && status < 300) || status == 304);
+    options.validateStatus = (status) =>
+        status != null && ((status >= 200 && status < 300) || status == 304);
     if (_transactionsEtag != null) {
       options.headers?['If-None-Match'] = _transactionsEtag;
     }
@@ -811,7 +852,8 @@ class ApiService {
       await _storage.write(key: 'transactions_etag', value: newEtag);
     }
 
-    final firstData = firstResponse.data is Map ? firstResponse.data['data'] : null;
+    final firstData =
+        firstResponse.data is Map ? firstResponse.data['data'] : null;
     final firstItems = _asJsonList(firstData);
     allTransactions.addAll(firstItems.map(Transaction.fromJson));
 
@@ -830,12 +872,13 @@ class ApiService {
           options: _authOptions(token),
         );
 
-        final nextData = nextResponse.data is Map ? nextResponse.data['data'] : null;
+        final nextData =
+            nextResponse.data is Map ? nextResponse.data['data'] : null;
         final nextItems = _asJsonList(nextData);
         if (nextItems.isEmpty) break;
 
         allTransactions.addAll(nextItems.map(Transaction.fromJson));
-        
+
         if (nextData is Map) {
           hasMore = nextData['has_more'] == true;
           currentCursor = nextData['next_cursor'] as String?;
@@ -939,7 +982,8 @@ class ApiService {
 
     LocalDbService.instance.putTransactions(synced);
     if (kDebugMode) {
-      debugPrint('[ApiService] Assigned transaction IDs: ${synced.length}/${sent.length}');
+      debugPrint(
+          '[ApiService] Assigned transaction IDs: ${synced.length}/${sent.length}');
     }
   }
 
@@ -1005,7 +1049,8 @@ class ApiService {
 
     LocalDbService.instance.putBudgets(synced);
     if (kDebugMode) {
-      debugPrint('[ApiService] Assigned budget IDs: ${synced.length}/${sent.length}');
+      debugPrint(
+          '[ApiService] Assigned budget IDs: ${synced.length}/${sent.length}');
     }
   }
 

@@ -5,8 +5,8 @@ import '../utils/language_manager.dart';
 import '../main.dart';
 
 /// Централизованный обработчик ошибок приложения.
-/// 
-/// Отвечает за преобразование технических исключений (сетевых, серверных) 
+///
+/// Отвечает за преобразование технических исключений (сетевых, серверных)
 /// в понятные пользователю сообщения и их отображение в UI.
 class AppErrorHandler {
   /// Возвращает текстовое сообщение на основе типа ошибки.
@@ -18,11 +18,11 @@ class AppErrorHandler {
   }
 
   /// Показывает уведомление об ошибке пользователю.
-  /// 
+  ///
   /// В случае истечения сессии (401 или специальные коды) отображает модальный диалог.
   static void show(BuildContext context, dynamic error, {String? title}) {
     final message = getMessage(error);
-    
+
     if (error is DioException) {
       final data = error.response?.data;
       final code = (data is Map) ? data['code'] : null;
@@ -56,9 +56,13 @@ class AppErrorHandler {
           code == 'RATE_LIMIT_EXCEEDED' ||
           (data is Map && data['status'] == 'RATE_LIMIT_EXCEEDED')) {
         final retryAfterHeader = error.response?.headers.value('retry-after');
-        final retrySeconds = retryAfterHeader != null ? int.tryParse(retryAfterHeader.trim()) : null;
+        final retrySeconds = retryAfterHeader != null
+            ? int.tryParse(retryAfterHeader.trim())
+            : null;
 
-        final customMsg = (data is Map && data['message'] != null && data['message'].toString().isNotEmpty)
+        final customMsg = (data is Map &&
+                data['message'] != null &&
+                data['message'].toString().isNotEmpty)
             ? data['message'].toString()
             : LanguageManager.t('http_429');
 
@@ -75,7 +79,9 @@ class AppErrorHandler {
       if (error.response?.statusCode == 503 ||
           code == 'SERVICE_UNAVAILABLE' ||
           (data is Map && data['status'] == 'SERVICE_UNAVAILABLE')) {
-        final customMsg = (data is Map && data['message'] != null && data['message'].toString().isNotEmpty)
+        final customMsg = (data is Map &&
+                data['message'] != null &&
+                data['message'].toString().isNotEmpty)
             ? data['message'].toString()
             : null;
         AppAlerts.showServiceUnavailableDialog(
@@ -95,7 +101,7 @@ class AppErrorHandler {
 
     if (error.response != null) {
       final data = error.response?.data;
-      
+
       if (data is Map) {
         // Извлечение сообщения из унифицированного контракта ErrorResponse
         if (data['message'] != null && data['message'].toString().isNotEmpty) {
@@ -128,14 +134,30 @@ class AppErrorHandler {
       } else {
         // Резервный механизм на основе HTTP статус-кодов
         switch (error.response?.statusCode) {
-          case 400: message = LanguageManager.t('http_400'); break;
-          case 401: message = LanguageManager.t('http_401'); break;
-          case 403: message = LanguageManager.t('http_403'); break;
-          case 404: message = LanguageManager.t('http_404'); break;
-          case 429: message = LanguageManager.t('http_429'); break;
-          case 500: message = LanguageManager.t('http_500'); break;
-          case 503: message = LanguageManager.t('http_503'); break;
-          default: message = '${LanguageManager.t('server_error_code')}: ${error.response?.statusCode}';
+          case 400:
+            message = LanguageManager.t('http_400');
+            break;
+          case 401:
+            message = LanguageManager.t('http_401');
+            break;
+          case 403:
+            message = LanguageManager.t('http_403');
+            break;
+          case 404:
+            message = LanguageManager.t('http_404');
+            break;
+          case 429:
+            message = LanguageManager.t('http_429');
+            break;
+          case 500:
+            message = LanguageManager.t('http_500');
+            break;
+          case 503:
+            message = LanguageManager.t('http_503');
+            break;
+          default:
+            message =
+                '${LanguageManager.t('server_error_code')}: ${error.response?.statusCode}';
         }
       }
     } else {

@@ -58,13 +58,15 @@ void main() {
       const offsetString = '2026-10-03T15:00:00+03:00';
       final parsedOffset = parseServerDate(offsetString);
       expect(parsedOffset, isNotNull);
-      expect(parsedOffset!.toUtc().toIso8601String(), '2026-10-03T12:00:00.000Z');
+      expect(
+          parsedOffset!.toUtc().toIso8601String(), '2026-10-03T12:00:00.000Z');
 
       expect(parseServerDate(null), isNull);
       expect(parseServerDate(123), isNull);
     });
 
-    test('Transaction parses date as local and serializes date to UTC ISO 8601', () {
+    test('Transaction parses date as local and serializes date to UTC ISO 8601',
+        () {
       final json = {
         'id': 'tx-123',
         'amount': 450.50,
@@ -125,7 +127,8 @@ void main() {
       expect(authMe.userName, 'Test User');
       expect(authMe.createdAt, isNotNull);
       expect(authMe.createdAt!.isUtc, isFalse);
-      expect(authMe.createdAt!.toUtc().toIso8601String(), '2026-10-01T10:00:00.000Z');
+      expect(authMe.createdAt!.toUtc().toIso8601String(),
+          '2026-10-01T10:00:00.000Z');
     });
   });
 
@@ -146,7 +149,9 @@ void main() {
       expect(loginRes.tokenType, 'bearer');
     });
 
-    test('Dio Interceptor handles 401, refreshes tokens with jti, saves to secure storage and retries original request', () async {
+    test(
+        'Dio Interceptor handles 401, refreshes tokens with jti, saves to secure storage and retries original request',
+        () async {
       final api = ApiService.instance;
       await api.init();
       await api.setTokens('expired_access_token', 'initial_refresh_token');
@@ -159,7 +164,9 @@ void main() {
       api.dio.httpClientAdapter = _MockDioAdapter((RequestOptions options) {
         if (options.path == ApiConfig.refreshToken) {
           refreshCalled = true;
-          refreshPayload = options.data is Map ? Map<String, dynamic>.from(options.data) : null;
+          refreshPayload = options.data is Map
+              ? Map<String, dynamic>.from(options.data)
+              : null;
 
           return ResponseBody.fromString(
             jsonEncode({
@@ -207,7 +214,8 @@ void main() {
             );
           }
 
-          return ResponseBody.fromString(jsonEncode({'error': 'Unauthorized'}), 401);
+          return ResponseBody.fromString(
+              jsonEncode({'error': 'Unauthorized'}), 401);
         }
 
         return ResponseBody.fromString('{}', 404);
@@ -226,7 +234,9 @@ void main() {
       expect(mockSecureStorage['refresh_token'], 'new_jwt_refresh_jti_999');
     });
 
-    test('refreshAuthTokens directly requests /auth/refresh and updates storage', () async {
+    test(
+        'refreshAuthTokens directly requests /auth/refresh and updates storage',
+        () async {
       final api = ApiService.instance;
       await api.setTokens('access_old', 'refresh_jwt_jti_111');
 
@@ -305,7 +315,8 @@ void main() {
       expect(parsed.category, 'transport');
     });
 
-    test('SyncModel serializes transactions, budgets and deleted_budget_ids', () {
+    test('SyncModel serializes transactions, budgets and deleted_budget_ids',
+        () {
       final syncPayload = SyncModel(
         transactions: [
           {

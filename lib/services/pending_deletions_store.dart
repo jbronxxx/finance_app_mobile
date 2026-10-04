@@ -50,7 +50,7 @@ class PendingDeletionsStore {
         if (decoded is Map) {
           final txs = decoded['transactions'];
           if (txs is List) transactionIds.addAll(txs.whereType<String>());
-          
+
           final bgts = decoded['budgets'];
           if (bgts is List) budgetIds.addAll(bgts.whereType<String>());
         } else if (decoded is List) {

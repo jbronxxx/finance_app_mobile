@@ -212,9 +212,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         object.localId = id;
       },
       objectToFB: (Budget object, fb.Builder fbb) {
-        final serverIdOffset = object.serverId == null
-            ? null
-            : fbb.writeString(object.serverId!);
+        final serverIdOffset =
+            object.serverId == null ? null : fbb.writeString(object.serverId!);
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
         fbb.startTable(10);
         fbb.addInt64(0, object.localId);
@@ -304,9 +303,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         object.localId = id;
       },
       objectToFB: (Transaction object, fb.Builder fbb) {
-        final serverIdOffset = object.serverId == null
-            ? null
-            : fbb.writeString(object.serverId!);
+        final serverIdOffset =
+            object.serverId == null ? null : fbb.writeString(object.serverId!);
         final descriptionOffset = fbb.writeString(object.description);
         final dbCategoryOffset = fbb.writeString(object.dbCategory);
         final dbTypeOffset = fbb.writeString(object.dbType);

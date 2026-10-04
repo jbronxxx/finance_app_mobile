@@ -76,7 +76,8 @@ void main() {
       expect(tx.category, 'salary');
       expect(tx.type, 'income');
       expect(tx.createdAt, isNotNull);
-      expect(tx.createdAt!.toUtc().toIso8601String(), '2026-09-10T10:30:00.000Z');
+      expect(
+          tx.createdAt!.toUtc().toIso8601String(), '2026-09-10T10:30:00.000Z');
     });
 
     test('PaginatedResponse hasMore is false when on last page', () {
@@ -117,7 +118,8 @@ void main() {
 
       final tx1 = TransactionModel.fromJson(jsonWithCreatedAt);
       expect(tx1.createdAt, isNotNull);
-      expect(tx1.createdAt!.toUtc().toIso8601String(), '2026-09-11T12:05:00.000Z');
+      expect(
+          tx1.createdAt!.toUtc().toIso8601String(), '2026-09-11T12:05:00.000Z');
       expect(tx1.toJson()['created_at'], '2026-09-11T12:05:00.000Z');
 
       final jsonWithDateCreated = {
@@ -132,10 +134,12 @@ void main() {
 
       final tx2 = TransactionModel.fromJson(jsonWithDateCreated);
       expect(tx2.createdAt, isNotNull);
-      expect(tx2.createdAt!.toUtc().toIso8601String(), '2026-09-11T13:05:00.000Z');
+      expect(
+          tx2.createdAt!.toUtc().toIso8601String(), '2026-09-11T13:05:00.000Z');
     });
 
-    test('Transaction entity in local_db_models parses created_at correctly', () {
+    test('Transaction entity in local_db_models parses created_at correctly',
+        () {
       final json = {
         'id': 'tx-local-1',
         'amount': 500.0,
@@ -149,12 +153,16 @@ void main() {
       final tx = Transaction.fromJson(json);
       expect(tx.serverId, 'tx-local-1');
       expect(
-        DateTime.fromMillisecondsSinceEpoch(tx.dateCreatedMilliseconds).toUtc().toIso8601String(),
+        DateTime.fromMillisecondsSinceEpoch(tx.dateCreatedMilliseconds)
+            .toUtc()
+            .toIso8601String(),
         '2026-09-12T10:15:00.000Z',
       );
     });
 
-    test('ApiService.getTransactions sends limit, cursor, since and parses PaginatedResponse', () async {
+    test(
+        'ApiService.getTransactions sends limit, cursor, since and parses PaginatedResponse',
+        () async {
       final api = ApiService.instance;
       await api.setTokens('test_access_token', 'test_refresh_token');
 
@@ -265,7 +273,9 @@ void main() {
       }
     });
 
-    test('ApiService.getTransactions supports legacy flat array response gracefully', () async {
+    test(
+        'ApiService.getTransactions supports legacy flat array response gracefully',
+        () async {
       final api = ApiService.instance;
       await api.setTokens('test_token', 'test_refresh');
 
