@@ -189,31 +189,35 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     onPressed: () {
                       final amount =
                           CurrencyFormatter.parseInput(amountController.text);
-                      if (amount != null && amount > 0) {
-                        if (amount >
-                            CurrencyFormatter.currentCurrency.maxAmount) {
-                          AppAlerts.warning(context,
-                              '${context.l10n.alert_amount_too_large} ${CurrencyFormatter.currentCurrency.code}');
-                          return;
-                        }
-                        final spent = LocalDbService.instance
-                            .getSpentForCategory(_selectedMonth, _selectedYear,
-                                selectedCategory.name);
-                        final newBudget = Budget(
-                          localId: budgetToEdit?.localId ?? 0,
-                          serverId: budgetToEdit?.serverId,
-                          dbCategory: selectedCategory.name,
-                          limitAmount: amount,
-                          month: _selectedMonth,
-                          year: _selectedYear,
-                          spent: spent,
-                          remaining: amount - spent,
-                          isModified: budgetToEdit?.serverId != null,
-                        );
-                        LocalDbService.instance.saveBudget(newBudget);
-                        Navigator.pop(context);
-                        _loadBudgets();
+                      if (amount == null || amount <= 0) {
+                        AppAlerts.warning(
+                            context, context.l10n.alert_valid_amount);
+                        return;
                       }
+
+                      if (amount >
+                          CurrencyFormatter.currentCurrency.maxAmount) {
+                        AppAlerts.warning(context,
+                            '${context.l10n.alert_amount_too_large} ${CurrencyFormatter.currentCurrency.code}');
+                        return;
+                      }
+
+                      final spent = LocalDbService.instance.getSpentForCategory(
+                          _selectedMonth, _selectedYear, selectedCategory.name);
+                      final newBudget = Budget(
+                        localId: budgetToEdit?.localId ?? 0,
+                        serverId: budgetToEdit?.serverId,
+                        dbCategory: selectedCategory.name,
+                        limitAmount: amount,
+                        month: _selectedMonth,
+                        year: _selectedYear,
+                        spent: spent,
+                        remaining: amount - spent,
+                        isModified: budgetToEdit?.serverId != null,
+                      );
+                      LocalDbService.instance.saveBudget(newBudget);
+                      Navigator.pop(context);
+                      _loadBudgets();
                     },
                     child: Text(
                         budgetToEdit != null
@@ -314,7 +318,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           fillColor: Theme.of(context).colorScheme.surface,
                         ),
                         items: List.generate(11, (index) {
-                          final yearValue = DateTime.now().year + index;
+                          final yearValue = DateTime.now().year - 5 + index;
                           final isCurrentYear =
                               yearValue == DateTime.now().year;
                           return DropdownMenuItem(
@@ -501,7 +505,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                           if (isExceeded) ...[
                                             const SizedBox(height: 8),
                                             Text(
-                                                '${context.l10n.budget_exceeded}!',
+                                                '${context.l10n.budget_exceeded} ${CurrencyFormatter.format(currentSpent - b.limitAmount, showSymbol: true)}!',
                                                 style: TextStyle(
                                                     color: Theme.of(context)
                                                                 .brightness ==
