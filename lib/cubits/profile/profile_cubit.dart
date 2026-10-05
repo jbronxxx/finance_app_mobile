@@ -10,17 +10,11 @@ part 'profile_state.dart';
 class ProfileCubit extends Cubit<ProfileState> {
   final ApiService _api;
   final Connectivity _connectivity;
-  late final StreamSubscription<bool> _authSubscription;
 
   ProfileCubit({ApiService? api, Connectivity? connectivity})
       : _api = api ?? ApiService.instance,
         _connectivity = connectivity ?? Connectivity(),
-        super(ProfileState(
-            isAuthenticated: (api ?? ApiService.instance).isAuthenticated)) {
-    _authSubscription = _api.authStream.listen((isAuth) {
-      emit(state.copyWith(isAuthenticated: isAuth));
-    });
-  }
+        super(const ProfileState());
 
   /// Запускает полную синхронизацию. Ошибка сохраняется в `state.syncError`.
   Future<void> startSync() async {
@@ -53,11 +47,5 @@ class ProfileCubit extends Cubit<ProfileState> {
     } catch (e) {
       if (kDebugMode) debugPrint('[ProfileCubit] Server logout failed: $e');
     }
-  }
-
-  @override
-  Future<void> close() {
-    _authSubscription.cancel();
-    return super.close();
   }
 }

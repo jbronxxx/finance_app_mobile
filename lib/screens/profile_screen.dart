@@ -6,6 +6,7 @@ import '../utils/language_manager.dart';
 import '../services/preferences_service.dart';
 import '../utils/app_error_handler.dart';
 import '../cubits/profile/profile_cubit.dart';
+import '../cubits/auth/auth_cubit.dart';
 
 /// Экран профиля пользователя, совмещенный с настройками приложения.
 class ProfileScreen extends StatelessWidget {
@@ -253,7 +254,8 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
         _handleSyncState(context, state);
       },
       builder: (context, state) {
-        final isAuthenticated = state.isAuthenticated;
+        final isAuthenticated =
+            context.watch<AuthCubit>().state is Authenticated;
 
         return Scaffold(
           backgroundColor: Theme.of(context).colorScheme.surface,

@@ -14,6 +14,8 @@ import 'services/preferences_service.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth_screen.dart';
 import 'screens/service_unavailable_screen.dart';
+import 'cubits/auth/auth_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Точка входа в приложение.
 void main() async {
@@ -80,80 +82,86 @@ class FinanceApp extends StatelessWidget {
         return ValueListenableBuilder<AppLanguage>(
           valueListenable: LanguageManager.languageNotifier,
           builder: (context, currentLanguage, child) {
-            return MaterialApp(
-              navigatorKey: navigatorKey,
-              title: 'Family Budget',
-              debugShowCheckedModeBanner: false,
-              themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-              locale: Locale(currentLanguage.code),
-              supportedLocales: const [
-                Locale('ru'),
-                Locale('uz'),
-                Locale('en'),
-              ],
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              routes: {
-                '/': (context) => const MainShell(),
-                '/login': (context) => const AuthScreen(),
-                '/service-unavailable': (context) =>
-                    const ServiceUnavailableScreen(),
-              },
-              theme: ThemeData(
-                useMaterial3: true,
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: primaryTeal,
-                  primary: primaryTeal,
-                  secondary: const Color(0xFF14B8A6),
-                  surface: const Color(0xFFF8FAFC),
-                  error: const Color(0xFFEF4444),
-                ),
-                textTheme: GoogleFonts.interTextTheme(),
-                cardTheme: CardTheme(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    side: const BorderSide(color: Color(0xFFF1F5F9), width: 1),
+            return BlocProvider(
+                create: (_) => AuthCubit(),
+                child: MaterialApp(
+                  navigatorKey: navigatorKey,
+                  title: 'Family Budget',
+                  debugShowCheckedModeBanner: false,
+                  themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+                  locale: Locale(currentLanguage.code),
+                  supportedLocales: const [
+                    Locale('ru'),
+                    Locale('uz'),
+                    Locale('en'),
+                  ],
+                  localizationsDelegates: const [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  routes: {
+                    '/': (context) => const MainShell(),
+                    '/login': (context) => const AuthScreen(),
+                    '/service-unavailable': (context) =>
+                        const ServiceUnavailableScreen(),
+                  },
+                  theme: ThemeData(
+                    useMaterial3: true,
+                    colorScheme: ColorScheme.fromSeed(
+                      seedColor: primaryTeal,
+                      primary: primaryTeal,
+                      secondary: const Color(0xFF14B8A6),
+                      surface: const Color(0xFFF8FAFC),
+                      error: const Color(0xFFEF4444),
+                    ),
+                    textTheme: GoogleFonts.interTextTheme(),
+                    cardTheme: CardTheme(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        side: const BorderSide(
+                            color: Color(0xFFF1F5F9), width: 1),
+                      ),
+                      color: Colors.white,
+                    ),
+                    floatingActionButtonTheme:
+                        const FloatingActionButtonThemeData(
+                      backgroundColor: primaryTeal,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shape: CircleBorder(),
+                    ),
                   ),
-                  color: Colors.white,
-                ),
-                floatingActionButtonTheme: const FloatingActionButtonThemeData(
-                  backgroundColor: primaryTeal,
-                  foregroundColor: Colors.white,
-                  elevation: 4,
-                  shape: CircleBorder(),
-                ),
-              ),
-              darkTheme: ThemeData(
-                useMaterial3: true,
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: primaryTeal,
-                  brightness: Brightness.dark,
-                  primary: primaryTeal,
-                  secondary: const Color(0xFF14B8A6),
-                  error: const Color(0xFFEF4444),
-                ),
-                textTheme:
-                    GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-                cardTheme: CardTheme(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    side: const BorderSide(color: Color(0xFF334155), width: 1),
+                  darkTheme: ThemeData(
+                    useMaterial3: true,
+                    colorScheme: ColorScheme.fromSeed(
+                      seedColor: primaryTeal,
+                      brightness: Brightness.dark,
+                      primary: primaryTeal,
+                      secondary: const Color(0xFF14B8A6),
+                      error: const Color(0xFFEF4444),
+                    ),
+                    textTheme:
+                        GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+                    cardTheme: CardTheme(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        side: const BorderSide(
+                            color: Color(0xFF334155), width: 1),
+                      ),
+                      color: const Color(0xFF1E293B),
+                    ),
+                    floatingActionButtonTheme:
+                        const FloatingActionButtonThemeData(
+                      backgroundColor: primaryTeal,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shape: CircleBorder(),
+                    ),
                   ),
-                  color: const Color(0xFF1E293B),
-                ),
-                floatingActionButtonTheme: const FloatingActionButtonThemeData(
-                  backgroundColor: primaryTeal,
-                  foregroundColor: Colors.white,
-                  elevation: 4,
-                  shape: CircleBorder(),
-                ),
-              ),
-            );
+                ));
           },
         );
       },
