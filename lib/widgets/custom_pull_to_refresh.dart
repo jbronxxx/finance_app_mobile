@@ -182,12 +182,12 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
                   Text(
                     _isRefreshing
                         ? (widget.refreshingText ??
-                            LanguageManager.t('refreshing_data'))
+                            context.l10n.refreshing_data)
                         : (_canRefresh
                             ? (widget.releaseText ??
-                                LanguageManager.t('release_to_refresh'))
+                                context.l10n.release_to_refresh)
                             : (widget.pullText ??
-                                LanguageManager.t('pull_to_refresh'))),
+                                context.l10n.pull_to_refresh)),
                     style: TextStyle(
                       color: widget.foregroundColor,
                       fontWeight: FontWeight.bold,

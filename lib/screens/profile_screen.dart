@@ -73,10 +73,9 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
     if (state.syncStatus == SyncStatus.noInternet) {
       AppAlerts.noInternet(context);
     } else if (state.syncStatus == SyncStatus.success) {
-      AppAlerts.success(context, LanguageManager.t('sync_success'));
+      AppAlerts.success(context, context.l10n.sync_success);
     } else if (state.syncStatus == SyncStatus.error) {
-      AppErrorHandler.show(context, state.syncError,
-          title: LanguageManager.t('cloud'));
+      AppErrorHandler.show(context, state.syncError, title: context.l10n.cloud);
     }
   }
 
@@ -108,7 +107,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
               ),
             ),
             Text(
-              LanguageManager.t('select_currency'),
+              context.l10n.select_currency,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -177,7 +176,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
               ),
             ),
             Text(
-              LanguageManager.t('select_language'),
+              context.l10n.select_language,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -221,17 +220,17 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(LanguageManager.t('logout_confirm_title')),
-        content: Text(LanguageManager.t('logout_confirm_desc')),
+        title: Text(context.l10n.logout_confirm_title),
+        content: Text(context.l10n.logout_confirm_desc),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(LanguageManager.t('cancel')),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(LanguageManager.t('logout')),
+            child: Text(context.l10n.logout),
           ),
         ],
       ),
@@ -242,7 +241,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
     await cubit.logout();
     if (!mounted) return;
     widget.onLogout();
-    AppAlerts.info(context, LanguageManager.t('logout_info'));
+    AppAlerts.info(context, context.l10n.logout_info);
   }
 
   @override
@@ -262,7 +261,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
         return Scaffold(
           backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: AppBar(
-            title: Text(LanguageManager.t('profile'),
+            title: Text(context.l10n.profile,
                 style:
                     const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             centerTitle: true,
@@ -278,11 +277,11 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                 children: [
                   _buildProfileHeader(primaryTeal, isAuthenticated),
                   const SizedBox(height: 32),
-                  _buildSectionTitle(LanguageManager.t('cloud')),
+                  _buildSectionTitle(context.l10n.cloud),
                   _buildSyncCard(
                       primaryTeal, isAuthenticated, state.syncStatus),
                   const SizedBox(height: 24),
-                  _buildSectionTitle(LanguageManager.t('interface')),
+                  _buildSectionTitle(context.l10n.interface),
                   _buildSettingsCard(primaryTeal),
                   const SizedBox(height: 32),
                   SizedBox(
@@ -297,7 +296,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                             ),
                             onPressed: _handleLogout,
                             icon: const Icon(Icons.logout),
-                            label: Text(LanguageManager.t('logout'),
+                            label: Text(context.l10n.logout,
                                 style: const TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.bold)),
                           )
@@ -309,7 +308,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                             ),
                             onPressed: _handleLogin,
                             icon: const Icon(Icons.login),
-                            label: Text(LanguageManager.t('login_or_register'),
+                            label: Text(context.l10n.login_or_register,
                                 style: const TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
@@ -342,9 +341,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
         Text(
           isAuthenticated && widget.userName.isNotEmpty
               ? widget.userName
-              : (isAuthenticated
-                  ? LanguageManager.t('user')
-                  : LanguageManager.t('guest_mode')),
+              : (isAuthenticated ? context.l10n.user : context.l10n.guest_mode),
           style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -352,9 +349,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
         ),
         const SizedBox(height: 4),
         Text(
-          isAuthenticated
-              ? widget.userEmail
-              : LanguageManager.t('login_cloud_hint'),
+          isAuthenticated ? widget.userEmail : context.l10n.login_cloud_hint,
           style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
         ),
       ],
@@ -443,12 +438,12 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(LanguageManager.t('sync_status'),
+                    Text(context.l10n.sync_status,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     Text(
                       isAuthenticated
                           ? LanguageManager.t(syncStatusKey)
-                          : LanguageManager.t('cloud_not_connected'),
+                          : context.l10n.cloud_not_connected,
                       style:
                           TextStyle(color: Colors.grey.shade600, fontSize: 13),
                     ),
@@ -476,7 +471,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
       child: Column(
         children: [
           SwitchListTile(
-            title: Text(LanguageManager.t('dark_mode'),
+            title: Text(context.l10n.dark_mode,
                 style:
                     const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
             value: _isDarkMode,
@@ -487,7 +482,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
             },
           ),
           ListTile(
-            title: Text(LanguageManager.t('language'),
+            title: Text(context.l10n.language,
                 style:
                     const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
             trailing: Row(
@@ -506,7 +501,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
             onTap: _showLanguagePicker,
           ),
           ListTile(
-            title: Text(LanguageManager.t('currency'),
+            title: Text(context.l10n.currency,
                 style:
                     const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
             trailing: ValueListenableBuilder<Currency>(
@@ -530,10 +525,10 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
             onTap: _showCurrencyPicker,
           ),
           SwitchListTile(
-            title: Text(LanguageManager.t('notifications'),
+            title: Text(context.l10n.notifications,
                 style:
                     const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
-            subtitle: Text(LanguageManager.t('limits_and_budgets'),
+            subtitle: Text(context.l10n.limits_and_budgets,
                 style: const TextStyle(fontSize: 12)),
             value: _notificationsEnabled,
             activeColor: primaryColor,

@@ -70,13 +70,13 @@ class _MainShellState extends State<MainShell> {
                   ),
                 ),
                 Text(
-                  LanguageManager.t('welcome_lang_title'),
+                  context.l10n.welcome_lang_title,
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  LanguageManager.t('welcome_lang_subtitle'),
+                  context.l10n.welcome_lang_subtitle,
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 24),
@@ -146,7 +146,7 @@ class _MainShellState extends State<MainShell> {
                               Navigator.pop(context);
                             },
                             child: Text(
-                              LanguageManager.t('continue_btn'),
+                              context.l10n.continue_btn,
                               style: const TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.bold),
                             ),
@@ -236,24 +236,24 @@ class _MainShellState extends State<MainShell> {
                   NavigationDestination(
                     icon: const Icon(Icons.wallet_outlined),
                     selectedIcon: const Icon(Icons.wallet, color: primaryTeal),
-                    label: LanguageManager.t('balance'),
+                    label: context.l10n.balance,
                   ),
                   NavigationDestination(
                     icon: const Icon(Icons.pie_chart_outline),
                     selectedIcon:
                         const Icon(Icons.pie_chart, color: primaryTeal),
-                    label: LanguageManager.t('limits'),
+                    label: context.l10n.limits,
                   ),
                   NavigationDestination(
                     icon: const Icon(Icons.lightbulb_outline),
                     selectedIcon:
                         const Icon(Icons.lightbulb, color: primaryTeal),
-                    label: LanguageManager.t('insights'),
+                    label: context.l10n.insights,
                   ),
                   NavigationDestination(
                     icon: const Icon(Icons.person_outline),
                     selectedIcon: const Icon(Icons.person, color: primaryTeal),
-                    label: LanguageManager.t('profile'),
+                    label: context.l10n.profile,
                   ),
                 ],
               ),

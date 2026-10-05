@@ -51,13 +51,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     final amount = CurrencyFormatter.parseInput(_amountController.text);
 
     if (amount == null || amount <= 0) {
-      AppAlerts.warning(context, LanguageManager.t('alert_valid_amount'));
+      AppAlerts.warning(context, context.l10n.alert_valid_amount);
       return;
     }
 
     if (amount > CurrencyFormatter.currentCurrency.maxAmount) {
       AppAlerts.warning(context,
-          '${LanguageManager.t('alert_amount_too_large')} ${CurrencyFormatter.currentCurrency.code}');
+          '${context.l10n.alert_amount_too_large} ${CurrencyFormatter.currentCurrency.code}');
       return;
     }
 
@@ -132,8 +132,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             children: [
               Text(
                 isEditing
-                    ? LanguageManager.t('edit_transaction')
-                    : LanguageManager.t('new_transaction'),
+                    ? context.l10n.edit_transaction
+                    : context.l10n.new_transaction,
                 style:
                     const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
@@ -176,7 +176,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                             : [],
                       ),
                       child: Text(
-                        LanguageManager.t('expense_title'),
+                        context.l10n.expense_title,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: _type == TransactionType.expense
@@ -208,7 +208,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                             : [],
                       ),
                       child: Text(
-                        LanguageManager.t('income_title'),
+                        context.l10n.income_title,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: _type == TransactionType.income
@@ -230,7 +230,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             autofocus: false,
             decoration: InputDecoration(
               labelText:
-                  '${LanguageManager.t('amount_label')} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
+                  '${context.l10n.amount_label} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -249,7 +249,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               elevation: 16,
               alignment: Alignment.centerLeft,
               decoration: InputDecoration(
-                labelText: LanguageManager.t('category_label'),
+                labelText: context.l10n.category_label,
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
               ),
@@ -268,7 +268,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           TextField(
             controller: _descriptionController,
             decoration: InputDecoration(
-              labelText: LanguageManager.t('description_label'),
+              labelText: context.l10n.description_label,
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -287,8 +287,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               onPressed: _save,
               child: Text(
                 isEditing
-                    ? LanguageManager.t('save_changes_btn')
-                    : LanguageManager.t('add_btn'),
+                    ? context.l10n.save_changes_btn
+                    : context.l10n.add_btn,
                 style:
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),

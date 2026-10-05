@@ -33,7 +33,7 @@ class _InsightsScreenView extends StatelessWidget {
                 Icon(Icons.wifi_off, size: 64, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
-                  LanguageManager.t('no_network_title'),
+                  context.l10n.no_network_title,
                   style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -43,7 +43,7 @@ class _InsightsScreenView extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Text(
-                    LanguageManager.t('no_network_desc'),
+                    context.l10n.no_network_desc,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Theme.of(context)
@@ -67,7 +67,7 @@ class _InsightsScreenView extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: Text(LanguageManager.t('insights_header_title'),
+        title: Text(context.l10n.insights_header_title,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -96,7 +96,7 @@ class _InsightsScreenView extends StatelessWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
-                        LanguageManager.t('insights_header_subtitle'),
+                        context.l10n.insights_header_subtitle,
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
@@ -108,7 +108,7 @@ class _InsightsScreenView extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                LanguageManager.t('personal_recs_title'),
+                context.l10n.personal_recs_title,
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -125,7 +125,7 @@ class _InsightsScreenView extends StatelessWidget {
                               size: 14, color: Colors.grey.shade600),
                           const SizedBox(width: 6),
                           Text(
-                            '${LanguageManager.t('insights_updated_prefix')}: ${LanguageManager.formatDate(state.generatedAt!)}',
+                            '${context.l10n.insights_updated_prefix}: ${LanguageManager.formatDate(state.generatedAt!)}',
                             key: const Key('insights_updated_at'),
                             style: TextStyle(
                               fontSize: 12,
@@ -145,8 +145,8 @@ class _InsightsScreenView extends StatelessWidget {
                   bool showCacheHint = false;
                   if (state is InsightsLoaded &&
                       (state.generatedAt != null ||
-                          (!state.insights.contains(
-                              LanguageManager.t('insight_login_hint'))))) {
+                          (!state.insights
+                              .contains(context.l10n.insight_login_hint)))) {
                     showCacheHint = true;
                   }
                   if (showCacheHint) {
@@ -172,7 +172,7 @@ class _InsightsScreenView extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              LanguageManager.t('insights_cache_hint'),
+                              context.l10n.insights_cache_hint,
                               key: const Key('insights_cache_hint'),
                               style: TextStyle(
                                 fontSize: 11.5,

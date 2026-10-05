@@ -11,6 +11,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
+    LanguageManager.initFallback();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
       const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
@@ -30,40 +31,40 @@ void main() {
 
     test('Empty or null password returns fill_all_fields error', () {
       expect(AuthScreen.validatePassword(null),
-          equals(LanguageManager.t('fill_all_fields')));
+          equals(LanguageManager.l10n.fill_all_fields));
       expect(AuthScreen.validatePassword(''),
-          equals(LanguageManager.t('fill_all_fields')));
+          equals(LanguageManager.l10n.fill_all_fields));
     });
 
     test('Password shorter than 6 characters is rejected', () {
       expect(AuthScreen.validatePassword('a1'),
-          equals(LanguageManager.t('password_validation_error')));
+          equals(LanguageManager.l10n.password_validation_error));
       expect(AuthScreen.validatePassword('Pass1'),
-          equals(LanguageManager.t('password_validation_error')));
+          equals(LanguageManager.l10n.password_validation_error));
     });
 
     test('Password exceeding 72 bytes is rejected', () {
       final longPasswordAscii = 'A1${'x' * 71}'; // 73 bytes
       expect(AuthScreen.validatePassword(longPasswordAscii),
-          equals(LanguageManager.t('password_too_long_bytes')));
+          equals(LanguageManager.l10n.password_too_long_bytes));
 
       final longPasswordUtf8 = 'A1${'я' * 36}'; // 2 + 36 * 2 = 74 bytes
       expect(AuthScreen.validatePassword(longPasswordUtf8),
-          equals(LanguageManager.t('password_too_long_bytes')));
+          equals(LanguageManager.l10n.password_too_long_bytes));
     });
 
     test('Password without letters is rejected', () {
       expect(AuthScreen.validatePassword('123456'),
-          equals(LanguageManager.t('password_validation_error')));
+          equals(LanguageManager.l10n.password_validation_error));
       expect(AuthScreen.validatePassword('1234567890'),
-          equals(LanguageManager.t('password_validation_error')));
+          equals(LanguageManager.l10n.password_validation_error));
     });
 
     test('Password without numbers is rejected', () {
       expect(AuthScreen.validatePassword('password'),
-          equals(LanguageManager.t('password_validation_error')));
+          equals(LanguageManager.l10n.password_validation_error));
       expect(AuthScreen.validatePassword('StrongPassword'),
-          equals(LanguageManager.t('password_validation_error')));
+          equals(LanguageManager.l10n.password_validation_error));
     });
 
     test('Valid passwords (6-72 chars, letter + digit) are accepted', () {
@@ -104,7 +105,7 @@ void main() {
       );
 
       final msg = AppErrorHandler.getMessage(err);
-      expect(msg, equals(LanguageManager.t('http_429')));
+      expect(msg, equals(LanguageManager.l10n.http_429));
       expect(msg, contains('Превышен лимит запросов'));
     });
 
@@ -185,6 +186,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -212,6 +216,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -244,13 +251,13 @@ void main() {
 
       // Advance clock by another second
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text(LanguageManager.t('rate_limit_ready')), findsOneWidget);
+      expect(find.text(LanguageManager.l10n.rate_limit_ready), findsOneWidget);
 
       // Retry button is now visible
-      expect(find.text(LanguageManager.t('service_unavailable_retry')),
+      expect(find.text(LanguageManager.l10n.service_unavailable_retry),
           findsOneWidget);
       await tester
-          .tap(find.text(LanguageManager.t('service_unavailable_retry')));
+          .tap(find.text(LanguageManager.l10n.service_unavailable_retry));
       await tester.pumpAndSettle();
 
       expect(retried, isTrue);
@@ -265,38 +272,41 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          locale: Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: AuthScreen(),
         ),
       );
 
       // Initial mode is Login: no password requirements helper text
-      expect(find.text(LanguageManager.t('password_requirements_hint')),
+      expect(find.text(LanguageManager.l10n.password_requirements_hint),
           findsNothing);
 
       // Switch to Register mode
-      await tester.tap(find.text(LanguageManager.t('no_account_prompt')));
+      await tester.tap(find.text(LanguageManager.l10n.no_account_prompt));
       await tester.pumpAndSettle();
 
       // Password requirements hint is visible
-      expect(find.text(LanguageManager.t('password_requirements_hint')),
+      expect(find.text(LanguageManager.l10n.password_requirements_hint),
           findsOneWidget);
 
       // Enter name, email, and short password (<6 chars)
       await tester.enterText(
-          find.widgetWithText(TextField, LanguageManager.t('name_label')),
+          find.widgetWithText(TextField, LanguageManager.l10n.name_label),
           'Alex');
       await tester.enterText(
-          find.widgetWithText(TextField, LanguageManager.t('email_label')),
+          find.widgetWithText(TextField, LanguageManager.l10n.email_label),
           'alex@example.com');
       await tester.enterText(
-          find.widgetWithText(TextField, LanguageManager.t('password_label')),
+          find.widgetWithText(TextField, LanguageManager.l10n.password_label),
           '12345');
 
-      await tester.tap(find.text(LanguageManager.t('register_btn')));
+      await tester.tap(find.text(LanguageManager.l10n.register_btn));
       await tester.pump();
 
       // SnackBar with password validation error is shown
-      expect(find.text(LanguageManager.t('password_validation_error')),
+      expect(find.text(LanguageManager.l10n.password_validation_error),
           findsOneWidget);
     });
   });

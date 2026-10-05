@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 
 void main() {
   setUpAll(() {
+    LanguageManager.initFallback();
     TestWidgetsFlutterBinding.ensureInitialized();
     dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
 
@@ -99,20 +100,20 @@ void main() {
 
       LanguageManager.setLanguage(AppLanguage.ru);
       expect(LanguageManager.formatDate(testDate), '2 октября, 14:30');
-      expect(LanguageManager.t('insights_updated_prefix'), 'Обновлено');
-      expect(LanguageManager.t('insights_cache_hint'),
+      expect(LanguageManager.l10n.insights_updated_prefix, 'Обновлено');
+      expect(LanguageManager.l10n.insights_cache_hint,
           contains('Советы обновляются автоматически'));
 
       LanguageManager.setLanguage(AppLanguage.uz);
       expect(LanguageManager.formatDate(testDate), '2-oktabr, 14:30');
-      expect(LanguageManager.t('insights_updated_prefix'), 'Yangilangan');
-      expect(LanguageManager.t('insights_cache_hint'),
+      expect(LanguageManager.l10n.insights_updated_prefix, 'Yangilangan');
+      expect(LanguageManager.l10n.insights_cache_hint,
           contains('avtomatik ravishda yangilanadi'));
 
       LanguageManager.setLanguage(AppLanguage.en);
       expect(LanguageManager.formatDate(testDate), 'October 2, 14:30');
-      expect(LanguageManager.t('insights_updated_prefix'), 'Updated');
-      expect(LanguageManager.t('insights_cache_hint'),
+      expect(LanguageManager.l10n.insights_updated_prefix, 'Updated');
+      expect(LanguageManager.l10n.insights_cache_hint,
           contains('Insights update automatically'));
 
       // Restore RU
@@ -151,13 +152,21 @@ void main() {
 
   testWidgets('InsightsScreen renders and disposes cleanly with CancelToken',
       (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: InsightsScreen()));
+    await tester.pumpWidget(const MaterialApp(
+        locale: Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: InsightsScreen()));
     await tester.pump();
 
     expect(find.byType(InsightsScreen), findsOneWidget);
 
     // Unmount widget to trigger dispose() and verify no crashes or errors occur
-    await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+    await tester.pumpWidget(const MaterialApp(
+        locale: Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SizedBox.shrink()));
     await tester.pump();
 
     expect(find.byType(InsightsScreen), findsNothing);
@@ -194,18 +203,22 @@ void main() {
     });
 
     try {
-      await tester.pumpWidget(const MaterialApp(home: InsightsScreen()));
+      await tester.pumpWidget(const MaterialApp(
+          locale: Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: InsightsScreen()));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('insights_updated_at')), findsOneWidget);
       expect(
           find.text(
-              '${LanguageManager.t('insights_updated_prefix')}: $expectedFormatted'),
+              '${LanguageManager.l10n.insights_updated_prefix}: $expectedFormatted'),
           findsOneWidget);
 
       expect(find.byKey(const Key('insights_cache_hint')), findsOneWidget);
       expect(
-          find.text(LanguageManager.t('insights_cache_hint')), findsOneWidget);
+          find.text(LanguageManager.l10n.insights_cache_hint), findsOneWidget);
 
       expect(find.text('Следите за расходами на рестораны'), findsOneWidget);
     } finally {

@@ -60,7 +60,7 @@ class ServiceUnavailableScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  LanguageManager.t('service_unavailable_title'),
+                  context.l10n.service_unavailable_title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 22,
@@ -71,8 +71,7 @@ class ServiceUnavailableScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  customMessage ??
-                      LanguageManager.t('service_unavailable_desc'),
+                  customMessage ?? context.l10n.service_unavailable_desc,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -97,7 +96,7 @@ class ServiceUnavailableScreen extends StatelessWidget {
                       onPressed: onRetry,
                       icon: const Icon(Icons.refresh_rounded, size: 20),
                       label: Text(
-                        LanguageManager.t('service_unavailable_retry'),
+                        context.l10n.service_unavailable_retry,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

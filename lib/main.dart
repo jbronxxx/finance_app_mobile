@@ -45,6 +45,7 @@ void main() async {
   await ApiService.instance.init();
   await CurrencyFormatter.loadSavedCurrency();
   await LanguageManager.loadSavedLanguage();
+  LanguageManager.initFallback();
   await PreferencesService.instance.loadSavedDarkMode();
 
   // Фиксируем ориентацию и стиль системных панелей до запуска приложения,
@@ -85,6 +86,7 @@ class FinanceApp extends StatelessWidget {
                     Locale('en'),
                   ],
                   localizationsDelegates: const [
+                    AppLocalizations.delegate,
                     GlobalMaterialLocalizations.delegate,
                     GlobalWidgetsLocalizations.delegate,
                     GlobalCupertinoLocalizations.delegate,

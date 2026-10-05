@@ -25,7 +25,7 @@ class InsightsCubit extends Cubit<InsightsState> {
   /// Запрашивает инсайты, отменяя предыдущий незавершённый запрос.
   Future<void> loadInsights() async {
     if (!_api.isAuthenticated) {
-      emit(InsightsUnauthenticated(LanguageManager.t('insight_login_hint')));
+      emit(InsightsUnauthenticated(LanguageManager.l10n.insight_login_hint));
       return;
     }
 
@@ -57,7 +57,7 @@ class InsightsCubit extends Cubit<InsightsState> {
       emit(InsightsLoaded(
         insights: parsed.insights.isNotEmpty
             ? parsed.insights
-            : [LanguageManager.t('insight_no_data')],
+            : [LanguageManager.l10n.insight_no_data],
         generatedAt: parsed.generatedAt,
       ));
     } catch (e) {

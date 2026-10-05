@@ -50,7 +50,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   Future<void> _handleRefresh() async {
     if (!ApiService.instance.isAuthenticated) {
       _loadBudgets();
-      AppAlerts.warning(context, LanguageManager.t('sync_login_required'));
+      AppAlerts.warning(context, context.l10n.sync_login_required);
       return;
     }
 
@@ -71,13 +71,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       await ApiService.instance.syncAll();
       _loadBudgets();
       if (mounted) {
-        AppAlerts.success(context, LanguageManager.t('sync_success'));
+        AppAlerts.success(context, context.l10n.sync_success);
       }
     } catch (e) {
       if (mounted) {
         _loadBudgets();
-        AppErrorHandler.show(context, e,
-            title: LanguageManager.t('sync_error'));
+        AppErrorHandler.show(context, e, title: context.l10n.sync_error);
       }
     }
   }
@@ -87,7 +86,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     ApiService.instance.deleteBudgetEverywhere(budget);
     _loadBudgets();
 
-    AppAlerts.info(context, LanguageManager.t('budget_deleted'));
+    AppAlerts.info(context, context.l10n.budget_deleted);
   }
 
   /// Открывает форму создания или редактирования лимита.
@@ -133,8 +132,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 ),
                 Text(
                   budgetToEdit != null
-                      ? LanguageManager.t('edit_budget_title')
-                      : LanguageManager.t('add_budget_title'),
+                      ? context.l10n.edit_budget_title
+                      : context.l10n.add_budget_title,
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold),
                 ),
@@ -144,7 +143,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   borderRadius: BorderRadius.circular(24),
                   alignment: Alignment.centerLeft,
                   decoration: InputDecoration(
-                    labelText: LanguageManager.t('category_label'),
+                    labelText: context.l10n.category_label,
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
@@ -171,7 +170,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   autofocus: false,
                   decoration: InputDecoration(
                     labelText:
-                        '${LanguageManager.t('budget_amount_hint')} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
+                        '${context.l10n.budget_amount_hint} (${CurrencyFormatter.currentCurrency.localizedSymbol})',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
@@ -194,7 +193,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         if (amount >
                             CurrencyFormatter.currentCurrency.maxAmount) {
                           AppAlerts.warning(context,
-                              '${LanguageManager.t('alert_amount_too_large')} ${CurrencyFormatter.currentCurrency.code}');
+                              '${context.l10n.alert_amount_too_large} ${CurrencyFormatter.currentCurrency.code}');
                           return;
                         }
                         final spent = LocalDbService.instance
@@ -218,8 +217,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     },
                     child: Text(
                         budgetToEdit != null
-                            ? LanguageManager.t('save_btn')
-                            : LanguageManager.t('save_btn'),
+                            ? context.l10n.save_btn
+                            : context.l10n.save_btn,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -238,7 +237,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: Text(LanguageManager.t('budgets_title'),
+        title: Text(context.l10n.budgets_title,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -263,7 +262,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         borderRadius: BorderRadius.circular(24),
                         alignment: Alignment.center,
                         decoration: InputDecoration(
-                          labelText: LanguageManager.t('month_label'),
+                          labelText: context.l10n.month_label,
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16)),
                           filled: true,
@@ -308,7 +307,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         borderRadius: BorderRadius.circular(24),
                         alignment: Alignment.center,
                         decoration: InputDecoration(
-                          labelText: LanguageManager.t('year_label'),
+                          labelText: context.l10n.year_label,
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16)),
                           filled: true,
@@ -355,7 +354,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Center(
                     child: Text(
-                      LanguageManager.t('no_budgets_subtitle'),
+                      context.l10n.no_budgets_subtitle,
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.grey),
                     ),
@@ -502,7 +501,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                           if (isExceeded) ...[
                                             const SizedBox(height: 8),
                                             Text(
-                                                '${LanguageManager.t('budget_exceeded')}!',
+                                                '${context.l10n.budget_exceeded}!',
                                                 style: TextStyle(
                                                     color: Theme.of(context)
                                                                 .brightness ==

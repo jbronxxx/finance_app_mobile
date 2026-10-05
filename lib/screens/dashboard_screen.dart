@@ -149,7 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _handleRefresh() async {
     if (!ApiService.instance.isAuthenticated) {
-      AppAlerts.warning(context, LanguageManager.t('sync_login_required'));
+      AppAlerts.warning(context, context.l10n.sync_login_required);
       return;
     }
 
@@ -187,12 +187,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       _loadTransactions();
       if (mounted) {
-        AppAlerts.success(context, LanguageManager.t('sync_success'));
+        AppAlerts.success(context, context.l10n.sync_success);
       }
     } catch (e) {
       if (kDebugMode) debugPrint('[Dashboard] Sync error: $e');
       if (mounted) {
-        AppErrorHandler.show(context, e, title: LanguageManager.t('cloud'));
+        AppErrorHandler.show(context, e, title: context.l10n.cloud);
       }
     }
   }
@@ -207,7 +207,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ApiService.instance.deleteTransactionEverywhere(transaction);
     _loadTransactions();
 
-    AppAlerts.info(context, LanguageManager.t('transaction_deleted'));
+    AppAlerts.info(context, context.l10n.transaction_deleted);
   }
 
   /// Открывает форму добавления новой записи или редактирования существующей.
@@ -283,7 +283,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final email = ApiService.instance.email;
     if (email != null && email.isNotEmpty) return email;
 
-    return LanguageManager.t('profile');
+    return context.l10n.profile;
   }
 
   void _showPeriodPicker() {
@@ -315,7 +315,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               Text(
-                LanguageManager.t('select_period'),
+                context.l10n.select_period,
                 style:
                     const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
@@ -328,7 +328,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       borderRadius: BorderRadius.circular(24),
                       alignment: Alignment.center,
                       decoration: InputDecoration(
-                        labelText: LanguageManager.t('month_label'),
+                        labelText: context.l10n.month_label,
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16)),
                       ),
@@ -366,7 +366,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       borderRadius: BorderRadius.circular(24),
                       alignment: Alignment.center,
                       decoration: InputDecoration(
-                        labelText: LanguageManager.t('year_label'),
+                        labelText: context.l10n.year_label,
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16)),
                       ),
@@ -415,7 +415,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     });
                     Navigator.pop(context);
                   },
-                  child: Text(LanguageManager.t('continue_btn'),
+                  child: Text(context.l10n.continue_btn,
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -505,7 +505,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 130),
                       child: Text(
-                        LanguageManager.t('login_or_register'),
+                        context.l10n.login_or_register,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -548,7 +548,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   size: 16, color: Colors.amber.shade800),
                               const SizedBox(width: 8),
                               Text(
-                                '${LanguageManager.t('guest_mode')} (${LanguageManager.t('cloud_not_connected').toLowerCase()})',
+                                '${context.l10n.guest_mode} (${context.l10n.cloud_not_connected.toLowerCase()})',
                                 style: TextStyle(
                                     color: Colors.amber.shade900,
                                     fontSize: 12,
@@ -564,7 +564,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        LanguageManager.t('balance'),
+                        context.l10n.balance,
                         style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -576,7 +576,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           padding: const EdgeInsets.only(top: 40.0),
                           child: Center(
                             child: Text(
-                              LanguageManager.t('no_transactions'),
+                              context.l10n.no_transactions,
                               style: const TextStyle(color: Colors.grey),
                             ),
                           ),
@@ -643,9 +643,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: Text(
-            isToday
-                ? '${LanguageManager.t('today')}, $formattedDate'
-                : formattedDate,
+            isToday ? '${context.l10n.today}, $formattedDate' : formattedDate,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -790,7 +788,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
           title: Text(
             transaction.description.isEmpty
-                ? LanguageManager.t('no_description')
+                ? context.l10n.no_description
                 : transaction.description,
             style: const TextStyle(fontSize: 13),
           ),

@@ -13,24 +13,24 @@ class AuthScreen extends StatefulWidget {
   /// длина минимум 6 символов, максимум 72 байта (UTF-8), наличие хотя бы одной буквы и одной цифры.
   static String? validatePassword(String? password) {
     if (password == null || password.isEmpty) {
-      return LanguageManager.t('fill_all_fields');
+      return LanguageManager.l10n.fill_all_fields;
     }
 
     // Проверяем длину в байтах, так как серверный bcrypt поддерживает максимум 72 байта
     final byteLength = utf8.encode(password).length;
     if (byteLength > 72) {
-      return LanguageManager.t('password_too_long_bytes');
+      return LanguageManager.l10n.password_too_long_bytes;
     }
 
     if (password.length < 6) {
-      return LanguageManager.t('password_validation_error');
+      return LanguageManager.l10n.password_validation_error;
     }
     // Проверка регулярными выражениями наличия буквенных символов и цифр
     final hasLetter =
         RegExp(r'[a-zA-Z\p{L}]', unicode: true).hasMatch(password);
     final hasDigit = RegExp(r'[0-9]').hasMatch(password);
     if (!hasLetter || !hasDigit) {
-      return LanguageManager.t('password_validation_error');
+      return LanguageManager.l10n.password_validation_error;
     }
     return null;
   }
@@ -61,11 +61,11 @@ class _AuthScreenState extends State<AuthScreen> {
     final name = _nameController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      AppAlerts.warning(context, LanguageManager.t('fill_all_fields'));
+      AppAlerts.warning(context, LanguageManager.l10n.fill_all_fields);
       return;
     }
     if (!_isLoginMode && name.isEmpty) {
-      AppAlerts.warning(context, LanguageManager.t('enter_name_alert'));
+      AppAlerts.warning(context, LanguageManager.l10n.enter_name_alert);
       return;
     }
 
@@ -163,7 +163,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 TextField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: LanguageManager.t('name_label'),
+                    labelText: LanguageManager.l10n.name_label,
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                     prefixIcon: const Icon(Icons.person_outline),
@@ -175,7 +175,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: LanguageManager.t('email_label'),
+                  labelText: LanguageManager.l10n.email_label,
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16)),
                   prefixIcon: const Icon(Icons.email_outlined),
@@ -186,9 +186,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: LanguageManager.t('password_label'),
+                  labelText: LanguageManager.l10n.password_label,
                   helperText: !_isLoginMode
-                      ? LanguageManager.t('password_requirements_hint')
+                      ? LanguageManager.l10n.password_requirements_hint
                       : null,
                   helperMaxLines: 2,
                   border: OutlineInputBorder(
