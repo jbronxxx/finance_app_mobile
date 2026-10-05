@@ -275,17 +275,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) setState(() {});
   }
 
-  /// Подпись кнопки в AppBar: имя пользователя, иначе email, иначе «Профиль».
-  String get _userLabel {
-    final name = ApiService.instance.userName;
-    if (name != null && name.isNotEmpty) return name;
-
-    final email = ApiService.instance.email;
-    if (email != null && email.isNotEmpty) return email;
-
-    return context.l10n.profile;
-  }
-
   void _showPeriodPicker() {
     int tempMonth = _selectedMonth;
     int tempYear = _selectedYear;
@@ -465,30 +454,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: ApiService.instance.isAuthenticated
-                ? TextButton.icon(
-                    onPressed: _openProfile,
-                    icon: const Icon(Icons.person, size: 18),
-                    label: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 120),
-                      child: Text(
-                        _userLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.primary,
+                ? GestureDetector(
+                    onTap: _openProfile,
+                    child: CircleAvatar(
+                      radius: 18,
                       backgroundColor: Theme.of(context)
                           .colorScheme
                           .primary
                           .withValues(alpha: 0.1),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      backgroundImage: ApiService.instance.avatarUrl != null
+                          ? NetworkImage(ApiService.instance.avatarUrl!)
+                          : null,
+                      child: ApiService.instance.avatarUrl == null
+                          ? Icon(Icons.person,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary)
+                          : null,
                     ),
                   )
                 : TextButton(
@@ -536,29 +517,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (!ApiService.instance.isAuthenticated)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.amber.shade200),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.info_outline,
-                                  size: 16, color: Colors.amber.shade800),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${context.l10n.guest_mode} (${context.l10n.cloud_not_connected.toLowerCase()})',
-                                style: TextStyle(
-                                    color: Colors.amber.shade900,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500),
+                        Builder(
+                          builder: (context) {
+                            final isDark =
+                                Theme.of(context).brightness == Brightness.dark;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.amber.withValues(alpha: 0.15)
+                                    : Colors.amber.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: isDark
+                                        ? Colors.amber.withValues(alpha: 0.3)
+                                        : Colors.amber.shade200),
                               ),
-                            ],
-                          ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 16,
+                                      color: isDark
+                                          ? Colors.amber.shade300
+                                          : Colors.amber.shade800),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${context.l10n.guest_mode} (${context.l10n.cloud_not_connected.toLowerCase()})',
+                                    style: TextStyle(
+                                        color: isDark
+                                            ? Colors.amber.shade200
+                                            : Colors.amber.shade900,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       BalanceCard(
                         balance: _totalBalance,

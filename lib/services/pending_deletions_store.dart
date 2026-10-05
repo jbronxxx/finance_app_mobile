@@ -110,4 +110,11 @@ class PendingDeletionsStore {
       debugPrint('Не удалось сохранить очередь удалений: $e');
     }
   }
+
+  /// Полностью очищает очередь удалений.
+  Future<void> clear() async {
+    _transactionIds.clear();
+    _budgetIds.clear();
+    await _flush();
+  }
 }

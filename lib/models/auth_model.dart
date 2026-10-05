@@ -95,12 +95,15 @@ class AuthMeResponseModel {
   final String userEmail;
   final String userName;
   final DateTime? createdAt;
+  final String? avatarUrl;
 
-  AuthMeResponseModel(
-      {required this.id,
-      required this.userEmail,
-      required this.userName,
-      required this.createdAt});
+  AuthMeResponseModel({
+    required this.id,
+    required this.userEmail,
+    required this.userName,
+    required this.createdAt,
+    this.avatarUrl,
+  });
 
   factory AuthMeResponseModel.fromJson(Map<String, dynamic> json) {
     final data = json['data'];
@@ -112,6 +115,7 @@ class AuthMeResponseModel {
       createdAt: data['created_at'] != null
           ? DateTime.parse(data['created_at'] as String).toLocal()
           : null,
+      avatarUrl: data['avatar_url'] as String?,
     );
   }
 }

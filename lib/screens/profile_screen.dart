@@ -229,6 +229,54 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
     Navigator.of(context).pushNamed('/login');
   }
 
+  void _showLoadingDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.primary,
+                    strokeWidth: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleLogout() async {
     final cubit = context.read<ProfileCubit>();
     final confirm = await showDialog<bool>(
@@ -252,10 +300,51 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
 
     if (confirm != true) return;
 
+    _showLoadingDialog('Выход...');
     await cubit.logout();
     if (!mounted) return;
+    Navigator.pop(context); // закрыть лоадер
+
     widget.onLogout();
     AppAlerts.info(context, context.l10n.logout_info);
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Удаление аккаунта'),
+        content: const Text(
+            'Вы уверены, что хотите навсегда удалить свой аккаунт и все связанные с ним данные? Это действие невозможно отменить.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Удалить навсегда'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      _showLoadingDialog('Удаление...');
+      try {
+        await ApiService.instance.deleteAccount();
+        if (mounted) {
+          Navigator.pop(context); // закрыть лоадер
+          widget.onLogout();
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // закрыть лоадер
+          AppErrorHandler.show(context, e, title: 'Ошибка удаления');
+        }
+      }
+    }
   }
 
   @override
@@ -331,6 +420,23 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                                     fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                   ),
+                  if (isAuthenticated) ...[
+                    const SizedBox(height: 32),
+                    Center(
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey.shade500,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: _handleDeleteAccount,
+                        child: const Text('Удалить аккаунт',
+                            style: TextStyle(
+                                fontSize: 13,
+                                decoration: TextDecoration.underline)),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 40),
                 ],
               ),
@@ -347,13 +453,20 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
         CircleAvatar(
           radius: 50,
           backgroundColor: primaryColor.withValues(alpha: 0.1),
-          child: Text(
-            isAuthenticated && widget.userName.isNotEmpty
-                ? widget.userName[0].toUpperCase()
-                : (isAuthenticated ? 'U' : '?'),
-            style: TextStyle(
-                fontSize: 40, fontWeight: FontWeight.bold, color: primaryColor),
-          ),
+          backgroundImage: ApiService.instance.avatarUrl != null
+              ? NetworkImage(ApiService.instance.avatarUrl!)
+              : null,
+          child: ApiService.instance.avatarUrl == null
+              ? Text(
+                  isAuthenticated && widget.userName.isNotEmpty
+                      ? widget.userName[0].toUpperCase()
+                      : (isAuthenticated ? 'U' : '?'),
+                  style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor),
+                )
+              : null,
         ),
         const SizedBox(height: 16),
         Text(

@@ -2,6 +2,7 @@ import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../config/api_config.dart';
 import 'local_db_service.dart';
 import 'pending_deletions_store.dart';
@@ -132,17 +133,20 @@ class ApiService {
   String? _refreshToken;
   String? _userName;
   String? _email;
+  String? _avatarUrl;
   String? _transactionsEtag;
   String? _budgetsEtag;
 
   String? get userName => _userName;
   String? get email => _email;
+  String? get avatarUrl => _avatarUrl;
 
   Future<void> init() async {
     _token = await _storage.read(key: 'auth_token');
     _refreshToken = await _storage.read(key: 'refresh_token');
     _userName = await _storage.read(key: 'auth_user');
     _email = await _storage.read(key: 'auth_email');
+    _avatarUrl = await _storage.read(key: 'auth_avatar_url');
     _transactionsEtag = await _storage.read(key: 'transactions_etag');
     _budgetsEtag = await _storage.read(key: 'budgets_etag');
   }
@@ -168,6 +172,15 @@ class ApiService {
     }
   }
 
+  Future<void> setAvatarUrl(String? avatarUrl) async {
+    _avatarUrl = avatarUrl;
+    if (avatarUrl != null) {
+      await _storage.write(key: 'auth_avatar_url', value: avatarUrl);
+    } else {
+      await _storage.delete(key: 'auth_avatar_url');
+    }
+  }
+
   Future<void> setUserEmail(String? email) async {
     if (email != null) {
       _email = email;
@@ -181,13 +194,21 @@ class ApiService {
     await _storage.delete(key: 'refresh_token');
     await _storage.delete(key: 'auth_user');
     await _storage.delete(key: 'auth_email');
+    await _storage.delete(key: 'auth_avatar_url');
     await _storage.delete(key: 'transactions_etag');
     await _storage.delete(key: 'budgets_etag');
+
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[ApiService] Google signOut error: $e');
+    }
 
     _token = null;
     _refreshToken = null;
     _userName = null;
     _email = null;
+    _avatarUrl = null;
     _transactionsEtag = null;
     _budgetsEtag = null;
   }
@@ -281,6 +302,57 @@ class ApiService {
     }
   }
 
+  Future<LoginResponseModel> loginWithGoogle(String idToken) async {
+    try {
+      final response = await _dio.post(
+        ApiConfig.loginGoogle,
+        data: {'id_token': idToken},
+      );
+
+      return _handleLoginResponse(response.data);
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            '[ApiService] Google login error: ${e.response?.data ?? e.message}');
+      }
+      rethrow;
+    }
+  }
+
+  Future<LoginResponseModel> loginWithApple(String identityToken) async {
+    try {
+      final response = await _dio.post(
+        ApiConfig.loginApple,
+        data: {'identity_token': identityToken},
+      );
+
+      return _handleLoginResponse(response.data);
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            '[ApiService] Apple login error: ${e.response?.data ?? e.message}');
+      }
+      rethrow;
+    }
+  }
+
+  Future<LoginResponseModel> _handleLoginResponse(dynamic responseData) async {
+    final data = responseData['data'];
+    final token = data?['access_token'] as String?;
+    final refreshToken = data?['refresh_token'] as String?;
+
+    if (token == null || refreshToken == null) {
+      throw Exception('Сервер не вернул токены');
+    }
+
+    await setTokens(token, refreshToken);
+    await fetchAndSaveUserProfile();
+
+    _authStream.add(true);
+
+    return LoginResponseModel.fromJson(responseData);
+  }
+
   /// Получение и сохранение профиля текущего пользователя.
   Future<void> fetchAndSaveUserProfile() async {
     try {
@@ -293,6 +365,7 @@ class ApiService {
 
       await setUserName(userProfile.userName);
       await setUserEmail(userProfile.userEmail);
+      await setAvatarUrl(userProfile.avatarUrl);
 
       if (kDebugMode) {
         debugPrint('[ApiService] Profile updated for: ${userProfile.userName}');
@@ -304,6 +377,26 @@ class ApiService {
       }
     } catch (e) {
       if (kDebugMode) debugPrint('[ApiService] Profile parse error: $e');
+    }
+  }
+
+  /// Удаление аккаунта пользователя с сервера и очистка локальных данных.
+  Future<void> deleteAccount() async {
+    try {
+      await _dio.delete(
+        ApiConfig.me,
+        options: _authOptions(),
+      );
+
+      // Полная очистка локальной БД и очереди удалений, так как аккаунт уничтожен.
+      // Гостевой режим начнется с чистого листа.
+      await LocalDbService.instance.clearAllData();
+      await PendingDeletionsStore.instance.clear();
+
+      await _handleSessionExpired();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[ApiService] Delete account error: $e');
+      rethrow;
     }
   }
 
