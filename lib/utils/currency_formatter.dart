@@ -160,38 +160,86 @@ class CurrencyFormatter {
   }
 }
 
-/// Форматировщик для TextField.
-/// Автоматически расставляет пробелы при вводе и ограничивает ввод некорректных символов.
 class CurrencyInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.isEmpty) return newValue;
 
-    // Оставляем только цифры и один разделитель (точку или запятую)
+    // Оставляем только цифры, точку и запятую
     final text = newValue.text.replaceAll(' ', '').replaceAll(',', '.');
 
-    // Если ввод не является числом (и не в процессе ввода точки), отменяем изменение
-    if (text != '.' && double.tryParse(text) == null && !text.endsWith('.')) {
+    // Разрешаем только цифры и максимум одну точку. Никаких e, E, +, -, NaN, Infinity.
+    final validRegex = RegExp(r'^\d*\.?\d*$');
+    if (!validRegex.hasMatch(text)) {
       return oldValue;
     }
 
+    if (text == '.') {
+      return const TextEditingValue(
+        text: '0,',
+        selection: TextSelection.collapsed(offset: 2),
+      );
+    }
+
     final parts = text.split('.');
+    String intPart = parts[0];
+
+    // Убираем ведущие нули (например, "005" -> "5", но "0" -> "0")
+    if (intPart.length > 1 && intPart.startsWith('0')) {
+      intPart = int.parse(intPart).toString();
+    }
+
+    final digitsLimit = CurrencyFormatter.currentCurrency.defaultDecimalDigits;
+
+    // Если валюта не поддерживает копейки (UZS, KZT), запрещаем точку
+    if (digitsLimit == 0 && parts.length > 1) {
+      return oldValue;
+    }
+
+    // Ограничиваем количество знаков после запятой
+    if (parts.length > 1 && parts[1].length > digitsLimit) {
+      return oldValue;
+    }
+
     // Форматируем целую часть с пробелами
     final RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
     String formattedInt =
-        parts[0].replaceAllMapped(reg, (Match m) => '${m[1]} ');
+        intPart.replaceAllMapped(reg, (Match m) => '${m[1]} ');
 
     String finalString = formattedInt;
-    // Добавляем дробную часть обратно, если она есть
-    if (text.contains('.')) {
+    if (parts.length > 1 || text.endsWith('.')) {
       finalString += ',${parts.length > 1 ? parts[1] : ''}';
+    }
+
+    // Сохраняем позицию курсора, ориентируясь на количество введенных "не-пробелов"
+    int nonSpaceCharsBeforeCursor = 0;
+    for (int i = 0; i < newValue.selection.baseOffset; i++) {
+      if (i < newValue.text.length && newValue.text[i] != ' ') {
+        nonSpaceCharsBeforeCursor++;
+      }
+    }
+
+    int newCursorOffset = 0;
+    int nonSpaceCount = 0;
+    for (int i = 0; i < finalString.length; i++) {
+      if (nonSpaceCount == nonSpaceCharsBeforeCursor) {
+        break;
+      }
+      if (finalString[i] != ' ') {
+        nonSpaceCount++;
+      }
+      newCursorOffset++;
+    }
+
+    // Если курсор был в самом конце исходной строки, переносим его в конец новой
+    if (newValue.selection.baseOffset >= newValue.text.length) {
+      newCursorOffset = finalString.length;
     }
 
     return TextEditingValue(
       text: finalString,
-      // Удерживаем курсор в конце для удобства ввода
-      selection: TextSelection.collapsed(offset: finalString.length),
+      selection: TextSelection.collapsed(offset: newCursorOffset),
     );
   }
 }
