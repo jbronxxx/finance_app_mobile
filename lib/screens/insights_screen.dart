@@ -155,7 +155,9 @@ class _InsightsScreenView extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 7),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                             color: Theme.of(context)
@@ -174,7 +176,9 @@ class _InsightsScreenView extends StatelessWidget {
                               key: const Key('insights_cache_hint'),
                               style: TextStyle(
                                 fontSize: 11.5,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                                 height: 1.3,
                               ),
                             ),
