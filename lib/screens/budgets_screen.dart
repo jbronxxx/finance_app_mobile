@@ -65,7 +65,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
         _loadBudgets();
-        AppAlerts.error(context, LanguageManager.t('sync_network_required'));
+        AppAlerts.noInternet(
+            context, LanguageManager.t('sync_network_required'));
       }
       return;
     }

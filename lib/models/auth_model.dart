@@ -80,10 +80,12 @@ class LogoutResponseModel {
     required this.message,
   });
 
-  factory LogoutResponseModel.fromJson(Map<String, dynamic> json) {
+  factory LogoutResponseModel.fromJson(dynamic json) {
+    final map = json is Map ? json : const {};
+    final inner = map['data'] is Map ? map['data'] as Map : const {};
     return LogoutResponseModel(
-      status: json['status'] as String,
-      message: json['message'] as String,
+      status: (map['status'] ?? inner['status'] ?? 'success').toString(),
+      message: (map['message'] ?? inner['message'] ?? '').toString(),
     );
   }
 }

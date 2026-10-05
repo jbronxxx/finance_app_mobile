@@ -1,16 +1,14 @@
-import 'dart:async';
-
-import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
 import '../widgets/app_alerts.dart';
-import '../utils/app_error_handler.dart';
 import '../utils/language_manager.dart';
 import '../services/preferences_service.dart';
+import '../utils/app_error_handler.dart';
+import '../cubits/profile/profile_cubit.dart';
 
 /// Экран профиля пользователя, совмещенный с настройками приложения.
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   final String userEmail;
   final String userName;
   final VoidCallback onLogout;
@@ -23,25 +21,40 @@ class ProfileScreen extends StatefulWidget {
   });
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => ProfileCubit(),
+      child: _ProfileScreenView(
+        userEmail: userEmail,
+        userName: userName,
+        onLogout: onLogout,
+      ),
+    );
+  }
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isSyncing = false;
-  String _syncStatusKey = 'sync_synced';
-  IconData _syncIcon = Icons.cloud_done;
-  Color _syncColor = const Color(0xFF0F766E);
-  late StreamSubscription<bool> _authSubscription;
+class _ProfileScreenView extends StatefulWidget {
+  final String userEmail;
+  final String userName;
+  final VoidCallback onLogout;
 
+  const _ProfileScreenView({
+    required this.userEmail,
+    required this.userName,
+    required this.onLogout,
+  });
+
+  @override
+  State<_ProfileScreenView> createState() => _ProfileScreenViewState();
+}
+
+class _ProfileScreenViewState extends State<_ProfileScreenView> {
   bool _notificationsEnabled = true;
   bool _isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
-    _authSubscription = ApiService.instance.authStream.listen((_) {
-      if (mounted) setState(() {});
-    });
     _loadSettings();
   }
 
@@ -57,60 +70,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _authSubscription.cancel();
-    super.dispose();
-  }
-
-  /// Синхронизация данных через ApiService.
-  void _startSync() async {
-    // Проверка интернета перед синхронизацией
-    final connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult.contains(ConnectivityResult.none)) {
-      if (mounted) {
-        setState(() {
-          _syncStatusKey = 'sync_no_internet';
-          _syncIcon = Icons.cloud_off;
-          _syncColor = Colors.grey;
-        });
-        AppAlerts.warning(context, LanguageManager.t('sync_no_internet_alert'));
-      }
-      return;
-    }
-
-    setState(() {
-      _isSyncing = true;
-      _syncStatusKey = 'syncing';
-      _syncIcon = Icons.sync;
-      _syncColor = Colors.orange;
-    });
-
-    try {
-      await ApiService.instance.syncAll();
-      if (!mounted) return;
-
-      setState(() {
-        _isSyncing = false;
-        _syncStatusKey = 'sync_updated_just_now';
-        _syncIcon = Icons.cloud_done;
-        _syncColor = const Color(0xFF0F766E);
-      });
-
+  void _handleSyncState(BuildContext context, ProfileState state) {
+    if (state.syncStatus == SyncStatus.noInternet) {
+      AppAlerts.noInternet(
+          context, LanguageManager.t('sync_no_internet_alert'));
+    } else if (state.syncStatus == SyncStatus.success) {
       AppAlerts.success(context, LanguageManager.t('sync_success'));
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isSyncing = false;
-        _syncStatusKey = 'sync_error';
-        _syncIcon = Icons.error_outline;
-        _syncColor = Colors.red;
-      });
-      AppErrorHandler.show(context, e, title: LanguageManager.t('cloud'));
+    } else if (state.syncStatus == SyncStatus.error) {
+      AppErrorHandler.show(context, state.syncError,
+          title: LanguageManager.t('cloud'));
     }
   }
 
-  /// Выбор валюты в модальном окне.
   /// Выбор валюты в модальном окне.
   void _showCurrencyPicker() {
     showModalBottomSheet(
@@ -150,13 +121,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Опция выбора конкретной валюты.
   Widget _buildCurrencyOption(Currency currency) {
     return ValueListenableBuilder<Currency>(
       valueListenable: CurrencyFormatter.currencyNotifier,
       builder: (context, currentCurrency, child) {
         final isSelected = currentCurrency == currency;
-        // Отображаем знак и полное читаемое название из LanguageManager
         final currencyNameKey = '${currency.code.toLowerCase()}_name';
         final label =
             '${currency.localizedSymbol} — ${LanguageManager.t(currencyNameKey)}';
@@ -172,7 +141,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? const Icon(Icons.check, color: Color(0xFF0F766E))
               : null,
           onTap: () {
-            // Глобально меняем валюту через форматировщик
             CurrencyFormatter.setCurrency(currency);
             Navigator.pop(context);
           },
@@ -220,7 +188,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Опция выбора конкретного языка.
   Widget _buildLanguageOption(AppLanguage lang) {
     final isSelected = LanguageManager.currentLanguage == lang;
     final label = '${lang.flag}   ${lang.displayName}';
@@ -237,7 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: () {
         LanguageManager.setLanguage(lang);
         Navigator.pop(context);
-        setState(() {}); // Обновляем локальное состояние экрана профиля
+        setState(() {}); // Обновляем локальное состояние
       },
     );
   }
@@ -247,6 +214,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _handleLogout() async {
+    final cubit = context.read<ProfileCubit>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -268,88 +236,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (confirm != true) return;
 
-    try {
-      await ApiService.instance.logout();
-      if (!mounted) return;
-      widget.onLogout();
-
-      AppAlerts.info(context, LanguageManager.t('logout_info'));
-    } catch (e) {
-      if (!mounted) return;
-      AppErrorHandler.show(context, e,
-          title: LanguageManager.t('logout_error_title'));
-    }
+    await cubit.logout();
+    if (!mounted) return;
+    widget.onLogout();
+    AppAlerts.info(context, LanguageManager.t('logout_info'));
   }
 
   @override
   Widget build(BuildContext context) {
     const primaryTeal = Color(0xFF0F766E);
-    final isAuthenticated = ApiService.instance.isAuthenticated;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        title: Text(LanguageManager.t('profile'),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-          child: Column(
-            children: [
-              // User Info Header
-              _buildProfileHeader(primaryTeal, isAuthenticated),
-              const SizedBox(height: 32),
+    return BlocConsumer<ProfileCubit, ProfileState>(
+      listenWhen: (previous, current) =>
+          previous.syncStatus != current.syncStatus,
+      listener: (context, state) {
+        _handleSyncState(context, state);
+      },
+      builder: (context, state) {
+        final isAuthenticated = state.isAuthenticated;
 
-              // Sync Status Section
-              _buildSectionTitle(LanguageManager.t('cloud')),
-              _buildSyncCard(primaryTeal, isAuthenticated),
-              const SizedBox(height: 24),
-
-              // Settings Section
-              _buildSectionTitle(LanguageManager.t('interface')),
-              _buildSettingsCard(primaryTeal),
-              const SizedBox(height: 32),
-
-              // Action Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: isAuthenticated
-                    ? TextButton.icon(
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                        ),
-                        onPressed: _handleLogout,
-                        icon: const Icon(Icons.logout),
-                        label: Text(LanguageManager.t('logout'),
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
-                      )
-                    : FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: primaryTeal,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                        ),
-                        onPressed: _handleLogin,
-                        icon: const Icon(Icons.login),
-                        label: Text(LanguageManager.t('login_or_register'),
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
-                      ),
-              ),
-              const SizedBox(height: 40),
-            ],
+        return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          appBar: AppBar(
+            title: Text(LanguageManager.t('profile'),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
           ),
-        ),
-      ),
+          body: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+              child: Column(
+                children: [
+                  _buildProfileHeader(primaryTeal, isAuthenticated),
+                  const SizedBox(height: 32),
+                  _buildSectionTitle(LanguageManager.t('cloud')),
+                  _buildSyncCard(
+                      primaryTeal, isAuthenticated, state.syncStatus),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle(LanguageManager.t('interface')),
+                  _buildSettingsCard(primaryTeal),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: isAuthenticated
+                        ? TextButton.icon(
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                            ),
+                            onPressed: _handleLogout,
+                            icon: const Icon(Icons.logout),
+                            label: Text(LanguageManager.t('logout'),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
+                          )
+                        : FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: primaryTeal,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                            ),
+                            onPressed: _handleLogin,
+                            icon: const Icon(Icons.login),
+                            label: Text(LanguageManager.t('login_or_register'),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -406,7 +373,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSyncCard(Color primaryColor, bool isAuthenticated) {
+  Widget _buildSyncCard(
+      Color primaryColor, bool isAuthenticated, SyncStatus status) {
+    String syncStatusKey = 'sync_synced';
+    IconData syncIcon = Icons.cloud_done;
+    Color syncColor = const Color(0xFF0F766E);
+    bool isSyncing = status == SyncStatus.syncing;
+
+    if (status == SyncStatus.noInternet) {
+      syncStatusKey = 'sync_no_internet';
+      syncIcon = Icons.cloud_off;
+      syncColor = Colors.grey;
+    } else if (status == SyncStatus.syncing) {
+      syncStatusKey = 'syncing';
+      syncIcon = Icons.sync;
+      syncColor = Colors.orange;
+    } else if (status == SyncStatus.error) {
+      syncStatusKey = 'sync_error';
+      syncIcon = Icons.error_outline;
+      syncColor = Colors.red;
+    } else if (status == SyncStatus.success) {
+      syncStatusKey = 'sync_updated_just_now';
+      syncIcon = Icons.cloud_done;
+      syncColor = const Color(0xFF0F766E);
+    }
+
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(
@@ -415,7 +406,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: isAuthenticated && !_isSyncing ? _startSync : null,
+        onTap: isAuthenticated && !isSyncing
+            ? context.read<ProfileCubit>().startSync
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Row(
@@ -423,19 +416,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: (isAuthenticated ? _syncColor : Colors.grey)
+                  color: (isAuthenticated ? syncColor : Colors.grey)
                       .withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: isAuthenticated && _isSyncing
+                child: isAuthenticated && isSyncing
                     ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: _syncColor),
+                            strokeWidth: 2, color: syncColor),
                       )
-                    : Icon(isAuthenticated ? _syncIcon : Icons.cloud_off,
-                        color: isAuthenticated ? _syncColor : Colors.grey,
+                    : Icon(isAuthenticated ? syncIcon : Icons.cloud_off,
+                        color: isAuthenticated ? syncColor : Colors.grey,
                         size: 20),
               ),
               const SizedBox(width: 16),
@@ -447,7 +440,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     Text(
                       isAuthenticated
-                          ? LanguageManager.t(_syncStatusKey)
+                          ? LanguageManager.t(syncStatusKey)
                           : LanguageManager.t('cloud_not_connected'),
                       style:
                           TextStyle(color: Colors.grey.shade600, fontSize: 13),

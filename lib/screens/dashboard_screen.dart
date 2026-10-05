@@ -164,7 +164,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
-        AppAlerts.error(context, LanguageManager.t('sync_no_internet_alert'));
+        AppAlerts.noInternet(
+            context, LanguageManager.t('sync_no_internet_alert'));
       }
       return;
     }

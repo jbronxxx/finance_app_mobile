@@ -10,6 +10,7 @@
 | Слой                   | Технология                                                         |
 |------------------------|--------------------------------------------------------------------|
 | UI                     | Flutter (Material 3)                                               |
+| Управление состоянием  | [flutter_bloc](https://pub.dev/packages/flutter_bloc) (Cubit)      |
 | Локальное хранилище    | [ObjectBox](https://objectbox.io/) (NoSQL, встроенная БД)          |
 | Сетевой клиент         | [Dio](https://pub.dev/packages/dio)                                |
 | Конфигурация           | [flutter_dotenv](https://pub.dev/packages/flutter_dotenv) (`.env`) |
@@ -37,6 +38,9 @@ lib/
 │   ├── api_service.dart          # Клиент API (Dio, JWT, Refresh Token, Sync)
 │   ├── tracing_interceptor.dart # Сквозная трассировка сетевых запросов (X-Request-ID)
 │   └── pending_deletions_store.dart # Очередь отложенных удалений
+├── cubits/
+│   ├── insights/                # InsightsCubit: загрузка AI-инсайтов, отмена запросов, реакция на смену валюты/языка
+│   └── profile/                 # ProfileCubit: статус авторизации, облачная синхронизация, выход
 └── screens/
     ├── main_shell.dart            # Каркас с навигацией и слушателем сессии
     ├── dashboard_screen.dart      # Баланс и список операций
@@ -51,11 +55,30 @@ lib/
 ## Правила зависимостей между слоями
 
 ```
+screens/  --->  cubits/  --->  services/  --->  models/
 screens/  --->  services/  --->  models/
 screens/  --->  models/
 services/ --->  config/
 main.dart --->  services/, screens/
 ```
+
+### Управление состоянием (Cubit)
+
+Бизнес-логика экранов выносится в Cubit-классы (`lib/cubits/<feature>/`),
+состояния описываются в `part`-файле `<feature>_state.dart`. Экран создаёт
+Cubit через `BlocProvider` и отображает состояние через `BlocBuilder` /
+`BlocConsumer`; одноразовые эффекты (алерты, навигация) выполняются в
+`listener`, а не в `builder`.
+
+- Зависимости (`ApiService`, `Connectivity`) передаются в конструктор Cubit
+  опционально и по умолчанию берутся из синглтонов — это позволяет
+  подменять их моками в тестах (`test/cubits_test.dart`, `bloc_test` + `mocktail`).
+- Cubit не принимает `BuildContext` и не показывает UI. Ошибки сохраняются
+  в состоянии (например, `ProfileState.syncError`) и отображаются экраном.
+- Подписки (Stream, `ValueNotifier`) и `CancelToken` освобождаются в `close()`;
+  после асинхронных операций проверяется `isClosed` перед `emit`.
+- Мигрированы: `insights_screen.dart`, `profile_screen.dart`. Новые экраны
+  с сетевой логикой следует сразу писать на Cubit.
 
 Экраны и сервисы **никогда** не импортируют `main.dart`. Раньше это было не
 так: глобальный объект `dbService` жил прямо в `main.dart`, и экраны
