@@ -39,6 +39,7 @@ class _MainShellState extends State<MainShell> {
   void _showWelcomeLanguageSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       isDismissible: false,
       enableDrag: false,
       backgroundColor: Colors.transparent,
@@ -47,116 +48,123 @@ class _MainShellState extends State<MainShell> {
         child: PopScope(
           canPop: false, // Запрещаем закрывать по кнопке Назад без выбора
           child: Container(
-            padding:
-                const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 32),
+            padding: EdgeInsets.only(
+                top: 10,
+                left: 24,
+                right: 24,
+                bottom: 32 + MediaQuery.of(context).padding.bottom),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(32)),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 80,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 80,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 24),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                ),
-                Text(
-                  context.l10n.welcome_lang_title,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  context.l10n.welcome_lang_subtitle,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                ),
-                const SizedBox(height: 24),
-                StatefulBuilder(
-                  builder: (context, setModalState) {
-                    return Column(
-                      children: [
-                        ...AppLanguage.values.map((lang) {
-                          final isSelected =
-                              LanguageManager.currentLanguage == lang;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(0xFF0F766E)
-                                      .withValues(alpha: 0.05)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
+                  Text(
+                    context.l10n.welcome_lang_title,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    context.l10n.welcome_lang_subtitle,
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 24),
+                  StatefulBuilder(
+                    builder: (context, setModalState) {
+                      return Column(
+                        children: [
+                          ...AppLanguage.values.map((lang) {
+                            final isSelected =
+                                LanguageManager.currentLanguage == lang;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
                                 color: isSelected
                                     ? const Color(0xFF0F766E)
-                                    : Theme.of(context)
-                                        .dividerColor
-                                        .withValues(alpha: 0.1),
-                                width: isSelected ? 2 : 1,
-                              ),
-                            ),
-                            child: ListTile(
-                              title: Text(
-                                '${lang.flag}   ${lang.displayName}',
-                                style: TextStyle(
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                                        .withValues(alpha: 0.05)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
                                   color: isSelected
                                       ? const Color(0xFF0F766E)
-                                      : Theme.of(context).colorScheme.onSurface,
+                                      : Theme.of(context)
+                                          .dividerColor
+                                          .withValues(alpha: 0.1),
+                                  width: isSelected ? 2 : 1,
                                 ),
                               ),
-                              trailing: isSelected
-                                  ? const Icon(Icons.check_circle,
-                                      color: Color(0xFF0F766E))
-                                  : const Icon(Icons.circle_outlined,
-                                      color: Colors.grey),
-                              onTap: () {
-                                LanguageManager.setLanguage(lang);
-                                setModalState(() {});
-                                setState(() {}); // Перерисовываем оболочку
+                              child: ListTile(
+                                title: Text(
+                                  '${lang.flag}   ${lang.displayName}',
+                                  style: TextStyle(
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? const Color(0xFF0F766E)
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                  ),
+                                ),
+                                trailing: isSelected
+                                    ? const Icon(Icons.check_circle,
+                                        color: Color(0xFF0F766E))
+                                    : const Icon(Icons.circle_outlined,
+                                        color: Colors.grey),
+                                onTap: () {
+                                  LanguageManager.setLanguage(lang);
+                                  setModalState(() {});
+                                  setState(() {}); // Перерисовываем оболочку
+                                },
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 54,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0F766E),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16)),
+                              ),
+                              onPressed: () {
+                                PreferencesService.instance.saveLanguage(
+                                    LanguageManager.currentLanguage.code);
+                                Navigator.pop(context);
                               },
-                            ),
-                          );
-                        }),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 54,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0F766E),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                            ),
-                            onPressed: () {
-                              PreferencesService.instance.saveLanguage(
-                                  LanguageManager.currentLanguage.code);
-                              Navigator.pop(context);
-                            },
-                            child: Text(
-                              context.l10n.continue_btn,
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
+                              child: Text(
+                                context.l10n.continue_btn,
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),

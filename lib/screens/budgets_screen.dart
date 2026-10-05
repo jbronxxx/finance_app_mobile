@@ -108,8 +108,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: Container(
-          padding:
-              const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
+          padding: EdgeInsets.only(
+              top: 10,
+              left: 24,
+              right: 24,
+              bottom: 24 + MediaQuery.of(context).padding.bottom),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),

@@ -102,11 +102,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       margin: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      padding: const EdgeInsets.only(
+      padding: EdgeInsets.only(
         top: 10,
         left: 24,
         right: 24,
-        bottom: 24,
+        bottom: 24 + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
