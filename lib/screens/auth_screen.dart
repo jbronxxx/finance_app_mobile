@@ -85,7 +85,8 @@ class _AuthScreenState extends State<AuthScreen> {
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppAlerts.error(context, LanguageManager.t('auth_network_required'));
+        AppAlerts.noInternet(
+            context, LanguageManager.t('auth_network_required'));
       }
       return;
     }

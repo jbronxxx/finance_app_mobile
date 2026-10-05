@@ -43,6 +43,8 @@ class AppAlerts {
         break;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
+
     final snackBar = SnackBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -102,16 +104,14 @@ class AppAlerts {
                   size: 16, color: iconColor.withValues(alpha: 0.5)),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              onPressed: () {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              },
+              onPressed: messenger.hideCurrentSnackBar,
             ),
           ],
         ),
       ),
     );
 
-    ScaffoldMessenger.of(context)
+    messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(snackBar);
   }
@@ -130,6 +130,11 @@ class AppAlerts {
 
   static void info(BuildContext context, String message, {String? title}) {
     showToast(context, message: message, title: title, type: AlertType.info);
+  }
+
+  /// Уведомление об отсутствии сети. Единый стиль для всех экранов.
+  static void noInternet(BuildContext context, String message) {
+    showToast(context, message: message, type: AlertType.warning);
   }
 
   /// Отображает критическое модальное окно, требующее действия пользователя.

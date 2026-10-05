@@ -175,6 +175,10 @@ fvm flutter analyze     # статический анализ (lints)
 fvm flutter test        # unit/widget-тесты
 ```
 
+Cubit-классы (`lib/cubits/`) покрываются unit-тестами на `bloc_test` и
+`mocktail` (`test/cubits_test.dart`) — зависимости (`ApiService`,
+`Connectivity`) подменяются моками через конструктор.
+
 `flutter test` запускает виджет-тесты на хостовой машине (не на
 эмуляторе), а ObjectBox использует нативную библиотеку — для macOS/Linux/
 Windows её нужно один раз установить отдельно (не через `pub get`):
