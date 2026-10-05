@@ -92,7 +92,18 @@ class ApiService {
               if (kDebugMode) {
                 debugPrint('[ApiService] Token refresh failed: $err');
               }
-              await _handleSessionExpired();
+              bool isNetworkError = false;
+              if (err is DioException) {
+                isNetworkError =
+                    err.type == DioExceptionType.connectionTimeout ||
+                        err.type == DioExceptionType.sendTimeout ||
+                        err.type == DioExceptionType.receiveTimeout ||
+                        err.type == DioExceptionType.connectionError ||
+                        err.type == DioExceptionType.unknown;
+              }
+              if (!isNetworkError) {
+                await _handleSessionExpired();
+              }
               return handler.reject(e);
             }
           } else {
@@ -602,7 +613,17 @@ class ApiService {
       }
     } catch (e) {
       if (kDebugMode) debugPrint('[ApiService] refreshAuthTokens error: $e');
-      await _handleSessionExpired();
+      bool isNetworkError = false;
+      if (e is DioException) {
+        isNetworkError = e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.sendTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.unknown;
+      }
+      if (!isNetworkError) {
+        await _handleSessionExpired();
+      }
       return false;
     }
   }
