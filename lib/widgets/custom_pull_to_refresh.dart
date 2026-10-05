@@ -65,7 +65,7 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
     if (notification.depth != 0) return false;
 
     if (notification is OverscrollNotification) {
-      if (notification.overscroll < 0) {
+      if (notification.overscroll < 0 && notification.dragDetails != null) {
         setState(() {
           // Натяжение с коэффициентом сопротивления 0.5 (эффект тугой нативной резины)
           _dragOffset = (_dragOffset - notification.overscroll * 0.5)
@@ -85,7 +85,8 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
       // Плавное уменьшение смещения, если пользователь ведет палец обратно вверх до того, как отпустить
       if (_dragOffset > 0 &&
           notification.scrollDelta != null &&
-          notification.metrics.pixels <= 0) {
+          notification.metrics.pixels <= 0 &&
+          notification.dragDetails != null) {
         setState(() {
           _dragOffset = (_dragOffset - notification.scrollDelta!)
               .clamp(0.0, _maxDragOffset);
@@ -153,7 +154,11 @@ class _CustomPullToRefreshState extends State<CustomPullToRefresh>
       children: [
         // Нижний слой (Подложка)
         Container(
-          color: widget.backgroundColor,
+          color: widget.backgroundColor == const Color(0xFFF1F5F9)
+              ? (Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black
+                  : widget.backgroundColor)
+              : widget.backgroundColor,
           width: double.infinity,
           height: double.infinity,
           child: Align(

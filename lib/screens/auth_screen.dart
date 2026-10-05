@@ -85,8 +85,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppAlerts.noInternet(
-            context, LanguageManager.t('auth_network_required'));
+        AppAlerts.noInternet(context);
       }
       return;
     }
@@ -136,7 +135,8 @@ class _AuthScreenState extends State<AuthScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        iconTheme:
+            IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -148,10 +148,10 @@ class _AuthScreenState extends State<AuthScreen> {
               Text(
                 LanguageManager.t(
                     _isLoginMode ? 'welcome_back' : 'create_account'),
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87),
+                    color: Theme.of(context).colorScheme.onSurface),
               ),
               const SizedBox(height: 8),
               Text(

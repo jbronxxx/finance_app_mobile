@@ -109,9 +109,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         right: 24,
         bottom: 24,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -148,7 +148,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey.shade800
+                  : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -162,7 +164,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _type == TransactionType.expense
-                            ? Colors.white
+                            ? Theme.of(context).cardColor
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: _type == TransactionType.expense
@@ -179,7 +181,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: _type == TransactionType.expense
-                              ? Colors.black87
+                              ? Theme.of(context).colorScheme.onSurface
                               : Colors.grey,
                         ),
                       ),
@@ -194,7 +196,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _type == TransactionType.income
-                            ? Colors.white
+                            ? Theme.of(context).cardColor
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: _type == TransactionType.income
@@ -235,24 +237,33 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<Category>(
-            value: _category,
-            borderRadius: BorderRadius.circular(24),
-            alignment: Alignment.centerLeft,
-            decoration: InputDecoration(
-              labelText: LanguageManager.t('category_label'),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+          Theme(
+            data: Theme.of(context).copyWith(
+              shadowColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.15)
+                  : Colors.black.withValues(alpha: 0.2),
             ),
-            items: Category.values.map((cat) {
-              return DropdownMenuItem(
-                value: cat,
-                child: Text(cat.getLocalizedName(context)),
-              );
-            }).toList(),
-            onChanged: (val) {
-              if (val != null) setState(() => _category = val);
-            },
+            child: DropdownButtonFormField<Category>(
+              value: _category,
+              borderRadius: BorderRadius.circular(24),
+              dropdownColor: Theme.of(context).cardColor,
+              elevation: 16,
+              alignment: Alignment.centerLeft,
+              decoration: InputDecoration(
+                labelText: LanguageManager.t('category_label'),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              items: Category.values.map((cat) {
+                return DropdownMenuItem(
+                  value: cat,
+                  child: Text(cat.getLocalizedName(context)),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _category = val);
+              },
+            ),
           ),
           const SizedBox(height: 16),
           TextField(

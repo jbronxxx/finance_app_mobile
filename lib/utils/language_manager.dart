@@ -211,6 +211,14 @@ class LanguageManager {
       AppLanguage.uz: 'Tarmoq yo\'q',
       AppLanguage.en: 'No Network'
     },
+    'no_internet_connection': {
+      AppLanguage.ru:
+          'Нет подключения к интернету. Проверьте сеть и повторите попытку.',
+      AppLanguage.uz:
+          'Internetga ulanish yo\'q. Tarmoqni tekshirib, qayta urinib ko\'ring.',
+      AppLanguage.en:
+          'No internet connection. Please check your network and try again.'
+    },
     'sync_no_internet_alert': {
       AppLanguage.ru: 'Для синхронизации нужно подключение к сети',
       AppLanguage.uz: 'Sinxronizatsiya uchun tarmoqqa ulanish zarur',

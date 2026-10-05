@@ -15,6 +15,7 @@ import '../widgets/app_alerts.dart';
 import '../utils/app_error_handler.dart';
 import 'add_transaction_sheet.dart';
 import 'auth_screen.dart';
+import '../widgets/balance_card.dart';
 
 /// Главный экран: баланс за выбранный период и список операций.
 ///
@@ -164,8 +165,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
-        AppAlerts.noInternet(
-            context, LanguageManager.t('sync_no_internet_alert'));
+        AppAlerts.noInternet(context);
       }
       return;
     }
@@ -304,9 +304,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context) => Container(
         padding:
             const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: StatefulBuilder(
           builder: (context, setModalState) => Column(
@@ -356,8 +356,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ? FontWeight.bold
                                   : FontWeight.normal,
                               color: isCurrentMonth
-                                  ? const Color(0xFF0F766E)
-                                  : Colors.black87,
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         );
@@ -391,8 +391,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ? FontWeight.bold
                                   : FontWeight.normal,
                               color: isCurrentYear
-                                  ? const Color(0xFF0F766E)
-                                  : Colors.black87,
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         );
@@ -410,8 +410,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 height: 54,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F766E),
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
@@ -453,14 +453,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   '$currentMonthName $_selectedYear',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: Colors.black87,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                       fontSize: 18),
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.arrow_drop_down, color: Colors.black87),
+              Icon(Icons.arrow_drop_down,
+                  color: Theme.of(context).colorScheme.onSurface),
             ],
           ),
         ),
@@ -483,9 +484,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF0F766E),
-                      backgroundColor:
-                          const Color(0xFF0F766E).withValues(alpha: 0.1),
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.1),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
                       shape: RoundedRectangleBorder(
@@ -496,9 +499,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 : TextButton(
                     onPressed: _openAuthScreen,
                     style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF0F766E),
-                      backgroundColor:
-                          const Color(0xFF0F766E).withValues(alpha: 0.1),
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.1),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
                       shape: RoundedRectangleBorder(
@@ -560,15 +565,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
                         ),
-                      _buildBalanceCard(
-                          _totalBalance, _totalIncome, _totalExpense),
+                      BalanceCard(
+                        balance: _totalBalance,
+                        income: _totalIncome,
+                        expense: _totalExpense,
+                      ),
                       const SizedBox(height: 24),
                       Text(
                         LanguageManager.t('balance'),
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87),
+                            color: Theme.of(context).colorScheme.onSurface),
                       ),
                       const SizedBox(height: 12),
                       if (_transactions.isEmpty)
@@ -606,13 +614,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               if (_isLoading && _transactions.isNotEmpty)
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Center(
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Color(0xFF0F766E),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -626,97 +634,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onPressed: () => _openTransactionSheet(),
         child: const Icon(Icons.add, size: 32),
       ),
-    );
-  }
-
-  Widget _buildBalanceCard(double balance, double income, double expense) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            LanguageManager.t('total_balance'),
-            style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 8),
-          CurrencyFormatter.formatText(
-            balance,
-            showSign: true,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
-            useFittedBox: true,
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: _buildIncomeExpenseInfo(
-                    LanguageManager.t('income_title'),
-                    income,
-                    Icons.arrow_downward,
-                    Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildIncomeExpenseInfo(
-                    LanguageManager.t('expense_title'),
-                    expense,
-                    Icons.arrow_upward,
-                    Colors.white),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIncomeExpenseInfo(
-      String label, double amount, IconData icon, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color.withValues(alpha: 0.9), size: 12),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        CurrencyFormatter.formatText(
-          amount,
-          style: TextStyle(
-              color: color, fontWeight: FontWeight.bold, fontSize: 16),
-          useFittedBox: true,
-        ),
-      ],
     );
   }
 
@@ -802,9 +719,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       child: ExpansionTile(
         key: Key('expansion_${category.name}_$showHintOnFirstTransaction'),
@@ -837,7 +755,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: total >= 0 ? Colors.teal.shade700 : Colors.black87,
+              color: total >= 0
+                  ? Colors.teal.shade700
+                  : Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
@@ -871,7 +791,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
       background: background,
       child: Material(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         child: ListTile(
           onTap: () => _openTransactionSheet(transaction),
           contentPadding:
