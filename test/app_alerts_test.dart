@@ -5,11 +5,15 @@ import 'package:getbalanceai_mobile/utils/language_manager.dart';
 
 void main() {
   setUpAll(() {
+    LanguageManager.initFallback();
     TestWidgetsFlutterBinding.ensureInitialized();
   });
 
   Widget buildTestApp(Widget child) {
     return MaterialApp(
+      locale: const Locale('ru'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: child,
       ),
@@ -88,7 +92,7 @@ void main() {
     expect(find.byType(SnackBar), findsOneWidget);
 
     // Check if the unified text from LanguageManager is shown
-    final expectedText = LanguageManager.t('no_internet_connection');
+    final expectedText = LanguageManager.l10n.no_internet_connection;
     expect(find.text(expectedText), findsOneWidget);
     expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
   });

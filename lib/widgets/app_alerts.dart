@@ -140,8 +140,7 @@ class AppAlerts {
   /// Уведомление об отсутствии сети. Единый стиль для всех экранов.
   static void noInternet(BuildContext context) {
     showToast(context,
-        message: LanguageManager.t('no_internet_connection'),
-        type: AlertType.warning);
+        message: context.l10n.no_internet_connection, type: AlertType.warning);
   }
 
   /// Отображает критическое модальное окно, требующее действия пользователя.
@@ -154,7 +153,7 @@ class AppAlerts {
     String? buttonText,
     VoidCallback? onPressed,
   }) {
-    final effectiveButtonText = buttonText ?? LanguageManager.t('dialog_ok');
+    final effectiveButtonText = buttonText ?? context.l10n.dialog_ok;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -267,7 +266,7 @@ class AppAlerts {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  title ?? LanguageManager.t('service_unavailable_title'),
+                  title ?? context.l10n.service_unavailable_title,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -277,7 +276,7 @@ class AppAlerts {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  message ?? LanguageManager.t('service_unavailable_desc'),
+                  message ?? context.l10n.service_unavailable_desc,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
@@ -304,7 +303,7 @@ class AppAlerts {
                         onRetry();
                       },
                       child: Text(
-                        LanguageManager.t('service_unavailable_retry'),
+                        context.l10n.service_unavailable_retry,
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -313,7 +312,7 @@ class AppAlerts {
                   TextButton(
                     onPressed: () => Navigator.of(dialogContext).pop(),
                     child: Text(
-                      LanguageManager.t('dialog_ok'),
+                      context.l10n.dialog_ok,
                       style: TextStyle(color: Colors.grey.shade600),
                     ),
                   ),
@@ -332,7 +331,7 @@ class AppAlerts {
                       ),
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       child: Text(
-                        LanguageManager.t('dialog_ok'),
+                        context.l10n.dialog_ok,
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -369,8 +368,8 @@ class AppAlerts {
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: _RateLimitDialogContent(
-              title: title ?? LanguageManager.t('rate_limit_exceeded_title'),
-              message: message ?? LanguageManager.t('http_429'),
+              title: title ?? context.l10n.rate_limit_exceeded_title,
+              message: message ?? context.l10n.http_429,
               retryAfterSeconds: retryAfterSeconds,
               onRetry: onRetry,
             ),
@@ -492,8 +491,8 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
                 const SizedBox(width: 8),
                 Text(
                   _secondsLeft > 0
-                      ? '${LanguageManager.t('rate_limit_countdown_prefix')} $_secondsLeft ${LanguageManager.t('uzs_symbol') == 'сум' ? 'сек.' : 'sec'}'
-                      : LanguageManager.t('rate_limit_ready'),
+                      ? '${context.l10n.rate_limit_countdown_prefix} $_secondsLeft ${context.l10n.uzs_symbol == 'сум' ? 'сек.' : 'sec'}'
+                      : context.l10n.rate_limit_ready,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -523,7 +522,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
                 widget.onRetry!();
               },
               child: Text(
-                LanguageManager.t('service_unavailable_retry'),
+                context.l10n.service_unavailable_retry,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -532,7 +531,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
-              LanguageManager.t('dialog_ok'),
+              context.l10n.dialog_ok,
               style: TextStyle(color: Colors.grey.shade600),
             ),
           ),
@@ -551,7 +550,7 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
               ),
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                LanguageManager.t('dialog_ok'),
+                context.l10n.dialog_ok,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),

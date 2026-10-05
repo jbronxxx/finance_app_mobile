@@ -21,6 +21,7 @@ void main() {
   late MockConnectivity connectivity;
 
   setUpAll(() {
+    LanguageManager.initFallback();
     TestWidgetsFlutterBinding.ensureInitialized();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -103,7 +104,7 @@ void main() {
       expect: () => [
         isA<InsightsLoading>(),
         isA<InsightsLoaded>().having((s) => s.insights, 'insights',
-            [LanguageManager.t('insight_no_data')]),
+            [LanguageManager.l10n.insight_no_data]),
       ],
     );
 

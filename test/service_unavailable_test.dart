@@ -11,6 +11,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
+    LanguageManager.initFallback();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
       const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
@@ -85,15 +86,15 @@ void main() {
         'LanguageManager returns translations for service unavailable across all languages',
         () {
       LanguageManager.setLanguage(AppLanguage.ru);
-      expect(LanguageManager.t('service_unavailable_title'),
+      expect(LanguageManager.l10n.service_unavailable_title,
           equals('Сервис временно недоступен'));
 
       LanguageManager.setLanguage(AppLanguage.uz);
-      expect(LanguageManager.t('service_unavailable_title'),
+      expect(LanguageManager.l10n.service_unavailable_title,
           equals('Xizmat vaqtincha ishlamayapti'));
 
       LanguageManager.setLanguage(AppLanguage.en);
-      expect(LanguageManager.t('service_unavailable_title'),
+      expect(LanguageManager.l10n.service_unavailable_title,
           equals('Service Unavailable'));
     });
 
@@ -105,6 +106,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: ServiceUnavailableScreen(
             onRetry: () {
               retried = true;
@@ -134,6 +138,9 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          locale: Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: ServiceUnavailableScreen(
             customMessage: customMessage,
           ),
@@ -150,6 +157,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(

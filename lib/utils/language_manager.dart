@@ -1,3 +1,5 @@
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+export 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:flutter/material.dart';
 
@@ -15,12 +17,14 @@ enum AppLanguage {
 
 class LanguageManager {
   static AppLanguage _currentLanguage = AppLanguage.ru;
+  static late AppLocalizations l10n;
 
   static final ValueNotifier<AppLanguage> languageNotifier =
       ValueNotifier(AppLanguage.ru);
 
   static void setLanguage(AppLanguage language) {
     _currentLanguage = language;
+    l10n = lookupAppLocalizations(Locale(language.code));
     languageNotifier.value = language;
     PreferencesService.instance.saveLanguage(language.code);
   }
@@ -31,12 +35,21 @@ class LanguageManager {
       try {
         final saved = AppLanguage.values.firstWhere((l) => l.code == code);
         _currentLanguage = saved;
+        l10n = lookupAppLocalizations(Locale(saved.code));
         languageNotifier.value = saved;
       } catch (_) {}
     }
   }
 
   static AppLanguage get currentLanguage => _currentLanguage;
+  static void initFallback() {
+    try {
+      l10n.balance;
+    } catch (e) {
+      l10n = lookupAppLocalizations(Locale(_currentLanguage.code));
+    }
+  }
+
   static String get code => _currentLanguage.code;
 
   /// Все переводы для приложения на трех языках
@@ -1094,4 +1107,8 @@ class LanguageManager {
     if (map == null) return key;
     return map[_currentLanguage] ?? map[AppLanguage.ru] ?? key;
   }
+}
+
+extension L10nExtension on BuildContext {
+  AppLocalizations get l10n => AppLocalizations.of(this)!;
 }

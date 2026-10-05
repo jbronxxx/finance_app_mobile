@@ -1,3 +1,4 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -15,6 +16,7 @@ void main() {
   final Map<String, String> mockSecureStorage = {};
 
   setUpAll(() {
+    LanguageManager.initFallback();
     TestWidgetsFlutterBinding.ensureInitialized();
     dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
 

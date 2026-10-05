@@ -1,3 +1,4 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:dio/dio.dart';
 import 'package:getbalanceai_mobile/models/local_db_models.dart';
 import 'package:getbalanceai_mobile/models/paginated_response.dart';
@@ -11,6 +12,7 @@ void main() {
   final Map<String, String> mockSecureStorage = {};
 
   setUpAll(() {
+    LanguageManager.initFallback();
     TestWidgetsFlutterBinding.ensureInitialized();
     dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost:8000/api/v1');
 

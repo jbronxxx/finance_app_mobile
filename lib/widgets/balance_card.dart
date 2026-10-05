@@ -37,7 +37,7 @@ class BalanceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            LanguageManager.t('total_balance'),
+            context.l10n.total_balance,
             style: textTheme.titleSmall?.copyWith(
               color: colorScheme.onPrimary.withValues(alpha: 0.7),
             ),
@@ -57,7 +57,7 @@ class BalanceCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _IncomeExpenseInfo(
-                  label: LanguageManager.t('income_title'),
+                  label: context.l10n.income_title,
                   amount: income,
                   icon: Icons.arrow_downward,
                   color: colorScheme.onPrimary,
@@ -66,7 +66,7 @@ class BalanceCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _IncomeExpenseInfo(
-                  label: LanguageManager.t('expense_title'),
+                  label: context.l10n.expense_title,
                   amount: expense,
                   icon: Icons.arrow_upward,
                   color: colorScheme.onPrimary,

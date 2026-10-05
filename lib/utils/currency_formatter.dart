@@ -24,12 +24,20 @@ enum Currency {
 
   String get localizedSymbol {
     if (this == Currency.uzs) {
-      return LanguageManager.t('uzs_symbol');
+      return LanguageManager.l10n.uzs_symbol;
     }
     return symbol;
   }
 
-  String get localizedName => LanguageManager.t('${code.toLowerCase()}_name');
+  String get localizedName => this == Currency.uzs
+      ? LanguageManager.l10n.uzs_name
+      : this == Currency.kzt
+          ? LanguageManager.l10n.kzt_name
+          : this == Currency.rub
+              ? LanguageManager.l10n.rub_name
+              : this == Currency.eur
+                  ? LanguageManager.l10n.eur_name
+                  : LanguageManager.l10n.usd_name;
 }
 
 /// Утилита для форматирования и валидации денежных сумм.
@@ -75,14 +83,14 @@ class CurrencyFormatter {
   /// Проверяет корректность введенной суммы и соблюдение лимитов.
   static String? validateAmount(String? value) {
     if (value == null || value.isEmpty) {
-      return LanguageManager.t('enter_amount');
+      return LanguageManager.l10n.enter_amount;
     }
     final amount = parseInput(value);
     if (amount == null || amount <= 0) {
-      return LanguageManager.t('invalid_amount');
+      return LanguageManager.l10n.invalid_amount;
     }
     if (amount > _currentCurrency.maxAmount) {
-      return '${LanguageManager.t('max_amount_prefix')}: ${format(_currentCurrency.maxAmount)}';
+      return '${LanguageManager.l10n.max_amount_prefix}: ${format(_currentCurrency.maxAmount)}';
     }
     return null;
   }
