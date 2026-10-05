@@ -73,8 +73,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
 
   void _handleSyncState(BuildContext context, ProfileState state) {
     if (state.syncStatus == SyncStatus.noInternet) {
-      AppAlerts.noInternet(
-          context, LanguageManager.t('sync_no_internet_alert'));
+      AppAlerts.noInternet(context);
     } else if (state.syncStatus == SyncStatus.success) {
       AppAlerts.success(context, LanguageManager.t('sync_success'));
     } else if (state.syncStatus == SyncStatus.error) {
@@ -91,9 +90,9 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
       builder: (context) => Container(
         padding:
             const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -135,11 +134,13 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
             label,
             style: TextStyle(
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? const Color(0xFF0F766E) : Colors.black87,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface,
             ),
           ),
           trailing: isSelected
-              ? const Icon(Icons.check, color: Color(0xFF0F766E))
+              ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
               : null,
           onTap: () {
             CurrencyFormatter.setCurrency(currency);
@@ -158,9 +159,9 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
       builder: (context) => Container(
         padding:
             const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -197,11 +198,14 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
         label,
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? const Color(0xFF0F766E) : Colors.black87,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurface,
         ),
       ),
-      trailing:
-          isSelected ? const Icon(Icons.check, color: Color(0xFF0F766E)) : null,
+      trailing: isSelected
+          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+          : null,
       onTap: () {
         LanguageManager.setLanguage(lang);
         Navigator.pop(context);
@@ -245,7 +249,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryTeal = Color(0xFF0F766E);
+    final primaryTeal = Theme.of(context).colorScheme.primary;
 
     return BlocConsumer<ProfileCubit, ProfileState>(
       listenWhen: (previous, current) =>
@@ -343,8 +347,10 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
               : (isAuthenticated
                   ? LanguageManager.t('user')
                   : LanguageManager.t('guest_mode')),
-          style: const TextStyle(
-              fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+          style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface),
         ),
         const SizedBox(height: 4),
         Text(
@@ -379,7 +385,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
       Color primaryColor, bool isAuthenticated, SyncStatus status) {
     String syncStatusKey = 'sync_synced';
     IconData syncIcon = Icons.cloud_done;
-    Color syncColor = const Color(0xFF0F766E);
+    Color syncColor = primaryColor;
     bool isSyncing = status == SyncStatus.syncing;
 
     if (status == SyncStatus.noInternet) {
@@ -397,14 +403,15 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
     } else if (status == SyncStatus.success) {
       syncStatusKey = 'sync_updated_just_now';
       syncIcon = Icons.cloud_done;
-      syncColor = const Color(0xFF0F766E);
+      syncColor = primaryColor;
     }
 
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -461,10 +468,11 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
 
   Widget _buildSettingsCard(Color primaryColor) {
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

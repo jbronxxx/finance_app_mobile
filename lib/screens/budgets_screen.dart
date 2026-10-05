@@ -65,8 +65,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     if (connectivityResult.contains(ConnectivityResult.none)) {
       if (mounted) {
         _loadBudgets();
-        AppAlerts.noInternet(
-            context, LanguageManager.t('sync_network_required'));
+        AppAlerts.noInternet(context);
       }
       return;
     }
@@ -118,9 +117,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         child: Container(
           padding:
               const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: StatefulBuilder(
             builder: (context, setModalState) => Column(
@@ -243,7 +242,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     const primaryTeal = Color(0xFF0F766E);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(LanguageManager.t('budgets_title'),
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
@@ -274,7 +273,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16)),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Theme.of(context).colorScheme.surface,
                         ),
                         items: List.generate(12, (index) {
                           final monthValue = index + 1;
@@ -293,7 +292,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                     : FontWeight.normal,
                                 color: isCurrentMonth
                                     ? const Color(0xFF0F766E)
-                                    : Colors.black87,
+                                    : Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           );
@@ -319,7 +318,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16)),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Theme.of(context).colorScheme.surface,
                         ),
                         items: List.generate(11, (index) {
                           final yearValue = DateTime.now().year + index;
@@ -336,7 +335,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                     : FontWeight.normal,
                                 color: isCurrentYear
                                     ? const Color(0xFF0F766E)
-                                    : Colors.black87,
+                                    : Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           );
@@ -395,12 +394,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).cardColor,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                                 color: isExceeded
                                     ? Colors.orange.shade200
-                                    : Colors.grey.shade200),
+                                    : Theme.of(context)
+                                        .dividerColor
+                                        .withValues(alpha: 0.1)),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(19),
@@ -417,7 +418,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                 onDismissed: (direction) => _deleteBudget(b),
                                 background: background,
                                 child: Material(
-                                  color: Colors.white,
+                                  color: Theme.of(context).cardColor,
                                   child: InkWell(
                                     onTap: () => _showAddBudgetDialog(b),
                                     child: Padding(
@@ -496,7 +497,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                                 ? Colors.orange.shade400
                                                 : primaryTeal,
                                             backgroundColor:
-                                                Colors.grey.shade100,
+                                                Theme.of(context).brightness ==
+                                                        Brightness.dark
+                                                    ? Colors.grey.shade800
+                                                    : Colors.grey.shade100,
                                             minHeight: 8,
                                             borderRadius:
                                                 BorderRadius.circular(4),
@@ -506,8 +510,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                             Text(
                                                 '${LanguageManager.t('budget_exceeded')}!',
                                                 style: TextStyle(
-                                                    color:
-                                                        Colors.orange.shade900,
+                                                    color: Theme.of(context)
+                                                                .brightness ==
+                                                            Brightness.dark
+                                                        ? Colors.orange.shade300
+                                                        : Colors
+                                                            .orange.shade900,
                                                     fontSize: 12,
                                                     fontWeight:
                                                         FontWeight.w600))

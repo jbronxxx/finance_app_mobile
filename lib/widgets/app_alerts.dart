@@ -7,7 +7,7 @@ enum AlertType { success, error, warning, info }
 class AppAlerts {
   /// Отображает всплывающее уведомление (Toast) с кастомным дизайном.
   ///
-  /// Поддерживает различные типы [type] для визуальной дифференциации.
+  /// Поддерживает различные типы для визуальной дифференциации.
   static void showToast(
     BuildContext context, {
     required String message,
@@ -15,29 +15,23 @@ class AppAlerts {
     AlertType type = AlertType.info,
     Duration duration = const Duration(seconds: 4),
   }) {
-    // Настраиваем цвета и иконки в зависимости от типа
-    Color bgColor;
     Color iconColor;
     IconData icon;
 
     switch (type) {
       case AlertType.success:
-        bgColor = const Color(0xFFF0FDF4); // Light Green
         iconColor = const Color(0xFF16A34A); // Green
         icon = Icons.check_circle_rounded;
         break;
       case AlertType.error:
-        bgColor = const Color(0xFFFEF2F2); // Light Red
         iconColor = const Color(0xFFEF4444); // Red
         icon = Icons.error_rounded;
         break;
       case AlertType.warning:
-        bgColor = const Color(0xFFFFFBEB); // Light Amber
         iconColor = const Color(0xFFF59E0B); // Amber
         icon = Icons.warning_rounded;
         break;
       case AlertType.info:
-        bgColor = const Color(0xFFF0F9FF); // Light Blue
         iconColor = const Color(0xFF3B82F6); // Blue
         icon = Icons.info_rounded;
         break;
@@ -55,12 +49,14 @@ class AppAlerts {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: iconColor.withValues(alpha: 0.2)),
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+          ),
           boxShadow: [
             BoxShadow(
-              color: iconColor.withValues(alpha: 0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -69,8 +65,15 @@ class AppAlerts {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, color: iconColor, size: 28),
-            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -81,17 +84,17 @@ class AppAlerts {
                     Text(
                       title,
                       style: TextStyle(
-                        color: iconColor.darken(0.2),
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 15,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                   ],
                   Text(
                     message,
                     style: TextStyle(
-                      color: Colors.black87.withValues(alpha: 0.8),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: title != null ? 13 : 14,
                       height: 1.4,
                     ),
@@ -99,9 +102,11 @@ class AppAlerts {
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             IconButton(
               icon: Icon(Icons.close,
-                  size: 16, color: iconColor.withValues(alpha: 0.5)),
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               onPressed: messenger.hideCurrentSnackBar,
@@ -133,8 +138,10 @@ class AppAlerts {
   }
 
   /// Уведомление об отсутствии сети. Единый стиль для всех экранов.
-  static void noInternet(BuildContext context, String message) {
-    showToast(context, message: message, type: AlertType.warning);
+  static void noInternet(BuildContext context) {
+    showToast(context,
+        message: LanguageManager.t('no_internet_connection'),
+        type: AlertType.warning);
   }
 
   /// Отображает критическое модальное окно, требующее действия пользователя.
@@ -156,7 +163,7 @@ class AppAlerts {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -177,10 +184,10 @@ class AppAlerts {
                 const SizedBox(height: 20),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -240,7 +247,7 @@ class AppAlerts {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -261,10 +268,10 @@ class AppAlerts {
                 const SizedBox(height: 20),
                 Text(
                   title ?? LanguageManager.t('service_unavailable_title'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -358,7 +365,7 @@ class AppAlerts {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: _RateLimitDialogContent(
@@ -445,10 +452,10 @@ class _RateLimitDialogContentState extends State<_RateLimitDialogContent> {
         const SizedBox(height: 20),
         Text(
           widget.title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
           textAlign: TextAlign.center,
         ),

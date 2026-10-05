@@ -50,9 +50,10 @@ class _MainShellState extends State<MainShell> {
           child: Container(
             padding:
                 const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 32),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(32)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -98,7 +99,9 @@ class _MainShellState extends State<MainShell> {
                               border: Border.all(
                                 color: isSelected
                                     ? const Color(0xFF0F766E)
-                                    : Colors.grey.shade200,
+                                    : Theme.of(context)
+                                        .dividerColor
+                                        .withValues(alpha: 0.1),
                                 width: isSelected ? 2 : 1,
                               ),
                             ),
@@ -111,7 +114,7 @@ class _MainShellState extends State<MainShell> {
                                       : FontWeight.normal,
                                   color: isSelected
                                       ? const Color(0xFF0F766E)
-                                      : Colors.black87,
+                                      : Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               trailing: isSelected
@@ -139,6 +142,8 @@ class _MainShellState extends State<MainShell> {
                                   borderRadius: BorderRadius.circular(16)),
                             ),
                             onPressed: () {
+                              PreferencesService.instance.saveLanguage(
+                                  LanguageManager.currentLanguage.code);
                               Navigator.pop(context);
                             },
                             child: Text(
