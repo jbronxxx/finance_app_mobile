@@ -1,8 +1,8 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
-import '../utils/language_manager.dart';
 
 /// Кастомный виджет Pull-to-Refresh с эффектом «протягивания» всего контента
 /// и отображением подложки под ним.

@@ -1,5 +1,5 @@
-import 'package:getbalanceai_mobile/services/preferences_service.dart';
-import 'package:getbalanceai_mobile/utils/language_manager.dart';
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

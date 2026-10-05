@@ -1,6 +1,5 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:flutter/material.dart';
-import '../utils/currency_formatter.dart';
-import '../utils/language_manager.dart';
 
 class BalanceCard extends StatelessWidget {
   final double balance;

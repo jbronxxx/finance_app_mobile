@@ -1,6 +1,6 @@
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../services/api_service.dart';
 
 part 'auth_state.dart';
 

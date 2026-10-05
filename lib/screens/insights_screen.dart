@@ -1,7 +1,7 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../widgets/custom_pull_to_refresh.dart';
-import '../utils/language_manager.dart';
 import '../cubits/insights/insights_cubit.dart';
 
 /// Экран AI-инсайтов.

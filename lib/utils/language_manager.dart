@@ -1,5 +1,5 @@
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:flutter/material.dart';
-import '../services/preferences_service.dart';
 
 enum AppLanguage {
   ru('ru', 'Русский', '🇷🇺'),

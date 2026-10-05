@@ -1,6 +1,6 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../utils/language_manager.dart';
 
 enum AlertType { success, error, warning, info }
 

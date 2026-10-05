@@ -1,12 +1,10 @@
+import 'package:getbalanceai_mobile/models/models.dart';
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../services/api_service.dart';
-import '../../utils/currency_formatter.dart';
-import '../../utils/language_manager.dart';
-import '../../models/insights_model.dart';
-import '../../utils/app_error_handler.dart';
 
 part 'insights_state.dart';
 

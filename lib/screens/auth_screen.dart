@@ -1,10 +1,9 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import '../services/api_service.dart';
-import '../widgets/app_alerts.dart';
-import '../utils/app_error_handler.dart';
-import '../utils/language_manager.dart';
 
 /// Экран входа/регистрации.
 class AuthScreen extends StatefulWidget {

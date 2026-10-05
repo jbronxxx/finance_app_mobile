@@ -1,9 +1,8 @@
-import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
-import 'package:getbalanceai_mobile/utils/language_manager.dart';
+import 'package:getbalanceai_mobile/services/services.dart';
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
+import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:flutter/material.dart';
-import '../models/local_db_models.dart';
-import '../services/local_db_service.dart';
-import '../widgets/app_alerts.dart';
 
 /// Модальная форма создания/редактирования транзакции.
 ///
