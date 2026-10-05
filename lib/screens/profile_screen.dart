@@ -83,36 +83,43 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
   void _showCurrencyPicker() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding:
-            const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
+        padding: EdgeInsets.only(
+            top: 10,
+            left: 24,
+            right: 24,
+            bottom: 24 + MediaQuery.of(context).padding.bottom),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 80,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            Text(
-              context.l10n.select_currency,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            ...Currency.values.map((c) => _buildCurrencyOption(c)),
-          ],
+              Text(
+                context.l10n.select_currency,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ...Currency.values.map((c) => _buildCurrencyOption(c)),
+            ],
+          ),
         ),
       ),
     );
@@ -152,36 +159,43 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
   void _showLanguagePicker() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding:
-            const EdgeInsets.only(top: 10, left: 24, right: 24, bottom: 24),
+        padding: EdgeInsets.only(
+            top: 10,
+            left: 24,
+            right: 24,
+            bottom: 24 + MediaQuery.of(context).padding.bottom),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 80,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            Text(
-              context.l10n.select_language,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            ...AppLanguage.values.map((l) => _buildLanguageOption(l)),
-          ],
+              Text(
+                context.l10n.select_language,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ...AppLanguage.values.map((l) => _buildLanguageOption(l)),
+            ],
+          ),
         ),
       ),
     );
@@ -271,8 +285,12 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
           body: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+              padding: EdgeInsets.only(
+                left: 20.0,
+                right: 20.0,
+                top: 16.0,
+                bottom: 16.0 + MediaQuery.of(context).padding.bottom,
+              ),
               child: Column(
                 children: [
                   _buildProfileHeader(primaryTeal, isAuthenticated),
