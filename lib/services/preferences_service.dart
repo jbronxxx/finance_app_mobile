@@ -10,7 +10,11 @@ class PreferencesService {
   PreferencesService._internal();
   static final PreferencesService instance = PreferencesService._internal();
 
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+  );
   final ValueNotifier<bool> darkModeNotifier = ValueNotifier(false);
 
   static const _keyTotalSessions = 'ux_hint_sessions_completed';

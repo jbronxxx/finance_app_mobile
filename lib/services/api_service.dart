@@ -10,7 +10,11 @@ import 'dart:async';
 
 /// Клиент для работы с API бэкенда.
 class ApiService {
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+  );
   final StreamController<bool> _authStream = StreamController.broadcast();
   Stream<bool> get authStream => _authStream.stream;
 
