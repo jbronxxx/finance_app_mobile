@@ -1,0 +1,45 @@
+import 'dart:async';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../services/api_service.dart';
+
+part 'auth_state.dart';
+
+class AuthCubit extends Cubit<AuthState> {
+  final ApiService _apiService;
+  StreamSubscription<bool>? _authSubscription;
+
+  AuthCubit({ApiService? apiService})
+      : _apiService = apiService ?? ApiService.instance,
+        super(AuthInitial()) {
+    _init();
+  }
+
+  void _init() {
+    _updateState(_apiService.isAuthenticated);
+
+    _authSubscription = _apiService.authStream.listen((isAuthenticated) {
+      _updateState(isAuthenticated);
+    });
+  }
+
+  void _updateState(bool isAuthenticated) {
+    if (isAuthenticated) {
+      emit(Authenticated(
+        email: _apiService.email ?? '',
+        name: _apiService.userName ?? '',
+      ));
+    } else {
+      emit(Unauthenticated());
+    }
+  }
+
+  void logout() {
+    _apiService.performLogout();
+  }
+
+  @override
+  Future<void> close() {
+    _authSubscription?.cancel();
+    return super.close();
+  }
+}

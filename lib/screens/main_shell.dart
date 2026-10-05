@@ -2,12 +2,13 @@ import 'dart:async';
 import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
 import '../services/preferences_service.dart';
 import 'dashboard_screen.dart';
 import 'budgets_screen.dart';
 import 'insights_screen.dart';
 import 'profile_screen.dart';
+import '../cubits/auth/auth_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Каркас приложения с нижней навигацией.
 class MainShell extends StatefulWidget {
@@ -19,27 +20,10 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
-  String _userEmail = '';
-  String _userName = '';
-  late StreamSubscription _authSubscription;
 
   @override
   void initState() {
     super.initState();
-    _userEmail = ApiService.instance.email ?? '';
-    _userName = ApiService.instance.userName ?? '';
-    _authSubscription =
-        ApiService.instance.authStream.listen((isAuthenticated) {
-      setState(() {
-        _userEmail = ApiService.instance.email ?? '';
-        _userName = ApiService.instance.userName ?? '';
-
-        if (!isAuthenticated) {
-          _currentIndex = 0;
-        }
-      });
-    });
-
     // Проверяем первый запуск приложения для выбора языка
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkFirstRunLanguageSelection();
@@ -178,7 +162,6 @@ class _MainShellState extends State<MainShell> {
 
   @override
   void dispose() {
-    _authSubscription.cancel();
     super.dispose();
   }
 
@@ -190,17 +173,14 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _onAuthenticated(String email, String name) {
-    setState(() {
-      _userEmail = email;
-      _userName = name;
-    });
+    // AuthCubit автоматически обновит состояние
   }
 
   void _logout() {
-    ApiService.instance.performLogout();
+    context.read<AuthCubit>().logout();
   }
 
-  List<Widget> get _screens => [
+  List<Widget> _getScreens(String email, String name) => [
         DashboardScreen(
           onAuthenticated: _onAuthenticated,
           onOpenProfile: _openProfileTab,
@@ -208,8 +188,8 @@ class _MainShellState extends State<MainShell> {
         const BudgetsScreen(),
         const InsightsScreen(),
         ProfileScreen(
-          userEmail: _userEmail,
-          userName: _userName,
+          userEmail: email,
+          userName: name,
           onLogout: _logout,
         ),
       ];
@@ -222,39 +202,59 @@ class _MainShellState extends State<MainShell> {
     return ValueListenableBuilder<Currency>(
       valueListenable: CurrencyFormatter.currencyNotifier,
       builder: (context, currency, child) {
-        return Scaffold(
-          body: _screens[_currentIndex],
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (index) {
+        return BlocConsumer<AuthCubit, AuthState>(
+          listener: (context, state) {
+            if (state is Unauthenticated) {
               setState(() {
-                _currentIndex = index;
+                _currentIndex = 0;
               });
-            },
-            indicatorColor: primaryTeal.withValues(alpha: 0.2),
-            destinations: [
-              NavigationDestination(
-                icon: const Icon(Icons.wallet_outlined),
-                selectedIcon: const Icon(Icons.wallet, color: primaryTeal),
-                label: LanguageManager.t('balance'),
+            }
+          },
+          builder: (context, authState) {
+            String email = '';
+            String name = '';
+            if (authState is Authenticated) {
+              email = authState.email;
+              name = authState.name;
+            }
+
+            return Scaffold(
+              body: _getScreens(email, name)[_currentIndex],
+              bottomNavigationBar: NavigationBar(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+                indicatorColor: primaryTeal.withValues(alpha: 0.2),
+                destinations: [
+                  NavigationDestination(
+                    icon: const Icon(Icons.wallet_outlined),
+                    selectedIcon: const Icon(Icons.wallet, color: primaryTeal),
+                    label: LanguageManager.t('balance'),
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.pie_chart_outline),
+                    selectedIcon:
+                        const Icon(Icons.pie_chart, color: primaryTeal),
+                    label: LanguageManager.t('limits'),
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.lightbulb_outline),
+                    selectedIcon:
+                        const Icon(Icons.lightbulb, color: primaryTeal),
+                    label: LanguageManager.t('insights'),
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.person_outline),
+                    selectedIcon: const Icon(Icons.person, color: primaryTeal),
+                    label: LanguageManager.t('profile'),
+                  ),
+                ],
               ),
-              NavigationDestination(
-                icon: const Icon(Icons.pie_chart_outline),
-                selectedIcon: const Icon(Icons.pie_chart, color: primaryTeal),
-                label: LanguageManager.t('limits'),
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.lightbulb_outline),
-                selectedIcon: const Icon(Icons.lightbulb, color: primaryTeal),
-                label: LanguageManager.t('insights'),
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.person_outline),
-                selectedIcon: const Icon(Icons.person, color: primaryTeal),
-                label: LanguageManager.t('profile'),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

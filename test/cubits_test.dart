@@ -188,35 +188,7 @@ void main() {
   });
 
   group('ProfileCubit', () {
-    late StreamController<bool> authController;
-
-    setUp(() {
-      authController = StreamController<bool>.broadcast();
-      when(() => api.authStream).thenAnswer((_) => authController.stream);
-      when(() => api.isAuthenticated).thenReturn(true);
-    });
-
-    tearDown(() => authController.close());
-
     ProfileCubit build() => ProfileCubit(api: api, connectivity: connectivity);
-
-    test('initial state reflects current auth status', () async {
-      final cubit = build();
-      expect(cubit.state.isAuthenticated, isTrue);
-      expect(cubit.state.syncStatus, SyncStatus.idle);
-      expect(cubit.state.syncError, isNull);
-      await cubit.close();
-    });
-
-    blocTest<ProfileCubit, ProfileState>(
-      'updates isAuthenticated from authStream',
-      build: build,
-      act: (_) => authController.add(false),
-      expect: () => [
-        isA<ProfileState>()
-            .having((s) => s.isAuthenticated, 'isAuthenticated', false),
-      ],
-    );
 
     blocTest<ProfileCubit, ProfileState>(
       'emits noInternet and skips sync when offline',
@@ -318,7 +290,7 @@ void main() {
 
     test('copyWith clears syncError unless provided', () {
       final error = Exception('x');
-      const base = ProfileState(isAuthenticated: true);
+      const base = ProfileState();
       final withError =
           base.copyWith(syncStatus: SyncStatus.error, syncError: error);
       expect(withError.syncError, error);
