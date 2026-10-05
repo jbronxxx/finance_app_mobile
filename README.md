@@ -168,11 +168,20 @@ cd ios && rm -rf Pods Podfile.lock && pod install && cd ..
 cd android && ./gradlew clean && cd ..
 ```
 
-## Тесты и статический анализ
+## Тесты, статический анализ и форматирование
 
 ```bash
+fvm dart format .       # автоматическое форматирование кода
 fvm flutter analyze     # статический анализ (lints)
 fvm flutter test        # unit/widget-тесты
+```
+
+Если CI/CD падает из-за ошибок форматирования (или pre-commit hook блокирует коммит), выполните локально:
+```bash
+fvm dart format .
+git add .
+git commit --amend --no-edit # добавить форматирование в последний коммит
+git push --force origin HEAD # обновить ветку
 ```
 
 Cubit-классы (`lib/cubits/`) покрываются unit-тестами на `bloc_test` и
