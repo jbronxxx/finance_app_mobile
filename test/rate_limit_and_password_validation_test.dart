@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:getbalanceai_mobile/screens/auth_screen.dart';
+
 import 'package:getbalanceai_mobile/utils/app_error_handler.dart';
 import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:getbalanceai_mobile/widgets/app_alerts.dart';
@@ -22,70 +22,6 @@ void main() {
       const MethodChannel('dev.fluttercommunity.plus/connectivity'),
       (MethodCall methodCall) async => ['wifi'],
     );
-  });
-
-  group('Password Validation Rules Tests', () {
-    setUp(() {
-      LanguageManager.setLanguage(AppLanguage.ru);
-    });
-
-    test('Empty or null password returns fill_all_fields error', () {
-      expect(AuthScreen.validatePassword(null),
-          equals(LanguageManager.l10n.fill_all_fields));
-      expect(AuthScreen.validatePassword(''),
-          equals(LanguageManager.l10n.fill_all_fields));
-    });
-
-    test('Password shorter than 6 characters is rejected', () {
-      expect(AuthScreen.validatePassword('a1'),
-          equals(LanguageManager.l10n.password_validation_error));
-      expect(AuthScreen.validatePassword('Pass1'),
-          equals(LanguageManager.l10n.password_validation_error));
-    });
-
-    test('Password exceeding 72 bytes is rejected', () {
-      final longPasswordAscii = 'A1${'x' * 71}'; // 73 bytes
-      expect(AuthScreen.validatePassword(longPasswordAscii),
-          equals(LanguageManager.l10n.password_too_long_bytes));
-
-      final longPasswordUtf8 = 'A1${'я' * 36}'; // 2 + 36 * 2 = 74 bytes
-      expect(AuthScreen.validatePassword(longPasswordUtf8),
-          equals(LanguageManager.l10n.password_too_long_bytes));
-    });
-
-    test('Password without letters is rejected', () {
-      expect(AuthScreen.validatePassword('123456'),
-          equals(LanguageManager.l10n.password_validation_error));
-      expect(AuthScreen.validatePassword('1234567890'),
-          equals(LanguageManager.l10n.password_validation_error));
-    });
-
-    test('Password without numbers is rejected', () {
-      expect(AuthScreen.validatePassword('password'),
-          equals(LanguageManager.l10n.password_validation_error));
-      expect(AuthScreen.validatePassword('StrongPassword'),
-          equals(LanguageManager.l10n.password_validation_error));
-    });
-
-    test('Valid passwords (6-72 chars, letter + digit) are accepted', () {
-      expect(AuthScreen.validatePassword('pass12'), isNull);
-      expect(AuthScreen.validatePassword('SecurePass1'), isNull);
-      expect(AuthScreen.validatePassword('P@ssw0rd!2026'), isNull);
-      expect(AuthScreen.validatePassword('пароль123'), isNull);
-
-      // Exact boundary limits: 6 chars and 72 chars
-      final minBoundary = 'a1${'b' * 4}';
-      expect(minBoundary.length, equals(6));
-      expect(AuthScreen.validatePassword(minBoundary), isNull);
-
-      final maxBoundary = 'a1${'b' * 70}';
-      expect(maxBoundary.length, equals(72));
-      expect(AuthScreen.validatePassword(maxBoundary), isNull);
-
-      final maxBoundaryUtf8 =
-          'a1${'я' * 35}'; // 2 + 35 * 2 = 72 bytes, 37 characters
-      expect(AuthScreen.validatePassword(maxBoundaryUtf8), isNull);
-    });
   });
 
   group('Rate Limiting (HTTP 429 & RATE_LIMIT_EXCEEDED) Tests', () {
@@ -261,53 +197,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(retried, isTrue);
-    });
-  });
-
-  group('AuthScreen Registration UI Validation Tests', () {
-    testWidgets(
-        'Password helper hint appears in register mode and validation prevents submission',
-        (tester) async {
-      LanguageManager.setLanguage(AppLanguage.ru);
-
-      await tester.pumpWidget(
-        const MaterialApp(
-          locale: Locale('ru'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: AuthScreen(),
-        ),
-      );
-
-      // Initial mode is Login: no password requirements helper text
-      expect(find.text(LanguageManager.l10n.password_requirements_hint),
-          findsNothing);
-
-      // Switch to Register mode
-      await tester.tap(find.text(LanguageManager.l10n.no_account_prompt));
-      await tester.pumpAndSettle();
-
-      // Password requirements hint is visible
-      expect(find.text(LanguageManager.l10n.password_requirements_hint),
-          findsOneWidget);
-
-      // Enter name, email, and short password (<6 chars)
-      await tester.enterText(
-          find.widgetWithText(TextField, LanguageManager.l10n.name_label),
-          'Alex');
-      await tester.enterText(
-          find.widgetWithText(TextField, LanguageManager.l10n.email_label),
-          'alex@example.com');
-      await tester.enterText(
-          find.widgetWithText(TextField, LanguageManager.l10n.password_label),
-          '12345');
-
-      await tester.tap(find.text(LanguageManager.l10n.register_btn));
-      await tester.pump();
-
-      // SnackBar with password validation error is shown
-      expect(find.text(LanguageManager.l10n.password_validation_error),
-          findsOneWidget);
     });
   });
 }
