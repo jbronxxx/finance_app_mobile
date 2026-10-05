@@ -1,21 +1,13 @@
+import 'package:getbalanceai_mobile/models/models.dart';
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:getbalanceai_mobile/screens/profile_screen.dart';
-import 'package:getbalanceai_mobile/services/api_service.dart';
-import 'package:getbalanceai_mobile/services/preferences_service.dart';
-import 'package:getbalanceai_mobile/widgets/swipe_hint_wrapper.dart';
-import 'package:getbalanceai_mobile/widgets/custom_pull_to_refresh.dart';
-import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:getbalanceai_mobile/utils/language_manager.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
-import '../models/local_db_models.dart';
-import '../services/local_db_service.dart';
-import '../services/pending_deletions_store.dart';
-import '../widgets/app_alerts.dart';
-import '../utils/app_error_handler.dart';
 import 'add_transaction_sheet.dart';
 import 'auth_screen.dart';
-import '../widgets/balance_card.dart';
 
 /// Главный экран: баланс за выбранный период и список операций.
 ///

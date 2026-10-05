@@ -1,6 +1,6 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:flutter/widgets.dart';
 import 'package:objectbox/objectbox.dart';
-import '../utils/language_manager.dart';
 
 /// Разбирает дату из ответа бэкенда, возвращая `null` вместо исключения.
 ///

@@ -1,7 +1,7 @@
+import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import '../models/local_db_models.dart';
 import '../objectbox.g.dart'; // Генерируется автоматически: `dart run build_runner build`
 
 /// Локальное хранилище приложения на базе ObjectBox.

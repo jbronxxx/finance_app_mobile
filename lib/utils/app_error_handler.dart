@@ -1,7 +1,7 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import '../widgets/app_alerts.dart';
-import '../utils/language_manager.dart';
 import '../main.dart';
 
 /// Централизованный обработчик ошибок приложения.

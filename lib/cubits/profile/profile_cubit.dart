@@ -1,8 +1,8 @@
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../services/api_service.dart';
 
 part 'profile_state.dart';
 

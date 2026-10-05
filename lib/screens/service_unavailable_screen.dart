@@ -1,5 +1,5 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:flutter/material.dart';
-import '../utils/language_manager.dart';
 
 /// Экран отображения временной недоступности сервиса (HTTP 503 / Технические работы).
 class ServiceUnavailableScreen extends StatelessWidget {

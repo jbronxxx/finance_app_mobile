@@ -1,5 +1,5 @@
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:flutter/material.dart';
-import '../widgets/app_alerts.dart';
 
 extension ShowSnackBar on BuildContext {
   void showMessage(String message, {bool isError = false}) {

@@ -1,10 +1,8 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/widgets/widgets.dart';
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:getbalanceai_mobile/utils/currency_formatter.dart';
-import '../widgets/app_alerts.dart';
-import '../utils/language_manager.dart';
-import '../services/preferences_service.dart';
-import '../utils/app_error_handler.dart';
 import '../cubits/profile/profile_cubit.dart';
 import '../cubits/auth/auth_cubit.dart';
 

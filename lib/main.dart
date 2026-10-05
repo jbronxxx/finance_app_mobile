@@ -1,16 +1,12 @@
+import 'package:getbalanceai_mobile/utils/utils.dart';
+import 'package:getbalanceai_mobile/services/services.dart';
 import 'dart:developer' as developer;
 import 'dart:ui';
-import 'package:getbalanceai_mobile/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'services/local_db_service.dart';
-import 'services/pending_deletions_store.dart';
-import 'utils/currency_formatter.dart';
-import 'utils/language_manager.dart';
-import 'services/preferences_service.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth_screen.dart';
 import 'screens/service_unavailable_screen.dart';
