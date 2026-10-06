@@ -181,5 +181,18 @@
   "month_gen_9": "September",
   "month_gen_10": "October",
   "month_gen_11": "November",
-  "month_gen_12": "December"
+  "month_gen_12": "December",
+  "terms_of_use_prefix": "By continuing, you agree to the ",
+  "terms_of_use_link": "Terms of Use",
+  "terms_of_use_and": " and ",
+  "privacy_policy_link": "Privacy Policy",
+  "terms_of_use_suffix": ".",
+  "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vR9j3ZRVg7VwMccxRF5D3j96b5MCtRGrQoTx08-zfxpZn6Fp8JKM9bRtVZ6yE4J3g3Vcz7eO9MmDXJk/pub",
+  "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vR9j3ZRVg7VwMccxRF5D3j96b5MCtRGrQoTx08-zfxpZn6Fp8JKM9bRtVZ6yE4J3g3Vcz7eO9MmDXJk/pub",
+  "privacy_policy_url": "https://docs.google.com/document/d/e/2PACX-1vSRtpUKdUDUgGYNF9LH-mrxYdKtjF_c92oj289iWza_VE6kFLIdZxGBlXmK4_oT2sZJztid8VSXITKv/pub",
+  "login_with_google": "Continue with Google",
+  "login_with_apple": "Continue with Apple",
+  "continue_with_google": "Continue with Google.",
+  "continue_with_apple": "Continue with Apple ID.",
+  "auth_social_error": "Authentication failed or was cancelled. Please try again."
 }

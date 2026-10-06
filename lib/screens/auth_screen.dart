@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 
 /// Экран входа/регистрации через соцсети (Google, Apple).
 class AuthScreen extends StatefulWidget {
@@ -74,11 +75,19 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      AppErrorHandler.show(
-        context,
-        e,
-        title: LanguageManager.t('login_error_title'),
-      );
+      if (e is PlatformException) {
+        AppAlerts.showErrorDialog(
+          context,
+          title: context.l10n.login_error_title,
+          message: context.l10n.auth_social_error,
+        );
+      } else {
+        AppErrorHandler.show(
+          context,
+          e,
+          title: context.l10n.login_error_title,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -95,7 +104,7 @@ class _AuthScreenState extends State<AuthScreen> {
         width: 24,
         height: 24,
       ),
-      text: 'Войти с помощью Google',
+      text: context.l10n.login_with_google,
       backgroundColor: isDark ? const Color(0xFF131314) : Colors.white,
       textColor: isDark ? const Color(0xFFE3E3E3) : Colors.black87,
       borderColor: isDark ? const Color(0xFF8E918F) : Colors.grey.shade300,
@@ -105,7 +114,7 @@ class _AuthScreenState extends State<AuthScreen> {
     final appleButton = _SocialButton(
       icon: FaIcon(FontAwesomeIcons.apple,
           size: 24, color: Theme.of(context).colorScheme.onPrimary),
-      text: 'Войти с помощью Apple',
+      text: context.l10n.login_with_apple,
       backgroundColor: Theme.of(context).colorScheme.primary,
       textColor: Theme.of(context).colorScheme.onPrimary,
       borderColor: Theme.of(context).colorScheme.primary,
@@ -141,8 +150,8 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 12),
               Text(
                 isIOS
-                    ? 'Продолжите с помощью Apple ID.'
-                    : 'Продолжите с помощью Google.',
+                    ? context.l10n.continue_with_apple
+                    : context.l10n.continue_with_google,
                 style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
                 textAlign: TextAlign.center,
               ),
@@ -160,15 +169,15 @@ class _AuthScreenState extends State<AuthScreen> {
                   TextSpan(
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     children: [
-                      const TextSpan(text: 'Продолжая, вы соглашаетесь с '),
+                      TextSpan(text: context.l10n.terms_of_use_prefix),
                       WidgetSpan(
                         alignment: PlaceholderAlignment.baseline,
                         baseline: TextBaseline.alphabetic,
                         child: GestureDetector(
-                          onTap: () => launchUrl(Uri.parse(
-                              'https://docs.google.com/document/d/e/2PACX-1vR9j3ZRVg7VwMccxRF5D3j96b5MCtRGrQoTx08-zfxpZn6Fp8JKM9bRtVZ6yE4J3g3Vcz7eO9MmDXJk/pub')),
+                          onTap: () => launchUrl(
+                              Uri.parse(context.l10n.terms_of_use_url)),
                           child: Text(
-                            'Условиями использования',
+                            context.l10n.terms_of_use_link,
                             style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(context).colorScheme.primary,
@@ -177,15 +186,15 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                       ),
-                      const TextSpan(text: ' и '),
+                      TextSpan(text: context.l10n.terms_of_use_and),
                       WidgetSpan(
                         alignment: PlaceholderAlignment.baseline,
                         baseline: TextBaseline.alphabetic,
                         child: GestureDetector(
-                          onTap: () => launchUrl(Uri.parse(
-                              'https://docs.google.com/document/d/e/2PACX-1vSRtpUKdUDUgGYNF9LH-mrxYdKtjF_c92oj289iWza_VE6kFLIdZxGBlXmK4_oT2sZJztid8VSXITKv/pub')),
+                          onTap: () => launchUrl(
+                              Uri.parse(context.l10n.privacy_policy_url)),
                           child: Text(
-                            'Политикой конфиденциальности',
+                            context.l10n.privacy_policy_link,
                             style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(context).colorScheme.primary,
@@ -194,7 +203,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                       ),
-                      const TextSpan(text: '.'),
+                      TextSpan(text: context.l10n.terms_of_use_suffix),
                     ],
                   ),
                   textAlign: TextAlign.center,

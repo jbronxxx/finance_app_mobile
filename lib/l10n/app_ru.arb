@@ -181,5 +181,18 @@
   "month_gen_9": "сентября",
   "month_gen_10": "октября",
   "month_gen_11": "ноября",
-  "month_gen_12": "декабря"
+  "month_gen_12": "декабря",
+  "terms_of_use_prefix": "Продолжая, вы соглашаетесь с ",
+  "terms_of_use_link": "Условиями использования",
+  "terms_of_use_and": " и ",
+  "privacy_policy_link": "Политикой конфиденциальности",
+  "terms_of_use_suffix": ".",
+  "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vSEWTRgAZeAZEAbwQ8Cc7Pk9mfN8mBECvhYRyfTuDvIuJM-_i4hDl2mvUuboYx5W-6UOV9q3yjpMHRn/pub",
+  "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vSEWTRgAZeAZEAbwQ8Cc7Pk9mfN8mBECvhYRyfTuDvIuJM-_i4hDl2mvUuboYx5W-6UOV9q3yjpMHRn/pub",
+  "privacy_policy_url": "https://docs.google.com/document/d/e/2PACX-1vS5Bk9fuP4iI8yVeQ41aRkstdsY_tvH2GFJYyZixEGR5QzxTmNIZVZrSX_SfSBs6j-YkyTHxkwxWEpU/pub",
+  "login_with_google": "Войти с помощью Google",
+  "login_with_apple": "Войти с помощью Apple",
+  "continue_with_google": "Продолжите с помощью Google.",
+  "continue_with_apple": "Продолжите с помощью Apple ID.",
+  "auth_social_error": "Авторизация прервана или произошла ошибка. Пожалуйста, попробуйте снова."
 }
