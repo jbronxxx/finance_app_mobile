@@ -1,10 +1,8 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'environment.dart';
 
 /// Единая точка конфигурации обращений к бэкенду.
 class ApiConfig {
-  static const String _defaultBaseUrl = 'http://10.0.2.2:8000/api/v1';
-
-  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? _defaultBaseUrl;
+  static String get baseUrl => EnvironmentConfig.baseUrl;
 
   static const String register = '/auth/register';
   static const String login = '/auth/login';
