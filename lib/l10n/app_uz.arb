@@ -181,5 +181,18 @@
   "month_gen_9": "sentabr",
   "month_gen_10": "oktabr",
   "month_gen_11": "noyabr",
-  "month_gen_12": "dekabr"
+  "month_gen_12": "dekabr",
+  "terms_of_use_prefix": "Davom etish orqali siz ",
+  "terms_of_use_link": "Foydalanish shartlari",
+  "terms_of_use_and": " va ",
+  "privacy_policy_link": "Maxfiylik siyosati",
+  "terms_of_use_suffix": "ga rozilik bildirasiz.",
+  "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vS1GL9UupJ4IdHRYnSxCeMGlJUU4hroaxGvedGgGaWN_DxNDXBtvmv2ZKvp-z-0B0OclsaANRJO2a8j/pub",
+  "terms_of_use_url": "https://docs.google.com/document/d/e/2PACX-1vS1GL9UupJ4IdHRYnSxCeMGlJUU4hroaxGvedGgGaWN_DxNDXBtvmv2ZKvp-z-0B0OclsaANRJO2a8j/pub",
+  "privacy_policy_url": "https://docs.google.com/document/d/e/2PACX-1vTjCzniRnHNU9vIhYT9PuU_AHC1ZLyimUAh51f4Rz4NGGewztaY0hiynkfpWG-nKKeBPPh8hbjqMMPY/pub",
+  "login_with_google": "Google orqali kirish",
+  "login_with_apple": "Apple orqali kirish",
+  "continue_with_google": "Google orqali davom eting.",
+  "continue_with_apple": "Apple ID orqali davom eting.",
+  "auth_social_error": "Avtorizatsiya bekor qilindi yoki xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring."
 }
