@@ -1,8 +1,8 @@
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
-import 'dart:developer' as developer;
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +12,9 @@ import 'screens/auth_screen.dart';
 import 'screens/service_unavailable_screen.dart';
 import 'cubits/auth/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'config/environment.dart';
+import 'utils/app_logger.dart';
+import 'services/crashlytics_service.dart';
 
 /// Точка входа в приложение.
 void main() async {
@@ -20,25 +23,30 @@ void main() async {
 
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.dumpErrorToConsole(details);
-    developer.log(
-      '❌ [UI Error]',
-      error: details.exception,
-      stackTrace: details.stack,
-    );
+    if (!kReleaseMode) {
+      talker.handle(details.exception, details.stack, 'UI Error');
+    }
+    logger.e('❌ [UI Error]',
+        error: details.exception, stackTrace: details.stack);
+    CrashlyticsService.recordError(details.exception, details.stack,
+        fatal: true);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    developer.log(
-      '❌ [Async Error]',
-      error: error,
-      stackTrace: stack,
-    );
+    if (!kReleaseMode) {
+      talker.handle(error, stack, 'Async Error');
+    }
+    logger.e('❌ [Async Error]', error: error, stackTrace: stack);
+    CrashlyticsService.recordError(error, stack, fatal: true);
     return true;
   };
 
   try {
     await dotenv.load(fileName: '.env');
   } catch (_) {}
+
+  await EnvironmentConfig.init();
+  await CrashlyticsService.init();
 
   await LocalDbService.init();
   await PendingDeletionsStore.init();

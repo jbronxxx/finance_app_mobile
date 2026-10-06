@@ -3,8 +3,11 @@ import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../cubits/profile/profile_cubit.dart';
 import '../cubits/auth/auth_cubit.dart';
+import 'debug_menu_screen.dart';
 
 /// Экран профиля пользователя, совмещенный с настройками приложения.
 class ProfileScreen extends StatelessWidget {
@@ -50,11 +53,23 @@ class _ProfileScreenView extends StatefulWidget {
 class _ProfileScreenViewState extends State<_ProfileScreenView> {
   bool _notificationsEnabled = true;
   bool _isDarkMode = false;
+  String _appVersion = '';
+  int _debugTapCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _appVersion = '${info.version}+${info.buildNumber}';
+      });
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -437,6 +452,8 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 16),
+                  _buildAppVersion(context),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -444,6 +461,29 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAppVersion(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (kReleaseMode) return;
+        _debugTapCount++;
+        if (_debugTapCount >= 5) {
+          _debugTapCount = 0;
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DebugMenuScreen()),
+          );
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(
+          'Version $_appVersion',
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+        ),
+      ),
     );
   }
 

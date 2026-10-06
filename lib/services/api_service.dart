@@ -8,6 +8,8 @@ import 'local_db_service.dart';
 import 'pending_deletions_store.dart';
 import 'tracing_interceptor.dart';
 import 'dart:async';
+import 'package:talker_dio_logger/talker_dio_logger.dart';
+import '../utils/app_logger.dart';
 
 /// Клиент для работы с API бэкенда.
 class ApiService {
@@ -119,10 +121,13 @@ class ApiService {
     ));
 
     if (kDebugMode) {
-      _dio.interceptors.add(LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        requestHeader: true,
+      _dio.interceptors.add(TalkerDioLogger(
+        talker: talker,
+        settings: const TalkerDioLoggerSettings(
+          printRequestHeaders: true,
+          printResponseHeaders: true,
+          printResponseMessage: true,
+        ),
       ));
     }
   }

@@ -25,7 +25,8 @@
 lib/
 ├── main.dart                    # Точка входа: .env -> локальная БД -> ApiService.init -> runApp
 ├── config/
-│   └── api_config.dart          # Конфигурация бэкенда (единственный источник правды ApiConfig.baseUrl)
+│   ├── api_config.dart          # Пути эндпоинтов; ApiConfig.baseUrl делегирует в EnvironmentConfig
+│   └── environment.dart         # Окружения prod/dev/local, выбор в debug (SharedPreferences), в release всегда prod
 ├── models/
 │   ├── auth_model.dart          # DTO для авторизации (Login, Register, Me)
 │   ├── budget_model.dart        # DTO для бюджетов
@@ -111,6 +112,7 @@ main.dart`. Это было исправлено переносом состоя
 
 ## Наблюдаемость и обработка сбоев (Observability & Error Handling)
 
+- **Логирование и отладка**: `lib/utils/app_logger.dart` содержит `logger` (package `logger`) и `talker` (Talker, активен только в debug). HTTP-трафик в debug пишет `TalkerDioLogger`. Скрытое Debug-меню (`DebugMenuScreen`, не работает в release) позволяет сменить окружение, посмотреть логи Talker и очистить кеш/токены. `CrashlyticsService` — заглушка, пишущая ошибки в лог.
 - **Сквозная трассировка (X-Request-ID)**: В сетевом клиенте Dio зарегистрирован `TracingInterceptor`. Для каждого исходящего запроса генерируется UUID v4 (или сохраняется существующий заголовок `X-Request-ID`). При сбоях или ответах идентификатор запроса извлекается из заголовков ответа (`x-request-id`) или запроса и передается в логи (`developer.log` / `debugPrint`) для упрощения диагностики и корреляции с бэкендом.
 - **Ограничение частоты запросов (Rate Limiting HTTP 429 / RATE_LIMIT_EXCEEDED)**:
   - Эндпоинты аутентификации (`/api/v1/auth/login`, `/api/v1/auth/register`) ограничены лимитом 5 запросов в минуту на IP.
