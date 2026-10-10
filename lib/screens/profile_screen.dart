@@ -4,7 +4,6 @@ import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:package_info_plus/package_info_plus.dart';
 import '../cubits/profile/profile_cubit.dart';
 import '../cubits/auth/auth_cubit.dart';
 import 'debug_menu_screen.dart';
@@ -65,10 +64,10 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
   }
 
   Future<void> _loadAppVersion() async {
-    final info = await PackageInfo.fromPlatform();
+    final version = await AppInfoService.instance.getVersionString();
     if (mounted) {
       setState(() {
-        _appVersion = '${info.version}+${info.buildNumber}';
+        _appVersion = version;
       });
     }
   }

@@ -844,12 +844,20 @@ class ApiService {
   }
 
   /// Загружает транзакции и бюджеты пользователя с сервера в локальную базу.
-  Future<Map<String, dynamic>> syncBackendDataToLocal([String? token]) async {
+  Future<Map<String, dynamic>> syncBackendDataToLocal([
+    String? token,
+    void Function(int count, int page)? onTransactionProgress,
+    int maxPages = 100,
+  ]) async {
     final jwtToken = token ?? _token;
     if (jwtToken == null) throw Exception('Не авторизован');
 
     try {
-      final remoteTransactions = await _fetchRemoteTransactions(jwtToken);
+      final remoteTransactions = await _fetchRemoteTransactions(
+        jwtToken,
+        onProgress: onTransactionProgress,
+        maxPages: maxPages,
+      );
       final remoteBudgets = await _fetchRemoteBudgets(jwtToken);
 
       int removedTransactions = 0;
@@ -904,13 +912,21 @@ class ApiService {
   }
 
   /// Полная двусторонняя синхронизация.
-  Future<Map<String, dynamic>> syncAll([String? token]) async {
+  Future<Map<String, dynamic>> syncAll([
+    String? token,
+    void Function(int count, int page)? onTransactionProgress,
+    int maxPages = 100,
+  ]) async {
     final jwtToken = token ?? _token;
     if (jwtToken == null) throw Exception('Не авторизован');
 
     final deleted = await _flushPendingDeletions(jwtToken);
     final pushed = await syncLocalDataToBackend(jwtToken);
-    final pulled = await syncBackendDataToLocal(jwtToken);
+    final pulled = await syncBackendDataToLocal(
+      jwtToken,
+      onTransactionProgress,
+      maxPages,
+    );
 
     return {'deleted': deleted, 'pushed': pushed, 'pulled': pulled};
   }
@@ -981,8 +997,12 @@ class ApiService {
     return totalDone;
   }
 
-  Future<List<Transaction>?> _fetchRemoteTransactions(String token,
-      {DateTime? since}) async {
+  Future<List<Transaction>?> _fetchRemoteTransactions(
+    String token, {
+    DateTime? since,
+    void Function(int count, int page)? onProgress,
+    int maxPages = 100,
+  }) async {
     final options = _authOptions(token);
     options.validateStatus = (status) =>
         status != null && ((status >= 200 && status < 300) || status == 304);
@@ -1017,12 +1037,15 @@ class ApiService {
         firstResponse.data is Map ? firstResponse.data['data'] : null;
     final firstItems = _asJsonList(firstData);
     allTransactions.addAll(firstItems.map(Transaction.fromJson));
+    onProgress?.call(allTransactions.length, 1);
 
     if (firstData is Map) {
       bool hasMore = firstData['has_more'] == true;
       currentCursor = firstData['next_cursor'] as String?;
+      int page = 1;
 
-      while (hasMore && currentCursor != null) {
+      while (hasMore && currentCursor != null && page < maxPages) {
+        page++;
         final nextResponse = await _dio.get(
           ApiConfig.transactions,
           queryParameters: {
@@ -1039,12 +1062,20 @@ class ApiService {
         if (nextItems.isEmpty) break;
 
         allTransactions.addAll(nextItems.map(Transaction.fromJson));
+        onProgress?.call(allTransactions.length, page);
 
         if (nextData is Map) {
           hasMore = nextData['has_more'] == true;
           currentCursor = nextData['next_cursor'] as String?;
         } else {
           hasMore = false;
+        }
+      }
+
+      if (page >= maxPages && hasMore) {
+        if (kDebugMode) {
+          debugPrint(
+              '[ApiService] Transaction pagination limit ($maxPages pages) reached.');
         }
       }
     }

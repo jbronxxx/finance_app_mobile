@@ -3,7 +3,6 @@ import 'package:talker_flutter/talker_flutter.dart';
 import '../config/environment.dart';
 import '../utils/app_logger.dart';
 import '../services/services.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 class DebugMenuScreen extends StatefulWidget {
   const DebugMenuScreen({super.key});
@@ -22,10 +21,10 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
   }
 
   Future<void> _loadPackageInfo() async {
-    final info = await PackageInfo.fromPlatform();
+    final version = await AppInfoService.instance.getVersionString();
     if (!mounted) return;
     setState(() {
-      _appVersion = '${info.version}+${info.buildNumber}';
+      _appVersion = version;
     });
   }
 

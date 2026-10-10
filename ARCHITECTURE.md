@@ -37,6 +37,7 @@ lib/
 ├── services/
 │   ├── local_db_service.dart    # Доступ к ObjectBox (singleton)
 │   ├── api_service.dart          # Клиент API (Dio, JWT, Refresh Token, Sync)
+│   ├── app_info_service.dart     # Кеширование метаданных приложения (версия, сборка)
 │   ├── tracing_interceptor.dart # Сквозная трассировка сетевых запросов (X-Request-ID)
 │   └── pending_deletions_store.dart # Очередь отложенных удалений
 ├── cubits/
@@ -104,10 +105,10 @@ main.dart`. Это было исправлено переносом состоя
 - `Transaction` и `Budget` — сущности ObjectBox (`@Entity()`).
 - **Денежные суммы (Decimal / Numeric(12, 2))**: На бэкенде денежные поля переведены на `Decimal(12, 2)` (`amount`, `limit_amount`, `spent`, `remaining`). На клиенте десериализация моделей (`Transaction`, `Budget`, `TransactionModel`, `BudgetModel`) выполняется через безопасный хелпер `parseAmount()`, корректно обрабатывающий как числовой `num` (int/double), так и строковый формат `"123.45"`, исключая ошибки приведения типов.
 - **Временные метки**: Все даты передаются по API в формате UTC ISO 8601 (`.toUtc().toIso8601String()`), а на клиенте разбираются через `.toLocal()`.
-- **Пагинация транзакций (API GET /api/v1/transactions/)**: Эндпоинт поддерживает Query-параметры `limit` (1..100, default 50), `offset` (min 0) и `since` (ISO 8601). Ответ бэкенда возвращается в формате `PaginatedResponse<TransactionModel>` (`items`, `total`, `limit`, `offset`). Фоновый процесс синхронизации `syncBackendDataToLocal` прозрачно выкачивает все страницы при первичной или полной загрузке.
+- **Пагинация транзакций (API GET /api/v1/transactions/)**: Эндпоинт поддерживает Query-параметры `limit` (1..100, default 50), `offset` (min 0) и `since` (ISO 8601). Ответ бэкенда возвращается в формате `PaginatedResponse<TransactionModel>` (`items`, `total`, `limit`, `offset`). Фоновый процесс синхронизации `syncBackendDataToLocal` прозрачно выкачивает страницы с поддержкой отслеживания прогресса (`onTransactionProgress`) и защитой от переполнения памяти/бесконечных циклов через лимит `maxPages`.
 - **Синхронизация**: Двусторонняя (push/pull).
   - `syncLocalDataToBackend`: Отправляет локальные записи без `serverId`, а для офлайн-удаленных бюджетов передает `is_deleted: true` и массив `deleted_budget_ids`.
-  - `syncBackendDataToLocal`: Загружает актуальные данные с сервера и сверяет с локальными.
+  - `syncBackendDataToLocal`: Загружает актуальные данные с сервера и сверяет с локальными. Процесс сверки (`reconcileTransactions`, `reconcileBudgets`) оптимизирован по потреблению памяти: поиск устаревших локальных записей выполняется таргетированными запросами ObjectBox, минуя загрузку всей базы в Dart heap.
   - `PendingDeletionsStore`: Хранит ID удаленных локально транзакций и бюджетов (tombstones), чтобы синхронизировать удаление на сервере при появлении сети.
 
 ## Наблюдаемость и обработка сбоев (Observability & Error Handling)
