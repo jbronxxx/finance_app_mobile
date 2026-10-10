@@ -29,7 +29,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     super.initState();
     final t = widget.transactionToEdit;
     _type = t?.type ?? TransactionType.expense;
-    _category = t?.category ?? Category.food;
+    _category = t?.category ??
+        (_type == TransactionType.income ? Category.salary : Category.food);
     _amountController = TextEditingController(
       text: t != null
           ? CurrencyFormatter.format(t.amount, showSymbol: false)
@@ -156,8 +157,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () =>
-                        setState(() => _type = TransactionType.expense),
+                    onTap: () => setState(() {
+                      _type = TransactionType.expense;
+                      if (!Category.expenseCategories.contains(_category)) {
+                        _category = Category.food;
+                      }
+                    }),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       alignment: Alignment.center,
@@ -189,7 +194,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                 ),
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => setState(() => _type = TransactionType.income),
+                    onTap: () => setState(() {
+                      _type = TransactionType.income;
+                      if (!Category.incomeCategories.contains(_category)) {
+                        _category = Category.salary;
+                      }
+                    }),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       alignment: Alignment.center,
@@ -253,7 +263,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              items: Category.values.map((cat) {
+              items: (_type == TransactionType.income
+                      ? Category.incomeCategories
+                      : Category.expenseCategories)
+                  .map((cat) {
                 return DropdownMenuItem(
                   value: cat,
                   child: Text(cat.getLocalizedName(context)),

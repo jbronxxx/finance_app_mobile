@@ -789,6 +789,31 @@ class LanguageManager {
       AppLanguage.uz: 'Maosh',
       AppLanguage.en: 'Salary'
     },
+    'category_freelance': {
+      AppLanguage.ru: 'Фриланс',
+      AppLanguage.uz: 'Frilans',
+      AppLanguage.en: 'Freelance'
+    },
+    'category_investments': {
+      AppLanguage.ru: 'Инвестиции',
+      AppLanguage.uz: 'Investitsiyalar',
+      AppLanguage.en: 'Investments'
+    },
+    'category_transfers': {
+      AppLanguage.ru: 'Переводы',
+      AppLanguage.uz: "O'tkazmalar",
+      AppLanguage.en: 'Transfers'
+    },
+    'category_cashback': {
+      AppLanguage.ru: 'Кэшбэк',
+      AppLanguage.uz: 'Keshbek',
+      AppLanguage.en: 'Cashback'
+    },
+    'category_sales': {
+      AppLanguage.ru: 'Продажи',
+      AppLanguage.uz: 'Sotuvlar',
+      AppLanguage.en: 'Sales'
+    },
     'category_other': {
       AppLanguage.ru: 'Другое',
       AppLanguage.uz: 'Boshqa',

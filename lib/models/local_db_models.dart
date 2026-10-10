@@ -74,7 +74,34 @@ enum Category {
   subscriptions,
   shopping,
   salary,
+  freelance,
+  investments,
+  transfers,
+  cashback,
+  sales,
   other;
+
+  /// Допустимые категории для доходов.
+  static const incomeCategories = [
+    Category.salary,
+    Category.freelance,
+    Category.investments,
+    Category.transfers,
+    Category.cashback,
+    Category.sales,
+    Category.other,
+  ];
+
+  /// Допустимые категории для расходов.
+  static const expenseCategories = [
+    Category.food,
+    Category.transport,
+    Category.entertainment,
+    Category.health,
+    Category.subscriptions,
+    Category.shopping,
+    Category.other,
+  ];
 
   /// Строковое значение из БД/JSON -> enum. Неизвестная категория
   /// (например, добавленная бэкендом позже, но ещё не поддержанная в

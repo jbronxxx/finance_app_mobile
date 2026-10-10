@@ -184,7 +184,7 @@ Cubit-классы (`lib/cubits/`) покрываются unit-тестами н
 Windows её нужно один раз установить отдельно (не через `pub get`):
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/objectbox/objectbox-dart/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/objectbox/objectbox-dart/v4.3.1/install.sh)
 ```
 
 Без этого шага `fvm flutter test` упадёт с ошибкой загрузки
