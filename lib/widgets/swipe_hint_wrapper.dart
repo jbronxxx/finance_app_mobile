@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 /// Обертка, которая делает короткую анимацию «подглядывания» (peek),
@@ -28,6 +29,7 @@ class _SwipeHintWrapperState extends State<SwipeHintWrapper>
   late AnimationController _controller;
   late Animation<Offset> _animation;
   bool _hasStarted = false;
+  Timer? _startTimer;
 
   @override
   void initState() {
@@ -66,7 +68,8 @@ class _SwipeHintWrapperState extends State<SwipeHintWrapper>
   void _startHint() {
     _hasStarted = true;
     widget.onHintShown?.call();
-    Future.delayed(const Duration(milliseconds: 800), () {
+    _startTimer?.cancel();
+    _startTimer = Timer(const Duration(milliseconds: 800), () {
       if (mounted) {
         _controller.forward();
       }
@@ -75,6 +78,7 @@ class _SwipeHintWrapperState extends State<SwipeHintWrapper>
 
   @override
   void dispose() {
+    _startTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

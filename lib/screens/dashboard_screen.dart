@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:getbalanceai_mobile/models/models.dart';
 import 'package:getbalanceai_mobile/utils/utils.dart';
 import 'package:getbalanceai_mobile/widgets/widgets.dart';
@@ -39,6 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double _totalBalance = 0;
 
   bool _shouldShowSwipeHint = false;
+  Timer? _swipeHintDismissTimer;
 
   // Параметры пагинации
   final ScrollController _scrollController = ScrollController();
@@ -57,6 +59,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    _swipeHintDismissTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -73,6 +76,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _checkSwipeHint() async {
     final canShow =
         await PreferencesService.instance.shouldShowSwipeHint('dashboard');
+    if (!mounted) return;
     if (canShow) {
       setState(() {
         _shouldShowSwipeHint = true;
@@ -816,7 +820,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         background: background,
         onHintShown: () {
           PreferencesService.instance.recordHintShown('dashboard');
-          Future.delayed(const Duration(milliseconds: 2000), () {
+          _swipeHintDismissTimer?.cancel();
+          _swipeHintDismissTimer =
+              Timer(const Duration(milliseconds: 2000), () {
             if (mounted) setState(() => _shouldShowSwipeHint = false);
           });
         },

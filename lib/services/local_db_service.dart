@@ -271,12 +271,16 @@ class LocalDbService {
       final remoteIds =
           remote.map((t) => t.serverId).whereType<String>().toSet();
 
-      final stale = _transactionBox
-          .getAll()
-          .where((t) =>
-              t.serverId != null &&
-              !t.isModified &&
-              !remoteIds.contains(t.serverId))
+      final query = _transactionBox
+          .query(Transaction_.serverId
+              .notNull()
+              .and(Transaction_.isModified.equals(false)))
+          .build();
+      final candidates = query.find();
+      query.close();
+
+      final stale = candidates
+          .where((t) => !remoteIds.contains(t.serverId))
           .map((t) => t.localId)
           .toList();
 
@@ -395,12 +399,15 @@ class LocalDbService {
       final remoteIds =
           remote.map((b) => b.serverId).whereType<String>().toSet();
 
-      final stale = _budgetBox
-          .getAll()
-          .where((b) =>
-              b.serverId != null &&
-              !b.isModified &&
-              !remoteIds.contains(b.serverId))
+      final query = _budgetBox
+          .query(
+              Budget_.serverId.notNull().and(Budget_.isModified.equals(false)))
+          .build();
+      final candidates = query.find();
+      query.close();
+
+      final stale = candidates
+          .where((b) => !remoteIds.contains(b.serverId))
           .map((b) => b.localId)
           .toList();
 
