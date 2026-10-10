@@ -123,14 +123,19 @@ class ApiService {
     if (kDebugMode) {
       _dio.interceptors.add(TalkerDioLogger(
         talker: talker,
-        settings: const TalkerDioLoggerSettings(
-          printRequestHeaders: true,
-          printResponseHeaders: true,
+        settings: TalkerDioLoggerSettings(
+          printRequestHeaders: false,
+          printResponseHeaders: false,
           printResponseMessage: true,
+          requestFilter: (o) => !_isAuthPath(o.path),
+          responseFilter: (r) => !_isAuthPath(r.requestOptions.path),
         ),
       ));
     }
   }
+
+  /// Пути, чьи тела запросов/ответов содержат пароли и токены.
+  static bool _isAuthPath(String path) => path.startsWith('/auth/');
 
   static final ApiService instance = ApiService._internal();
 

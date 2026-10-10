@@ -87,8 +87,6 @@ fvm flutter pub run build_runner build --delete-conflicting-outputs
 ```bash
 fvm flutter devices          # посмотреть доступные устройства/эмуляторы
 fvm flutter run              # запуск в debug на выбранном/единственном устройстве
-fvm flutter run -d chrome     # запуск в браузере (web)
-fvm flutter run -d macos      # запуск нативного macOS-приложения
 ```
 
 ## Сборки
@@ -100,10 +98,10 @@ fvm flutter run -d macos      # запуск нативного macOS-прило
 fvm flutter build apk --debug
 
 # Release APK
-fvm flutter build apk --release
+fvm flutter build apk --release --dart-define=PROD_API_BASE_URL=https://api.your-domain.com/api/v1
 
 # Release App Bundle (для публикации в Google Play)
-fvm flutter build appbundle --release
+fvm flutter build appbundle --release --dart-define=PROD_API_BASE_URL=https://api.your-domain.com/api/v1
 ```
 
 > Перед публикацией в Google Play замените `applicationId` в
@@ -123,28 +121,15 @@ cd ios && pod install && cd ..
 fvm flutter build ios --debug --simulator
 
 # Release-сборка (нужен подключённый Apple Developer аккаунт и провижининг в Xcode)
-fvm flutter build ios --release
+fvm flutter build ios --release --dart-define=PROD_API_BASE_URL=https://api.your-domain.com/api/v1
 
 # IPA для распространения (TestFlight/App Store)
-fvm flutter build ipa --release
+fvm flutter build ipa --release --dart-define=PROD_API_BASE_URL=https://api.your-domain.com/api/v1
 ```
 
 Подпись/провижининг для iOS настраивается в Xcode
 (`ios/Runner.xcworkspace` → Signing & Capabilities), а не в коде.
 
-### macOS / Windows / Linux (desktop)
-
-```bash
-fvm flutter build macos --release
-fvm flutter build windows --release
-fvm flutter build linux --release
-```
-
-### Web
-
-```bash
-fvm flutter build web --release
-```
 
 ## Обновление и очистка
 
@@ -207,8 +192,9 @@ bash <(curl -s https://raw.githubusercontent.com/objectbox/objectbox-dart/main/i
 
 ## Безопасность / работа с репозиторием
 
-- Секреты — только через `.env` (см. выше), никогда не в коде и не в
-  коммитах.
+- Секреты для локальной разработки хранятся в `.env`, но в релизной сборке этот файл **игнорируется полностью**.
+- Секреты для релиза передаются только через аргументы командной строки сборки: `--dart-define=...`.
+- Никогда не оставляйте секреты прямо в коде или в коммитах.
 - Если нужно поделиться доступом к бэкенду для локальной разработки,
   передавайте `.env` вне git (менеджер паролей, защищённый чат) — не
   добавляйте его в `.gitignore`-исключения и не коммитьте "временно".

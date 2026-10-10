@@ -8,11 +8,29 @@ enum Environment {
   local,
 }
 
+/// Выбор окружения и базового URL бэкенда.
+///
+/// В release-сборке всегда используется prod, URL берется только из
+/// `--dart-define=PROD_API_BASE_URL=...`; `.env` не читается.
+/// В debug/profile значение ищется в `--dart-define`, затем в `.env`.
 class EnvironmentConfig {
   static const String _envKey = 'selected_environment';
+  static const String _definedProdUrl =
+      String.fromEnvironment('PROD_API_BASE_URL');
+  static const String _definedDevUrl =
+      String.fromEnvironment('DEV_API_BASE_URL');
+  static const String _definedLocalUrl = String.fromEnvironment('API_BASE_URL');
+  static const bool _debugMenuFlag = bool.fromEnvironment('ENABLE_DEBUG_MENU');
+  static const String _defaultLocalUrl = 'http://10.0.2.2:8000/api/v1';
+
   static Environment _current = Environment.prod;
 
   static Environment get current => _current;
+
+  /// Debug-меню доступно в debug-сборке и в profile-сборке при
+  /// `--dart-define=ENABLE_DEBUG_MENU=true`; в release недоступно никогда.
+  static bool get debugMenuEnabled =>
+      !kReleaseMode && (kDebugMode || _debugMenuFlag);
 
   static Future<void> init() async {
     if (kReleaseMode) {
@@ -33,24 +51,43 @@ class EnvironmentConfig {
   }
 
   static Future<void> setEnvironment(Environment env) async {
-    if (kReleaseMode) return; // Защита: в релизе менять нельзя
+    if (kReleaseMode) return;
     _current = env;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_envKey, env.name);
   }
 
   static String get baseUrl {
-    if (kReleaseMode) {
-      return dotenv.env['PROD_API_BASE_URL'] ?? 'https://prod.api.com/api/v1';
-    }
+    if (kReleaseMode) return _validateReleaseUrl(_definedProdUrl);
 
     switch (_current) {
       case Environment.prod:
-        return dotenv.env['PROD_API_BASE_URL'] ?? 'https://prod.api.com/api/v1';
+        return _resolve(_definedProdUrl, 'PROD_API_BASE_URL');
       case Environment.dev:
-        return dotenv.env['DEV_API_BASE_URL'] ?? 'https://dev.api.com/api/v1';
+        return _resolve(_definedDevUrl, 'DEV_API_BASE_URL');
       case Environment.local:
-        return dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000/api/v1';
+        final url = _resolve(_definedLocalUrl, 'API_BASE_URL');
+        return url.isEmpty ? _defaultLocalUrl : url;
     }
+  }
+
+  static String _resolve(String defined, String envKey) {
+    if (defined.isNotEmpty) return defined;
+    if (!dotenv.isInitialized) return '';
+    return dotenv.maybeGet(envKey) ?? '';
+  }
+
+  /// Бросает исключение, если release-URL не задан или не https, чтобы
+  /// приложение не ушло на случайный или незащищенный хост.
+  static String _validateReleaseUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (url.isEmpty || uri == null || uri.host.isEmpty) {
+      throw StateError(
+          'PROD_API_BASE_URL is not configured. Pass it via --dart-define.');
+    }
+    if (uri.scheme != 'https') {
+      throw StateError('Release build requires an https API base URL.');
+    }
+    return url;
   }
 }

@@ -3,11 +3,12 @@ import 'package:getbalanceai_mobile/widgets/widgets.dart';
 import 'package:getbalanceai_mobile/services/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:package_info_plus/package_info_plus.dart';
 import '../cubits/profile/profile_cubit.dart';
 import '../cubits/auth/auth_cubit.dart';
 import 'debug_menu_screen.dart';
+import '../config/environment.dart';
 
 /// Экран профиля пользователя, совмещенный с настройками приложения.
 class ProfileScreen extends StatelessWidget {
@@ -467,7 +468,7 @@ class _ProfileScreenViewState extends State<_ProfileScreenView> {
   Widget _buildAppVersion(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        if (kReleaseMode) return;
+        if (!EnvironmentConfig.debugMenuEnabled) return;
         _debugTapCount++;
         if (_debugTapCount >= 5) {
           _debugTapCount = 0;
