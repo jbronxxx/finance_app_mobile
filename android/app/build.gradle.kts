@@ -53,8 +53,18 @@ android {
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
-                signingConfigs.getByName("debug")
+                if (gradle.startParameter.taskNames.any { it.contains("Release") }) {
+                    throw GradleException("key.properties not found! Release build requires a valid keystore.")
+                }
+                null
             }
+            
+            // 4. Включаем R8 (минификация и обфускация)
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

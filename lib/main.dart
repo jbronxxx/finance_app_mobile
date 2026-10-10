@@ -41,9 +41,13 @@ void main() async {
     return true;
   };
 
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (_) {}
+  if (!kReleaseMode) {
+    try {
+      await dotenv.load(fileName: '.env');
+    } catch (e) {
+      logger.w('[Config] .env not loaded: $e');
+    }
+  }
 
   await EnvironmentConfig.init();
   await CrashlyticsService.init();
