@@ -707,6 +707,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
       categoryIcon = Icons.subscriptions;
       categoryColor = Colors.indigo.shade400;
       bgColor = Colors.indigo.shade50;
+    } else if (category == Category.freelance) {
+      categoryIcon = Icons.laptop_mac;
+      categoryColor = Colors.amber.shade700;
+      bgColor = Colors.amber.shade50;
+    } else if (category == Category.investments) {
+      categoryIcon = Icons.trending_up;
+      categoryColor = Colors.green.shade600;
+      bgColor = Colors.green.shade50;
+    } else if (category == Category.transfers) {
+      categoryIcon = Icons.swap_horiz;
+      categoryColor = Colors.cyan.shade600;
+      bgColor = Colors.cyan.shade50;
+    } else if (category == Category.cashback) {
+      categoryIcon = Icons.savings;
+      categoryColor = Colors.teal.shade600;
+      bgColor = Colors.teal.shade50;
+    } else if (category == Category.sales) {
+      categoryIcon = Icons.sell;
+      categoryColor = Colors.deepOrange.shade400;
+      bgColor = Colors.deepOrange.shade50;
     }
 
     return Container(

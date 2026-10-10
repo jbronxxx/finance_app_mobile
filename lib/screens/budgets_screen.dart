@@ -150,7 +150,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
-                  items: Category.values.map((cat) {
+                  items: Category.expenseCategories.map((cat) {
                     return DropdownMenuItem(
                       value: cat,
                       child: Text(cat.getLocalizedName(context)),
