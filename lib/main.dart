@@ -26,17 +26,14 @@ void main() async {
     if (!kReleaseMode) {
       talker.handle(details.exception, details.stack, 'UI Error');
     }
-    logger.e('❌ [UI Error]',
-        error: details.exception, stackTrace: details.stack);
     CrashlyticsService.recordError(details.exception, details.stack,
-        fatal: true);
+        fatal: false);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
     if (!kReleaseMode) {
       talker.handle(error, stack, 'Async Error');
     }
-    logger.e('❌ [Async Error]', error: error, stackTrace: stack);
     CrashlyticsService.recordError(error, stack, fatal: true);
     return true;
   };

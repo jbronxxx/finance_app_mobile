@@ -54,9 +54,10 @@ class _DebugMenuScreenState extends State<DebugMenuScreen> {
                 setState(() {});
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content:
-                          Text('Environment changed. Please restart the app.')),
+                  SnackBar(
+                    content: Text(
+                        'Environment changed to ${val.name.toUpperCase()}. Session reset.'),
+                  ),
                 );
               }
             },

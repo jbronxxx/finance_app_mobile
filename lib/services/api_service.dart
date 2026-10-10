@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../config/api_config.dart';
+import '../config/environment.dart';
 import 'local_db_service.dart';
 import 'pending_deletions_store.dart';
 import 'tracing_interceptor.dart';
@@ -13,6 +14,8 @@ import '../utils/app_logger.dart';
 
 /// Клиент для работы с API бэкенда.
 class ApiService {
+  static const String _kRetriedKey = 'retried';
+
   final _storage = const FlutterSecureStorage(
     aOptions: AndroidOptions(
       encryptedSharedPreferences: true,
@@ -38,33 +41,55 @@ class ApiService {
   @visibleForTesting
   Dio get dio => _dio;
 
+  void updateBaseUrl(String newBaseUrl) {
+    _dio.options.baseUrl = newBaseUrl;
+  }
+
+  Future<void> onEnvironmentChanged() async {
+    updateBaseUrl(ApiConfig.baseUrl);
+    await clearAllUserData();
+  }
+
+  static bool _isAuthExcludedPath(String path) {
+    final cleanPath = path.split('?').first;
+    return cleanPath == ApiConfig.refreshToken ||
+        cleanPath == ApiConfig.login ||
+        cleanPath == ApiConfig.register ||
+        cleanPath == ApiConfig.loginGoogle ||
+        cleanPath == ApiConfig.loginApple;
+  }
+
   ApiService._internal() {
+    EnvironmentConfig.addEnvironmentListener((_) async {
+      await onEnvironmentChanged();
+    });
+
     _dio.interceptors.add(TracingInterceptor());
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
         final token = _token;
         if (token != null &&
             !options.headers.containsKey('Authorization') &&
-            options.path != ApiConfig.refreshToken &&
-            options.path != ApiConfig.login &&
-            options.path != ApiConfig.register) {
+            !_isAuthExcludedPath(options.path)) {
           options.headers['Authorization'] = 'Bearer $token';
         }
         return handler.next(options);
       },
       onError: (DioException e, handler) async {
+        if (e.requestOptions.extra[_kRetriedKey] == true) {
+          return handler.next(e);
+        }
+
         if (e.response?.statusCode == 401 &&
-            e.requestOptions.path != ApiConfig.refreshToken &&
-            e.requestOptions.path != ApiConfig.login &&
-            e.requestOptions.path != ApiConfig.register) {
+            !_isAuthExcludedPath(e.requestOptions.path)) {
           final currentAuth = e.requestOptions.headers['Authorization'];
 
-          // Если токен уже был обновлен параллельным запросом, сразу повторяем с новым токеном
           if (_token != null &&
               currentAuth != null &&
               currentAuth != 'Bearer $_token') {
             final options = e.requestOptions;
             options.headers['Authorization'] = 'Bearer $_token';
+            options.extra[_kRetriedKey] = true;
             try {
               final response = await _dio.fetch(options);
               return handler.resolve(response);
@@ -80,6 +105,7 @@ class ApiService {
           if (newAccessToken != null && newAccessToken.isNotEmpty) {
             final options = e.requestOptions;
             options.headers['Authorization'] = 'Bearer $newAccessToken';
+            options.extra[_kRetriedKey] = true;
             try {
               final response = await _dio.fetch(options);
               return handler.resolve(response);

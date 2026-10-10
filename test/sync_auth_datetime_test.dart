@@ -341,6 +341,112 @@ void main() {
       expect(results[1]['insights'], ['OK']);
       expect(mockSecureStorage['auth_token'], 'new_valid_token_789');
     });
+
+    test(
+        'retried request receiving 401 does not loop or trigger additional refresh',
+        () async {
+      final api = ApiService.instance;
+      await api.setTokens('invalid_token', 'refresh_token_123');
+
+      int refreshCallCount = 0;
+      api.dio.httpClientAdapter = _MockDioAdapter((RequestOptions options) {
+        if (options.path == ApiConfig.refreshToken) {
+          refreshCallCount++;
+          return ResponseBody.fromString(
+            jsonEncode({
+              'data': {
+                'access_token': 'new_token',
+                'refresh_token': 'new_refresh',
+              }
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        } else if (options.path == ApiConfig.insights) {
+          return ResponseBody.fromString(
+            jsonEncode({'detail': 'Still Unauthorized'}),
+            401,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        return ResponseBody.fromString('{}', 404);
+      });
+
+      await expectLater(
+        api.getInsights(),
+        throwsA(isA<DioException>()),
+      );
+      expect(refreshCallCount, 1);
+    });
+
+    test(
+        '401 on /auth/google or /auth/apple does not trigger refresh or session expiration',
+        () async {
+      final api = ApiService.instance;
+      await api.setTokens('existing_access', 'existing_refresh');
+
+      int refreshCallCount = 0;
+      bool sessionExpiredFired = false;
+      final sub = api.authStream.listen((isAuthenticated) {
+        if (!isAuthenticated) {
+          sessionExpiredFired = true;
+        }
+      });
+
+      api.dio.httpClientAdapter = _MockDioAdapter((RequestOptions options) {
+        if (options.path == ApiConfig.refreshToken) {
+          refreshCallCount++;
+          return ResponseBody.fromString('{}', 200);
+        } else if (options.path == ApiConfig.loginGoogle ||
+            options.path == ApiConfig.loginApple) {
+          return ResponseBody.fromString(
+            jsonEncode({'detail': 'Invalid social token'}),
+            401,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        return ResponseBody.fromString('{}', 404);
+      });
+
+      await expectLater(
+        api.loginWithGoogle('bad_google_token'),
+        throwsA(isA<DioException>()),
+      );
+
+      await expectLater(
+        api.loginWithApple('bad_apple_token'),
+        throwsA(isA<DioException>()),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 50));
+      await sub.cancel();
+
+      expect(refreshCallCount, 0);
+      expect(sessionExpiredFired, isFalse);
+      expect(api.isAuthenticated, isTrue);
+    });
+
+    test(
+        'updateBaseUrl updates Dio base URL and onEnvironmentChanged clears session',
+        () async {
+      final api = ApiService.instance;
+      await api.setTokens('session_token', 'session_refresh');
+      expect(api.isAuthenticated, isTrue);
+
+      api.updateBaseUrl('https://staging.example.com/api/v1');
+      expect(api.dio.options.baseUrl, 'https://staging.example.com/api/v1');
+
+      await api.onEnvironmentChanged();
+      expect(api.isAuthenticated, isFalse);
+      expect(mockSecureStorage['auth_token'], isNull);
+      expect(mockSecureStorage['refresh_token'], isNull);
+    });
   });
 
   group('3. Offline Batch Sync (POST /api/v1/sync/) & Budget Deletion', () {
