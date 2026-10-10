@@ -55,65 +55,42 @@ class ApiService {
       onError: (DioException e, handler) async {
         if (e.response?.statusCode == 401 &&
             e.requestOptions.path != ApiConfig.refreshToken &&
-            e.requestOptions.path != ApiConfig.login) {
-          final refreshToken =
-              _refreshToken ?? await _storage.read(key: 'refresh_token');
-          if (refreshToken != null && refreshToken.isNotEmpty) {
-            if (kDebugMode) {
-              debugPrint(
-                  '[ApiService] Token expired (401), attempting refresh...');
-            }
+            e.requestOptions.path != ApiConfig.login &&
+            e.requestOptions.path != ApiConfig.register) {
+          final currentAuth = e.requestOptions.headers['Authorization'];
+
+          // Если токен уже был обновлен параллельным запросом, сразу повторяем с новым токеном
+          if (_token != null &&
+              currentAuth != null &&
+              currentAuth != 'Bearer $_token') {
+            final options = e.requestOptions;
+            options.headers['Authorization'] = 'Bearer $_token';
             try {
-              final refreshResponse = await _dio.post(
-                ApiConfig.refreshToken,
-                data: {'refresh_token': refreshToken},
-              );
-
-              final resData = refreshResponse.data is Map
-                  ? (refreshResponse.data['data'] is Map
-                      ? refreshResponse.data['data'] as Map<String, dynamic>
-                      : refreshResponse.data as Map<String, dynamic>)
-                  : <String, dynamic>{};
-
-              final newAccess = resData['access_token'] as String?;
-              final newRefresh =
-                  resData['refresh_token'] as String? ?? refreshToken;
-
-              if (newAccess != null && newAccess.isNotEmpty) {
-                await setTokens(newAccess, newRefresh);
-                if (kDebugMode) {
-                  debugPrint('[ApiService] Token refreshed successfully');
-                }
-
-                final options = e.requestOptions;
-                options.headers['Authorization'] = 'Bearer $newAccess';
-                return handler.resolve(await _dio.fetch(options));
-              } else {
-                throw Exception('Empty access token returned on refresh');
+              final response = await _dio.fetch(options);
+              return handler.resolve(response);
+            } catch (retryErr) {
+              if (retryErr is DioException) {
+                return handler.next(retryErr);
               }
-            } catch (err) {
-              if (kDebugMode) {
-                debugPrint('[ApiService] Token refresh failed: $err');
-              }
-              bool isNetworkError = false;
-              if (err is DioException) {
-                isNetworkError =
-                    err.type == DioExceptionType.connectionTimeout ||
-                        err.type == DioExceptionType.sendTimeout ||
-                        err.type == DioExceptionType.receiveTimeout ||
-                        err.type == DioExceptionType.connectionError ||
-                        err.type == DioExceptionType.unknown;
-              }
-              if (!isNetworkError) {
-                await _handleSessionExpired();
+              return handler.reject(e);
+            }
+          }
+
+          final newAccessToken = await _performTokenRefresh();
+          if (newAccessToken != null && newAccessToken.isNotEmpty) {
+            final options = e.requestOptions;
+            options.headers['Authorization'] = 'Bearer $newAccessToken';
+            try {
+              final response = await _dio.fetch(options);
+              return handler.resolve(response);
+            } catch (retryErr) {
+              if (retryErr is DioException) {
+                return handler.next(retryErr);
               }
               return handler.reject(e);
             }
           } else {
-            if (kDebugMode) {
-              debugPrint('[ApiService] No refresh token available');
-            }
-            await _handleSessionExpired();
+            return handler.reject(e);
           }
         }
         return handler.next(e);
@@ -141,6 +118,7 @@ class ApiService {
 
   String? _token;
   String? _refreshToken;
+  Completer<String?>? _refreshCompleter;
   String? _userName;
   String? _email;
   String? _avatarUrl;
@@ -683,16 +661,35 @@ class ApiService {
     }
   }
 
-  /// Обновление пары JWT-токенов через POST /api/v1/auth/refresh.
-  Future<bool> refreshAuthTokens() async {
-    final currentRefresh =
-        _refreshToken ?? await _storage.read(key: 'refresh_token');
-    if (currentRefresh == null || currentRefresh.isEmpty) {
-      await _handleSessionExpired();
-      return false;
+  /// Выполняет обновление access и refresh токенов.
+  ///
+  /// Предотвращает состояние гонки (Race Condition): если несколько запросов
+  /// одновременно получают 401, запрос на /auth/refresh выполняется ровно один раз,
+  /// а все параллельные вызовы ожидают его завершения.
+  Future<String?> _performTokenRefresh() async {
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
     }
 
+    final completer = Completer<String?>();
+    _refreshCompleter = completer;
+
     try {
+      final currentRefresh =
+          _refreshToken ?? await _storage.read(key: 'refresh_token');
+      if (currentRefresh == null || currentRefresh.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('[ApiService] No refresh token available');
+        }
+        await _handleSessionExpired();
+        completer.complete(null);
+        return null;
+      }
+
+      if (kDebugMode) {
+        debugPrint('[ApiService] Token expired (401), attempting refresh...');
+      }
+
       final response = await _dio.post(
         ApiConfig.refreshToken,
         data: {'refresh_token': currentRefresh},
@@ -709,13 +706,20 @@ class ApiService {
 
       if (newAccess != null && newAccess.isNotEmpty) {
         await setTokens(newAccess, newRefresh);
-        return true;
+        if (kDebugMode) {
+          debugPrint('[ApiService] Token refreshed successfully');
+        }
+        completer.complete(newAccess);
+        return newAccess;
       } else {
-        await _handleSessionExpired();
-        return false;
+        throw Exception('Empty access token returned on refresh');
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[ApiService] refreshAuthTokens error: $e');
+      if (kDebugMode) {
+        debugPrint('[ApiService] Token refresh failed: $e');
+      }
+      completer.complete(null);
+
       bool isNetworkError = false;
       if (e is DioException) {
         isNetworkError = e.type == DioExceptionType.connectionTimeout ||
@@ -727,8 +731,16 @@ class ApiService {
       if (!isNetworkError) {
         await _handleSessionExpired();
       }
-      return false;
+      return null;
+    } finally {
+      _refreshCompleter = null;
     }
+  }
+
+  /// Обновление пары JWT-токенов через POST /api/v1/auth/refresh.
+  Future<bool> refreshAuthTokens() async {
+    final newAccess = await _performTokenRefresh();
+    return newAccess != null && newAccess.isNotEmpty;
   }
 
   /// Выгружает локальные транзакции и бюджеты на сервер (включая удаленные офлайн бюджеты).

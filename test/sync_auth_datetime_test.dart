@@ -268,6 +268,79 @@ void main() {
       expect(mockSecureStorage['auth_token'], 'access_new_jti_222');
       expect(mockSecureStorage['refresh_token'], 'refresh_new_jti_333');
     });
+
+    test(
+        'concurrent 401 requests trigger only one /auth/refresh call and both retry successfully',
+        () async {
+      final api = ApiService.instance;
+      await api.setTokens('expired_token_123', 'initial_refresh_token_456');
+
+      int refreshCallCount = 0;
+
+      api.dio.httpClientAdapter = _MockDioAdapter((RequestOptions options) {
+        if (options.path == ApiConfig.refreshToken) {
+          refreshCallCount++;
+          return ResponseBody.fromString(
+            jsonEncode({
+              'status': 'success',
+              'data': {
+                'access_token': 'new_valid_token_789',
+                'refresh_token': 'new_valid_refresh_789',
+                'token_type': 'bearer',
+              }
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        } else if (options.path == ApiConfig.insights) {
+          final authHeader = options.headers['Authorization'] as String?;
+
+          // Со старым токеном возвращаем 401
+          if (authHeader == 'Bearer expired_token_123') {
+            return ResponseBody.fromString(
+              jsonEncode({'detail': 'Token expired'}),
+              401,
+              headers: {
+                Headers.contentTypeHeader: [Headers.jsonContentType],
+              },
+            );
+          }
+
+          // С новым токеном возвращаем 200
+          if (authHeader == 'Bearer new_valid_token_789') {
+            return ResponseBody.fromString(
+              jsonEncode({
+                'status': 'success',
+                'data': {
+                  'insights': ['OK'],
+                }
+              }),
+              200,
+              headers: {
+                Headers.contentTypeHeader: [Headers.jsonContentType],
+              },
+            );
+          }
+
+          return ResponseBody.fromString('{}', 401);
+        }
+        return ResponseBody.fromString('{}', 404);
+      });
+
+      // Запускаем два конкурентных запроса одновременно
+      final results = await Future.wait([
+        api.getInsights(),
+        api.getInsights(),
+      ]);
+
+      // Рефреш должен быть вызван ровно один раз
+      expect(refreshCallCount, 1);
+      expect(results[0]['insights'], ['OK']);
+      expect(results[1]['insights'], ['OK']);
+      expect(mockSecureStorage['auth_token'], 'new_valid_token_789');
+    });
   });
 
   group('3. Offline Batch Sync (POST /api/v1/sync/) & Budget Deletion', () {
